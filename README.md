@@ -7,9 +7,6 @@
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Vercel AI Accelerator 2025](https://img.shields.io/badge/Vercel%20AI-Accelerator%202025-000000?style=flat&logo=vercel)](https://vercel.com/ai-accelerator)
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-orange.svg)](https://github.com/usestrix/strix)
-[![Discord](https://dcbadge.limes.pink/api/server/yduEyduBsp?style=flat)](https://discord.gg/yduEyduBsp)
-
-**⚡ Use it to hack your apps before the bad guys do ⚡**
 
 </div>
 
@@ -133,15 +130,5 @@ Our managed platform provides:
 ## 👥 Join Our Community
 
 Have questions? Found a bug? Want to contribute? **[Join our Discord!](https://discord.gg/yduEyduBsp)**
-
----
-
-<div align="center">
-
-### About • Links
-
-**[OmniSecure Inc.](https://omnisecure.ai)** • Applied AI Research Lab
-
-[Discord Community](https://discord.gg/yduEyduBsp) • [Enterprise Solutions](https://form.typeform.com/to/ljtvl6X0) • [Report Issues](https://github.com/usestrix/strix/issues)
 
 </div>
