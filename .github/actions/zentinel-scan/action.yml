@@ -1,0 +1,26 @@
+name: 'Zentinel Security Scan'
+description: 'Scans the repository for vulnerabilities using Zentinel API'
+inputs:
+  api-key:
+    description: 'Zentinel API Key'
+    required: true
+  fail-on-critical:
+    description: 'Fail if critical issues found'
+    required: false
+    default: 'false'
+outputs:
+  exit_code:
+    description: 'Scan exit code'
+    value: ${{ steps.scan-script.outputs.exit_code }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Scan Script
+      id: scan-script
+      run: |
+        python3 backend/scripts/ci_scan.py
+        echo "exit_code=$?" >> $GITHUB_OUTPUT
+      shell: bash
+      env:
+        API_KEY: ${{ inputs.api-key }}
+        FAIL_ON_CRITICAL: ${{ inputs.fail-on-critical }}

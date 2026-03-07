@@ -1,0 +1,12 @@
+.git
+node_modules
+.next
+.env*
+venv
+__pycache__
+*.log
+.agent/
+.agents/
+inspect_output.txt
+zentinelvertex.json
+git-diff.patch

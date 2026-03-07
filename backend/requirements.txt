@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+redis
+celery
+litellm
+tenacity
+google-cloud-aiplatform
+pydantic-settings
+supabase
+pyjwt[crypto]

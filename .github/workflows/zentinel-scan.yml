@@ -1,0 +1,21 @@
+name: Zentinel Security Scan
+on: [pull_request]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true # Stop workflow immediately if Critical vulnerability found
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Centinel Scan
+        id: scan
+        uses: ./.github/actions/zentinel-scan
+        with:
+          api-key: ${{ secrets.ZENTINEL_API_KEY }}
+          fail-on-critical: true # Returns exit code 1 if Critical found
+          
+      - name: Check Status
+        if: steps.scan.outputs.exit_code != 0
+        run: exit 1
