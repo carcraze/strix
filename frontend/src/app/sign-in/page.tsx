@@ -58,6 +58,7 @@ export default function SignInPage() {
             if (error) {
                 alert(error.message);
             } else {
+                // Let the proxy or a specialized redirect handler take over
                 window.location.href = "/dashboard";
             }
         } catch (err) {
@@ -79,7 +80,7 @@ export default function SignInPage() {
             const { error } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/dashboard`
+                    emailRedirectTo: `${window.location.origin}/auth/callback`
                 }
             });
 

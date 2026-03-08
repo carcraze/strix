@@ -52,7 +52,7 @@ export async function GET(request: Request) {
             type: 'magiclink',
             email,
             options: {
-                redirectTo: `${siteUrl}/dashboard`
+                redirectTo: `${siteUrl}/auth/callback`
             }
         });
 

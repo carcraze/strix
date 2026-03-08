@@ -8,6 +8,9 @@ steps:
     '--build-arg', 'NEXT_PUBLIC_POSTHOG_TOKEN=${_NEXT_PUBLIC_POSTHOG_TOKEN}',
     '--build-arg', 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}',
     '--build-arg', 'NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL}',
+    '--build-arg', 'WORKOS_CLIENT_ID=${_WORKOS_CLIENT_ID}',
+    '--build-arg', 'WORKOS_API_KEY=${_WORKOS_API_KEY}',
+    '--build-arg', 'SUPABASE_SERVICE_ROLE_KEY=${_SUPABASE_SERVICE_ROLE_KEY}',
     '.'
   ]
 images:

@@ -28,7 +28,7 @@ export default function CRMSignInPage() {
             if (error) {
                 alert(error.message);
             } else {
-                // Force redirect to CRM
+                // Let the proxy or a specialized redirect handler take over
                 window.location.href = "/crm";
             }
         } catch (err) {
@@ -50,7 +50,7 @@ export default function CRMSignInPage() {
             const { error } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/crm`
+                    emailRedirectTo: `${window.location.origin}/auth/callback`
                 }
             });
 

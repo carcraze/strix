@@ -57,13 +57,48 @@ export async function proxy(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // --- SUBDOMAIN ROUTING ---
+    // --- SUBDOMAIN ROUTING & SMART REDIRECTS ---
     const url = request.nextUrl
     const hostname = request.headers.get('host') || ''
     const isAppSubdomain = hostname.startsWith('app.zentinel.dev')
     const isCrmSubdomain = hostname.startsWith('crm.zentinel.dev')
+    const isMainDomain = !isAppSubdomain && !isCrmSubdomain
 
-    // 1. Handle app.zentinel.dev
+    // 1. Smart Post-Login Routing for Main Domain (signed-in user visits / or /sign-in)
+    if (user && isMainDomain && (url.pathname === '/' || url.pathname === '/sign-in')) {
+        const adminClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+
+        // Check if CRM Staff (use maybeSingle to avoid throwing)
+        const { data: staff } = await adminClient
+            .from('crm_staff')
+            .select('is_active')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle()
+
+        if (staff) {
+            return NextResponse.redirect(new URL('https://crm.zentinel.dev', request.url))
+        }
+
+        // Check if has Organization
+        const { data: orgMember } = await adminClient
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .maybeSingle()
+
+        if (orgMember) {
+            return NextResponse.redirect(new URL('https://app.zentinel.dev/dashboard', request.url))
+        } else {
+            return NextResponse.redirect(new URL('https://app.zentinel.dev/sign-up', request.url))
+        }
+    }
+
+    // 2. Handle app.zentinel.dev
     if (isAppSubdomain) {
         if (url.pathname === '/') {
             return NextResponse.rewrite(new URL('/dashboard', request.url))
@@ -73,18 +108,17 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // 2. Handle crm.zentinel.dev
+    // 3. Handle crm.zentinel.dev — rewrite / to /crm internally
     if (isCrmSubdomain) {
         if (url.pathname === '/') {
             return NextResponse.rewrite(new URL('/crm', request.url))
         }
-        if (url.pathname.startsWith('/dashboard')) {
-            return NextResponse.redirect(new URL('https://app.zentinel.dev', request.url))
-        }
+        // NOTE: Do NOT redirect /dashboard here — the CRM staff check below
+        // may redirect to /crm/sign-in (not /dashboard), so this is safe.
     }
 
-    // 3. Fallback for main domain (zentinel.dev)
-    if (!isAppSubdomain && !isCrmSubdomain) {
+    // 4. Fallback for main domain (zentinel.dev) paths
+    if (isMainDomain) {
         if (url.pathname.startsWith('/dashboard')) {
             return NextResponse.redirect(new URL(`https://app.zentinel.dev${url.pathname}`, request.url))
         }
@@ -92,7 +126,7 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL(`https://crm.zentinel.dev${url.pathname}`, request.url))
         }
     }
-    // --- END SUBDOMAIN ROUTING ---
+    // --- END SUBDOMAIN ROUTING & SMART REDIRECTS ---
 
     const pathname = request.nextUrl.pathname
     const isCrmPath = pathname.startsWith('/crm')
@@ -126,7 +160,7 @@ export async function proxy(request: NextRequest) {
                 }
             }
 
-            // 4. Staff Check (Only for fully verified users)
+            // 4. Staff Check — use maybeSingle() to avoid PostgREST throwing on 0 rows
             try {
                 const adminClient = createClient(
                     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,15 +171,16 @@ export async function proxy(request: NextRequest) {
                     .from('crm_staff')
                     .select('is_active')
                     .eq('user_id', user.id)
-                    .single()
+                    .maybeSingle()  // FIXED: was .single() which throws on 0 rows
 
                 if (error || !staff || !staff.is_active) {
-                    console.error('CRM staff access denied for:', user.email)
-                    return NextResponse.redirect(new URL('/dashboard', request.url))
+                    console.error('CRM staff access denied for:', user.email, error?.message)
+                    // Redirect to CRM sign-in (NOT /dashboard which would loop on crm subdomain)
+                    return NextResponse.redirect(new URL('/crm/sign-in', request.url))
                 }
             } catch (err) {
                 console.error('CRM proxy error:', err)
-                return NextResponse.redirect(new URL('/dashboard', request.url))
+                return NextResponse.redirect(new URL('/crm/sign-in', request.url))
             }
         }
     }
