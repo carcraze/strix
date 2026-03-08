@@ -1,0 +1,334 @@
+STAGE-1 SALES ORGANIZATION
+
+Complete Operational Plan
+
+Product-Led Growth · Outbound Sales · Startup Security Platform
+
+Build a repeatable machine that consistently brings startups to sign up and convert to paid plans.
+
+Confidential -- Internal Use Only
+Agenda                                                  06 Prospect Database
+
+Complete plan -- 10 sections covered                            Excel system, pipeline stages, data rules
+ 01 Sales Model Overview
+                                                        07 Daily Workflow & Meetings
+          PLG + outbound support strategy
+                                                                Time blocks, accountability cadence
+ 02 Team Structure
+                                                        08 Tools & Resources
+          5­6 person focused organization
+                                                                Technology stack, marketing assets
+ 03 Role Responsibilities
+                                                        09 Team Rules & KPIs
+          Sales Operator · SDR · AE · Customer Success
+                                                                5 operating rules + weekly scorecard
+ 04 SDR Playbook
+                                                        10 Stage-1 Graduation
+          Daily targets, prospecting sources, workflow
+                                                                When and how to upgrade to CRM
+ 05 Account Executive Playbook
+
+          Demo, negotiate, convert to paid
+Sales Model Overview
+
+Product-Led Growth (PLG) with Outbound Support
+
+SELF-SERVE                                          PLG                                  OUTBOUND
+
+  PLATFORM                                      CORE ENGINE                                  SUPPORT
+
+  Customers sign up and start using the       The product drives adoption. SDRs feed       SDRs proactively hunt startups across
+platform themselves -- no sales friction at  startups in; the platform converts them to  LinkedIn, Crunchbase, Product Hunt, and
+
+                the entry point.                                paid users.                                  GitHub.
+
+STAGE 1 GOAL:  Build a repeatable machine that consistently brings startups to sign up and convert to paid
+               plans.
+Team Structure
+
+Small, focused, and measurable -- 5 to 6 people total
+
+  ×1                             ×2­3                                ×1                           ×1
+
+Sales Operator                          SDR                       Account Executive            Customer Success
+
+    Head of Sales               Sales Dev Representatives                       AE                     CS Manager
+
+Build system & close strategic  Hunt startups & generate signups  Run demos & convert to paid  Onboard users & ensure
+               deals                                                            plans                   adoption
+
+This team of 5­6 people supports hundreds of startups onboarding monthly.
+Role: Sales Operator (Head of Sales)
+
+The system architect of revenue
+
+RESPONSIBILITIES                        DAILY INDICATORS
+
+ · Design the outreach strategy          · Pipeline review completed
+ · Define ICP (Ideal Customer Profile)   · SDR outreach performance reviewed
+ · Monitor pipeline performance          · New outreach experiments designed
+ · Improve messaging continuously        · 1+ strategic conversation with large prospect
+ · Close high-value strategic deals
+ · Coordinate with product team
+
+                                        WEEKLY KPIs
+
+                                         · Total new signups generated from sales
+                                         · Conversion rate: signup  paid plan
+                                         · SDR meeting conversion rate
+Role: Sales Development Representatives (SDRs)
+
+Primary mission: Bring startups onto the platform
+
+SDRs HUNT FOR STARTUPS -- every day, every hour, consistently and systematically.
+
+PROSPECTING SOURCES                                DAILY PRODUCTIVITY TARGETS      40­60
+                                                                                   60­80
+  1 LinkedIn                                         New Prospects Added
+                                                     Outreach Messages Sent           10+
+          Find founders and CTOs directly by role    Responses Received               2­5
+                                                     Signups Generated
+  2 Crunchbase
+
+          Recently funded startups database
+
+  3 Product Hunt
+
+          Active early-stage product teams
+
+  4 GitHub
+
+          Technical founders building products
+SDR Daily Activities
+
+5 structured steps that convert research into signups
+
+1  Find New Startups
+
+   Search LinkedIn, Crunchbase, Product Hunt, and GitHub for early-stage companies that match the ICP.
+
+2  Identify Decision Makers
+
+   Locate the Founder or CTO -- the person who can approve a trial account.
+
+3  Send Outreach Messages
+
+   Send personalized, concise messages referencing the startup's product or known pain point.
+
+4  Track All Responses
+
+   Log every reply in the prospect database -- never let a lead fall through the cracks.
+
+5  Encourage Platform Signups
+
+   Guide interested prospects to create an account and run their first security scan.
+Role: Account Executive (AE)                                 RESPONSIBILITIES
+
+Handles engaged prospects -- demos, negotiation, conversion   · Run product demos end-to-end
+                                                              · Explain vulnerability reports clearly
+  WHO THE AE HANDLES                                          · Negotiate subscription packages
+                                                              · Convert free users to paid plans
+   · Startups asking detailed product questions
+   · Startups requesting a product demo
+   · Startups actively considering paid plans
+
+DAILY PRODUCTIVITY INDICATORS      10+ / day                 1­2 / week
+
+       3­5 / day                     Follow-Ups Sent                Deals Closed
+
+                Product Demos Run
+Role: Customer Success Manager
+
+Ensures startups actually use and get value from the platform
+
+Key insight: Many SaaS companies lose customers because users sign up but never adopt the product.
+
+RESPONSIBILITIES                                               DAILY TARGETS                        2­3
+                                                                                                    10+
+ · Provide onboarding guidance to new signups                    Customer Onboarding Sessions
+ · Explain vulnerability reports to clients                      Support Tickets Resolved              5
+ · Help startups fix identified security issues
+ · Collect feedback and relay to product team
+
+                                                               Customer Check-ins
+
+Without Customer Success, churn erodes all sales effort. This role directly protects revenue.
+Prospect Database -- Excel System
+
+Master sheet: Startup_Prospects
+
+17 columns capture everything needed to track, manage, and convert each startup:
+
+Prospect_ID       Unique identifier for each prospect  Source                     LinkedIn / Crunchbase / etc.
+                                                                                  When prospect was discovered
+Startup_Name      Company name                         Date_Added                 Responsible SDR name
+                                                                                  Not contacted / Contacted / Replied
+Industry          Fintech, SaaS, AI, etc.              SDR_Assigned               Signed up / Not signed up
+                                                                                  Active / Inactive trial
+Country           Location / region                    Contact_Status             Paid / Free
+                                                                                  Important conversation details
+Website           Company website URL                  Signup_Status
+
+Founder_Name      Main point of contact                Trial_Status
+
+Role              Founder / CTO                        Paid_Status
+
+LinkedIn_Profile  Direct contact link                  Notes
+
+Email             Contact email address
+Prospect Pipeline Stages
+
+Track the full journey -- identify exactly where leads are lost
+
+   1                     2                     3                       4                        5                         6
+
+PROSPECT              CONTACTED              ENGAGED                SIGNED UP               ACTIVE USER              PAID CUSTOMER
+IDENTIFIED
+
+Startup found during  Outreach message sent  Prospect has           Account created on the  First security scan has        Subscription
+   research phase                                                                                  been run          successfully purchased
+                      to founder or CTO      responded to outreach  platform
+
+This pipeline reveals where leads drop off -- so you can fix the right stage, not guess.
+Protecting Prospect Data
+
+You are a cybersecurity company -- data mishandling destroys trust
+
+Access Control                                                      No Sensitive Data Storage
+
+· Only SDR team, Sales Operator, and AE can access the              · Never store passwords or credentials of any kind
+       database                                                     · No private company data or confidential code
+
+· Never share the spreadsheet externally under any                         information
+       circumstances                                                · Only store publicly available business contact details
+
+· Restrict file permissions strictly by role
+
+Cloud Security                                                      Data Ownership Rule
+
+· Store in Google Sheets or Microsoft Excel (cloud-                 · All prospect data belongs to the company -- not
+       backed)                                                             individuals
+
+· Enable two-factor authentication on the account                   · If an SDR leaves, data remains with the organization
+· Enable restricted access + version history                        · Access is revoked immediately on departure
+SDR Daily Workflow
+
+A structured 7-hour day built for maximum signups
+
+AM MORNING                     PM                  MIDDAY                                    EOD AFTERNOON
+
+               2 Hours                             3 Hours                                                  2 Hours
+
+· Research new startups        · Send outreach messages during                               · Send follow-ups to non-
+       matching the ICP               peak hours                                                    responders (3x over 14 days)
+
+· Add new prospects to the     · Respond to all incoming replies                             · Update Excel pipeline with all
+       master database                immediately                                                   outcomes
+
+· Update statuses of existing  · Book demos with interested                                  · Record every conversation note
+       prospects                      prospects via Calendly                                        before end of day
+
+Follow-up rule: Contact each non-responding prospect 3 times over 14 days before archiving.
+Daily Sales Meeting
+
+10 minutes · Every morning · No exceptions
+ Each SDR reports 4 metrics. The Sales Operator identifies bottlenecks in real-time.
+
+ 01 Prospects Added
+                How many new startups were added to the database today
+
+ 02 Outreach Sent
+                Total number of outreach messages sent to prospects
+
+ 03 Responses Received
+                Number of replies received from prospects today
+
+ 04 Signups Generated
+                Prospects who created a platform account as a result of outreach
+Purpose: Maintain accountability and identify bottlenecks before they compound.
+Tools & Resources Required
+
+Stage-1 lightweight, cost-effective stack                                      MARKETING ASSETS
+
+SALES TOOLS & OUTREACH INFRASTRUCTURE                                          Must be ready before any
+                                                                               outreach begins:
+LinkedIn           Prospect discovery -- find founders and CTOs by role
+                                                                                · Product demo video
+Crunchbase         Startup database -- recently funded companies, team info     · Vulnerability report example
+                                                                                · Landing page explaining the
+Google Sheets      Prospect tracking -- master database for all leads
+                                                                                        platform
+Calendly           Demo booking -- remove friction from scheduling demos        · Pricing page with clear tier
+
+                                                                                        structure
+
+Company Email      Professional outreach infrastructure for SDR team
+
+Outreach Templates Pre-approved message scripts to ensure consistent quality
+
+Automated Follow-  Scheduled follow-up sequences for non-responding prospects
+ups
+5 Team Operating Rules
+
+Non-negotiable standards every team member follows
+
+ 1 Every Prospect Must Be Recorded
+              If a startup is contacted, it must appear in the database -- no exceptions, no side lists.
+
+ 2 No Duplicate Outreach
+              Two SDRs must never contact the same startup. Check the database before every outreach.
+
+ 3 All Interactions Logged
+              Every conversation and reply must be recorded in the Notes column the same day it happens.
+
+ 4 Daily Database Update
+              All prospect statuses must be updated before end of day -- no deferrals to the next morning.
+
+ 5 Follow-Up Discipline
+              If a prospect doesn't respond, follow up 3 times over 14 days before archiving the lead.
+Weekly Performance Scorecard
+
+Real productivity numbers -- not activity theater
+EXAMPLE WEEKLY SCORECARD (2 SDRs)
+
+SDR                  Prospects Added  Outreach Sent  Replies Received  Signups Generated
+                                                             40                 15
+SDR 1                220              320                    36                 13
+                                                             76                 28
+SDR 2                210              300
+
+TEAM TOTAL           430              620
+
+            28                        76                               620
+
+            Weekly                    Weekly                               Weekly
+            Signups                    Replies                         Messages Sent
+When to Upgrade from Excel to CRM
+
+Excel is the right tool -- until it isn't
+ Excel is free, fast, and flexible for Stage 1. It works until you hit 5,000 prospects.
+
+                                                                   UPGRADE TRIGGER
+
+                       5,000 Prospects
+
+RECOMMENDED CRM OPTIONS                  Salesforce
+
+ HubSpot                                   · Enterprise-grade CRM
+                                           · Advanced pipeline analytics
+    · Free tier available                  · Email sequence automation
+    · Lead tracking & email sequences      · Integrates with all major tools
+    · Pipeline analytics dashboard
+    · Integrates with Gmail and Outlook
+THE REAL GOAL OF STAGE 1
+
+Discover the repeatable message
+that gets startups to sign up.
+
+The goal is not just outreach volume.
+It is to find the message, the channel, and the timing that converts startups at scale.
+
+Once you find it -- growth accelerates.
+
+ Next step: Build outbound scripts that dramatically increase startup signup rates
+

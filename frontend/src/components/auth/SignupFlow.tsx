@@ -37,7 +37,13 @@ function SignupFlowInner() {
                 setFormData(prev => ({ ...prev, email: session.user.email! }));
             }
         });
-    }, []);
+
+        // Auto-fill domain from landing page
+        const domain = searchParams.get('domain');
+        if (domain) {
+            setFormData(prev => ({ ...prev, companyWebsite: domain }));
+        }
+    }, [searchParams]);
 
     const updateData = (newData: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...newData }));
@@ -110,7 +116,7 @@ function SignupFlowInner() {
             else if (formData.concerns.includes("cloud_misconfigs")) destination = "/dashboard/surface";
             else if (formData.concerns.includes("dependency_vulns")) destination = "/dashboard/issues";
 
-            window.location.href = destination;
+            window.location.href = `https://app.zentinel.dev${destination}`;
 
         } catch (err: any) {
             console.error(err);

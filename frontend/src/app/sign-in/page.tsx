@@ -289,11 +289,13 @@ export default function SignInPage() {
                         </div>
                     </form>
 
-                    <p className="text-center text-xs font-mono text-[var(--color-textSecondary)] mt-6">
-                        Don't have an account?{" "}
-                        <Link href="/sign-up" className="text-[var(--color-cyan)] hover:opacity-80 font-bold">
-                            Request Access
-                        </Link>
+                </div>
+
+                {/* Footer Checkpoint */}
+                <div className="mt-8 text-center grayscale opacity-10">
+                    <p className="text-[10px] font-mono text-white uppercase tracking-widest leading-loose">
+                        Authorized Personnel Gateway<br />
+                        System ID: {typeof window !== 'undefined' ? btoa(window.location.hostname).slice(0, 8) : '00000000'}
                     </p>
                 </div>
             </div>

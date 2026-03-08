@@ -3,6 +3,8 @@ import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import AuthListener from "@/components/AuthListener";
+import Script from "next/script";
+import { CSPostHogProvider } from "@/components/PostHogProvider";
 
 const syne = Syne({
     variable: "--font-syne",
@@ -36,9 +38,26 @@ export default function RootLayout({
                     defaultTheme="dark"
                     disableTransitionOnChange
                 >
-                    <AuthListener />
-                    {children}
+                    <CSPostHogProvider>
+                        <AuthListener />
+                        {children}
+                    </CSPostHogProvider>
                 </ThemeProvider>
+
+                {/* Google Analytics */}
+                <Script
+                    src="https://www.googletagmanager.com/gtag/js?id=G-8Y4NBFSHB7"
+                    strategy="afterInteractive"
+                />
+                <Script id="google-analytics" strategy="afterInteractive">
+                    {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+
+                        gtag('config', 'G-8Y4NBFSHB7');
+                    `}
+                </Script>
             </body>
         </html>
     );

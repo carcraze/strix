@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
     Activity, ArrowRight, Bell, Brain, Bug, CheckCircle2, ChevronRight, Clock, Cloud, Code, Database,
@@ -8,9 +11,16 @@ import {
 /* ─── SECTION: Navbar ─── */
 function Navbar() {
     return (
-        <header className="flex flex-col sm:flex-row items-center justify-between px-8 py-4 bg-black/70 backdrop-blur-md border-b border-white/5 relative">
-            <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Zentinel" className="h-6 w-auto" />
+        <header className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 py-4 bg-black/70 backdrop-blur-md border-b border-white/5">
+            <div className="flex items-center gap-10">
+                <Link href="/">
+                    <img src="/logo.png" alt="Zentinel" className="h-6 w-auto" />
+                </Link>
+                <nav className="hidden md:flex items-center gap-8">
+                    <Link href="#features" className="text-sm text-white/50 hover:text-white transition-colors">Features</Link>
+                    <Link href="/pricing" className="text-sm text-white/50 hover:text-white transition-colors">Pricing</Link>
+                    <Link href="https://cal.com/alvin-zentinel/15min" target="_blank" className="text-sm text-white/50 hover:text-white transition-colors">Get a Demo</Link>
+                </nav>
             </div>
             <div className="flex items-center gap-4">
                 <Link href="/sign-in" className="text-sm text-white/70 hover:text-white transition-colors">
@@ -20,31 +30,20 @@ function Navbar() {
                     href="/sign-up"
                     className="bg-blue-600 text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.5)]"
                 >
-                    Join Beta
+                    Get Started
                 </Link>
             </div>
         </header>
     );
 }
 
-/* ─── SECTION: Ticker ─── */
-function Ticker() {
-    const msg = "WE ARE RUNNING A CLOSED BETA V1.0 — SIGN UP TO JOIN THE BETA WHEN NEW SPOTS OPEN";
-    const repeated = Array(8).fill(msg).join("    ·    ");
-    return (
-        <div className="overflow-hidden bg-[#080c18] border-b border-white/5 py-2.5">
-            <div className="flex whitespace-nowrap animate-[ticker_30s_linear_infinite]">
-                <span className="text-[11px] font-mono text-white/30 tracking-widest uppercase pr-16">{repeated}</span>
-                <span className="text-[11px] font-mono text-white/30 tracking-widest uppercase pr-16">{repeated}</span>
-            </div>
-        </div>
-    );
-}
 
 /* ─── SECTION: Hero ─── */
 function Hero() {
+    const [domain, setDomain] = useState("");
+
     return (
-        <section className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-6 pt-16 overflow-hidden">
+        <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 pt-24 pb-12 overflow-hidden">
             {/* Blue radial glow */}
             <div className="absolute inset-0 -z-10">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-900/25 blur-[130px] rounded-full" />
@@ -64,19 +63,35 @@ function Hero() {
                 </span>
             </h1>
 
-            <p className="text-xl text-white/45 max-w-lg mx-auto mb-8 leading-relaxed">
+            <p className="text-xl text-white/45 max-w-lg mx-auto mb-10 leading-relaxed">
                 Zentinel finds it, proves it, and fixes it —{" "}
                 <span className="text-white/70 font-semibold">before anyone else does.</span>
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
-                <Link
-                    href="/sign-up"
-                    className="bg-blue-600 text-white font-bold px-8 py-4 rounded-xl text-base hover:bg-blue-500 transition-all shadow-[0_0_30px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_rgba(37,99,235,0.7)]"
-                >
-                    Find My Vulnerabilities →
-                </Link>
+            {/* Domain Lead Capture */}
+            <div className="w-full max-w-xl mx-auto mb-12 flex flex-col items-center gap-6">
+                <div className="w-full relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition-opacity" />
+                    <div className="relative flex items-center bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden p-1.5 shadow-2xl">
+                        <div className="pl-4 flex items-center text-white/20">
+                            <Globe className="h-4 w-4" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Enter your domain (e.g. acme.com)"
+                            value={domain}
+                            onChange={(e) => setDomain(e.target.value)}
+                            className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-white placeholder:text-white/20 font-mono text-sm"
+                        />
+                        <Link
+                            href={`/sign-up?domain=${domain}`}
+                            className="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] whitespace-nowrap"
+                        >
+                            Find My Vulnerabilities →
+                        </Link>
+                    </div>
+                </div>
+
                 <Link
                     href="/sign-up"
                     className="text-white/40 hover:text-white/70 text-sm font-medium transition-colors"
@@ -103,7 +118,7 @@ function Hero() {
 /* ─── SECTION: Full Stack Platform ─── */
 function FullStackPlatform() {
     return (
-        <section className="relative px-6 py-12 max-w-6xl mx-auto">
+        <section id="features" className="relative px-6 py-12 max-w-6xl mx-auto">
             {/* Subtle dot grid pattern */}
             <div
                 className="absolute inset-0 pointer-events-none opacity-40"
@@ -572,14 +587,10 @@ export default function HomePage() {
     return (
         <div className="min-h-screen bg-black text-white">
             <style>{`
-                @keyframes ticker {
-                    from { transform: translateX(0); }
-                    to   { transform: translateX(-50%); }
-                }
+                /* Ticker animation removed */
             `}</style>
             <Navbar />
-            <div className="pt-[65px]">
-                <Ticker />
+            <div className="pt-[80px]">
                 <Hero />
                 <FullStackPlatform />
                 <WorkflowSteps />

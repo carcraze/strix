@@ -2,14 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
+import { Suspense } from 'react';
 
-export default function AuthCallback() {
+function AuthCallbackInner() {
     const router = useRouter();
     const params = useSearchParams();
 
@@ -34,7 +31,7 @@ export default function AuthCallback() {
             }
 
             // Session established — redirect to dashboard
-            router.push('/dashboard');
+            window.location.href = 'https://app.zentinel.dev/dashboard';
         };
 
         handleCallback();
@@ -47,5 +44,17 @@ export default function AuthCallback() {
                 <p className="text-[var(--color-textPrimary)] font-mono text-sm">Validating Enterprise Credentials...</p>
             </div>
         </div>
+    );
+}
+
+export default function AuthCallback() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
+                <div className="w-8 h-8 rounded-full border-2 border-[var(--color-cyan)] border-t-transparent animate-spin"></div>
+            </div>
+        }>
+            <AuthCallbackInner />
+        </Suspense>
     );
 }
