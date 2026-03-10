@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from ..services.redis_service import subscribe_to_channel
-from ..services.supabase import supabase_admin
-from ..core.security import get_current_user
+from app.services.redis_service import subscribe_to_channel
+from app.services.supabase import supabase_admin
+from app.core.security import get_current_user
 import json
 
 router = APIRouter(prefix="/api/scans", tags=["scans-logs"])

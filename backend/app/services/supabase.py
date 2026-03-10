@@ -5,7 +5,7 @@ from ..core.config import settings
 # For admin operations (like modifying credits), use the service role key
 # Make sure to have a fallback to os.environ for robust access
 supabase_url = getattr(settings, "SUPABASE_URL", os.environ.get("SUPABASE_URL"))
-supabase_key = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", os.environ.get("SUPABASE_SERVICE_ROLE_KEY"))
+supabase_key = getattr(settings, "SUPABASE_KEY", os.environ.get("SUPABASE_KEY"))
 
 if not supabase_url or not supabase_key:
     # If not defined, default to some mock or raise depending on your setup

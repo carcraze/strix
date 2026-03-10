@@ -1,10 +1,11 @@
 import logging
 import asyncio
 from celery import Celery
-from ..services.redis_service import publish_event
-from ..services.supabase import supabase_admin
-from ..core.scan_types import ScanType, SCAN_CONFIGS
-from ..core.config import settings
+from app.services.redis_service import publish_event
+from app.services.supabase import supabase_admin
+from app.core.scan_types import ScanType, SCAN_CONFIGS
+from app.core.config import settings
+from app.workers.pr_task import run_pr_review_task
 
 celery_app = Celery(
     "zentinel",

@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from ..core.scan_types import ScanType, SCAN_CONFIGS, PLAN_SCAN_PERMISSIONS
-from ..services.supabase import supabase_admin
-from ..workers.tasks import run_pentest_task
-from ..core.security import get_current_user
+from app.core.scan_types import ScanType, SCAN_CONFIGS, PLAN_SCAN_PERMISSIONS
+from app.services.supabase import supabase_admin
+from app.workers.tasks import run_pentest_task
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/api/scans", tags=["scans"])
 

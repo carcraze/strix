@@ -68,7 +68,7 @@ export async function GET(request: Request) {
                 }
 
                 // 3. Fallback to onboarding/signup
-                return NextResponse.redirect('https://app.zentinel.dev/onboarding')
+                return NextResponse.redirect('https://zentinel.dev/sign-up')
             }
         }
     }

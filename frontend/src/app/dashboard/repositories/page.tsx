@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Layers, Github, GitBranch, Lock, Globe, X, Settings, ChevronDown, Check, Loader2 } from "lucide-react";
+import { Plus, Search, Layers, Github, GitBranch, Lock, Globe, X, Settings, ChevronDown, Check, Loader2, Play } from "lucide-react";
 import { Card } from "@/components/ui/zentinel-card";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getRepositories } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
@@ -151,6 +153,25 @@ export default function RepositoriesPage() {
         } catch (err) {
             console.error("Failed to remove repo", err);
         }
+    };
+
+    const handleToggleAutoReview = async (repoId: string, current: boolean) => {
+        try {
+            const { error } = await supabase
+                .from('repositories')
+                .update({ auto_review_enabled: !current })
+                .eq('id', repoId);
+            
+            if (error) throw error;
+            setRepositories(prev => prev.map(r => r.id === repoId ? { ...r, auto_review_enabled: !current } : r));
+        } catch (err) {
+            console.error("Failed to toggle auto review", err);
+        }
+    };
+
+    const handleScanNow = async (repo: any) => {
+        // Placeholder for now: triggers an immediate manual scan.
+        alert(`Triggering manual PR-style review for branch ${repo.default_branch || 'main'} on ${repo.full_name}...`);
     };
 
     const providerIcon = (p: string) => {
@@ -322,10 +343,9 @@ export default function RepositoriesPage() {
                         <thead className="bg-black/40 border-b border-[var(--color-border)] font-syne text-[var(--color-textMuted)]">
                             <tr>
                                 <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Repository</th>
-                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Issues</th>
+                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Status</th>
                                 <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Auto-Review</th>
-                                <th className="px-6 py-4 font-medium tracking-wider text-xs flex items-center gap-1 border-r-0">Last Tested <ChevronDown className="h-3 w-3 inline-block" /></th>
-                                <th className="w-10"></th>
+                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right border-r-0">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]">
@@ -364,29 +384,49 @@ export default function RepositoriesPage() {
                                                     {repo.provider === 'github' ? <Github className="h-4 w-4" /> : <GitBranch className="h-4 w-4 text-[var(--color-textMuted)]" />}
                                                     {repo.full_name || repo.name}
                                                 </Link>
-                                            </td>
-                                            <td className="px-6 py-4 text-[var(--color-textMuted)]">—</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-xs text-[var(--color-textSecondary)]">
-                                                    {repo.auto_review_enabled ? (
-                                                        <><div className="h-1.5 w-1.5 rounded-full bg-[var(--color-green)]" /> Enabled</>
-                                                    ) : (
-                                                        <><div className="h-1.5 w-1.5 rounded-full bg-[var(--color-textMuted)]" /> Disabled</>
-                                                    )}
+                                                <div className="text-xs text-[var(--color-textMuted)] mt-1 ml-6">
+                                                    Branch: {repo.default_branch || 'main'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-[var(--color-textMuted)]">—</td>
-                                            <td className="px-4 py-4 text-right">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        handleRemoveRepo(repo.id);
-                                                    }}
-                                                    className="text-[var(--color-textMuted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 rounded hover:bg-red-400/10"
-                                                    title="Remove repository"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </button>
+                                            <td className="px-6 py-4">
+                                                {repo.auto_review_enabled ? (
+                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                                        Active
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-white/5 text-white/40 border-white/10">
+                                                        Disabled
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Switch 
+                                                        checked={!!repo.auto_review_enabled} 
+                                                        onCheckedChange={() => handleToggleAutoReview(repo.id, !!repo.auto_review_enabled)}
+                                                        className="data-[state=checked]:bg-[#A855F7]"
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button
+                                                        onClick={() => handleScanNow(repo)}
+                                                        className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md transition-colors border border-white/5"
+                                                    >
+                                                        <Play className="h-3 w-3" /> Scan now
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleRemoveRepo(repo.id);
+                                                        }}
+                                                        className="text-[var(--color-textMuted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded hover:bg-red-400/10"
+                                                        title="Remove repository"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

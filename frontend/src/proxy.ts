@@ -94,7 +94,7 @@ export async function proxy(request: NextRequest) {
         if (orgMember) {
             return NextResponse.redirect(new URL('https://app.zentinel.dev/dashboard', request.url))
         } else {
-            return NextResponse.redirect(new URL('https://app.zentinel.dev/sign-up', request.url))
+            return NextResponse.redirect(new URL('https://zentinel.dev/sign-up', request.url))
         }
     }
 

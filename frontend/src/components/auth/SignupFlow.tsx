@@ -12,8 +12,6 @@ import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 
 function SignupFlowInner() {
     const searchParams = useSearchParams();
-    const initialStep = Number(searchParams.get('step')) || 1;
-    const [step, setStep] = useState(initialStep);
     const [loading, setLoading] = useState(false);
     const [setupLoading, setSetupLoading] = useState(false);
 
@@ -49,13 +47,8 @@ function SignupFlowInner() {
         setFormData(prev => ({ ...prev, ...newData }));
     };
 
-    const handleNext = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        setStep(prev => prev + 1);
-    };
-
     const handleBack = () => {
-        setStep(prev => prev - 1);
+        // Obsolete
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -125,13 +118,14 @@ function SignupFlowInner() {
         }
     };
 
-    // Check if current step is fully filled
+    // Check if sections are fully filled
     const isStep1Valid = formData.firstName && formData.lastName && formData.email && formData.password.length >= 8;
     const isStep2Valid = formData.companyName && formData.companyWebsite && formData.role && formData.companySize;
+    const isFormValid = isStep1Valid && isStep2Valid && formData.codePlatforms.length > 0 && formData.concerns.length > 0;
 
     if (setupLoading) {
         return (
-            <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl w-full max-w-md p-10 flex flex-col items-center justify-center space-y-4 shadow-2xl animate-in fade-in duration-300">
+            <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl w-full max-w-lg p-10 flex flex-col items-center justify-center space-y-4 shadow-2xl animate-in fade-in duration-300">
                 <Loader2 className="h-8 w-8 text-[var(--color-cyan)] animate-spin" />
                 <h3 className="text-lg font-syne font-bold text-white tracking-tight">Setting up your dashboard...</h3>
                 <p className="text-sm font-mono text-[var(--color-textSecondary)] text-center">Configuring agents and preparing your environment</p>
@@ -140,52 +134,45 @@ function SignupFlowInner() {
     }
 
     return (
-        <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
-
-            {/* Progress Bar */}
-            <div className="absolute top-0 left-0 right-0 flex h-1 bg-[var(--background)]">
-                <div className="h-full bg-[var(--color-cyan)] transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }} />
-            </div>
-
+        <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden">
             <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <span className="text-xs font-mono text-[var(--color-cyan)] font-bold mb-1 block">STEP {step} OF 3</span>
-                        <h2 className="text-xl font-bold font-syne text-white">
-                            {step === 1 && "Create your account"}
-                            {step === 2 && "Company context"}
-                            {step === 3 && "Stack & intent"}
-                        </h2>
-                    </div>
-                    {step > 1 && (
-                        <button type="button" onClick={handleBack} className="h-8 w-8 rounded-full bg-[var(--background)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-textMuted)] hover:text-white hover:border-white/20 transition-all">
-                            <ArrowLeft className="h-4 w-4" />
-                        </button>
-                    )}
+                <div className="mb-8 border-b border-[var(--color-border)] pb-6">
+                    <h2 className="text-2xl font-bold font-syne text-white">Create your account</h2>
+                    <p className="text-sm text-[var(--color-textSecondary)] mt-2">Get started with Zentinel in just a few seconds.</p>
                 </div>
 
-                <form onSubmit={step === 3 ? handleSubmit : handleNext}>
-                    {step === 1 && <Step1Identity formData={formData} updateData={updateData} loading={loading} setLoading={setLoading} />}
-                    {step === 2 && <Step2Company formData={formData} updateData={updateData} />}
-                    {step === 3 && <Step3Stack formData={formData} updateData={updateData} />}
+                <form onSubmit={handleSubmit} className="space-y-10">
+                    
+                    {/* Section 1: Identity */}
+                    <div>
+                        <h3 className="text-sm font-syne font-bold text-white mb-4 uppercase tracking-wider text-[var(--color-cyan)]">1. Your Details</h3>
+                        <Step1Identity formData={formData} updateData={updateData} loading={loading} setLoading={setLoading} />
+                    </div>
 
-                    <div className="mt-8">
-                        {step < 3 ? (
-                            <Button
-                                type="submit"
-                                disabled={step === 1 ? !isStep1Valid : !isStep2Valid}
-                                className="w-full bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold h-11 transition-all group"
-                            >
-                                Continue <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        ) : (
-                            <Button
-                                type="submit"
-                                className="w-full bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold h-11 shadow-[0_0_15px_var(--color-cyan)]/20 transition-all group"
-                            >
-                                Set Up My Dashboard <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        )}
+                    <div className="border-t border-[var(--color-border)]" />
+
+                    {/* Section 2: Company */}
+                    <div>
+                        <h3 className="text-sm font-syne font-bold text-white mb-4 uppercase tracking-wider text-[var(--color-cyan)]">2. Company Context</h3>
+                        <Step2Company formData={formData} updateData={updateData} />
+                    </div>
+
+                    <div className="border-t border-[var(--color-border)]" />
+
+                    {/* Section 3: Stack */}
+                    <div>
+                        <h3 className="text-sm font-syne font-bold text-white mb-4 uppercase tracking-wider text-[var(--color-cyan)]">3. Stack & Intent</h3>
+                        <Step3Stack formData={formData} updateData={updateData} />
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
+                        <Button
+                            type="submit"
+                            disabled={!isFormValid || loading}
+                            className="w-full bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold h-12 shadow-[0_0_15px_var(--color-cyan)]/20 transition-all group text-lg"
+                        >
+                            Set Up My Dashboard <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        </Button>
                     </div>
                 </form>
             </div>
