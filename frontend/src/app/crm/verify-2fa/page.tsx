@@ -11,14 +11,19 @@ export default function CRMVerify2FA() {
     const router = useRouter();
     const [code, setCode] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [factorId, setFactorId] = useState<string | null>(null);
+    const [hostname, setHostname] = useState('secure-gate');
 
     useEffect(() => {
-        const getFactor = async () => {
-            const { data, error } = await supabase.auth.mfa.listFactors();
+        // Fix hydration error: window only available client-side
+        setHostname(window.location.hostname);
 
-            if (error) {
-                console.error("MFA Error:", error);
+        const initMFA = async () => {
+            const { data, error: listError } = await supabase.auth.mfa.listFactors();
+
+            if (listError) {
+                console.error("MFA Error:", listError);
                 return;
             }
 
@@ -32,15 +37,19 @@ export default function CRMVerify2FA() {
 
             setFactorId(verifiedFactor.id);
         };
-        getFactor();
+
+        initMFA();
     }, [router]);
 
-    const handleVerify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!code || code.length !== 6 || !factorId) return;
+    const handleVerify = async (submittedCode: string) => {
+        if (!submittedCode || submittedCode.length !== 6 || !factorId) return;
+        if (loading) return;
 
         setLoading(true);
+        setError(null);
+
         try {
+            // Create challenge atomically right before verify (prevents IP mismatch 422)
             const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
                 factorId
             });
@@ -50,17 +59,31 @@ export default function CRMVerify2FA() {
             const { error: verifyError } = await supabase.auth.mfa.verify({
                 factorId,
                 challengeId: challenge.id,
-                code
+                code: submittedCode
             });
 
             if (verifyError) throw verifyError;
 
-            // Success! 
-            router.push("/crm");
+            // CRITICAL: Use full-page navigation, NOT router.push().
+            // router.push() is client-side and doesn't re-send the updated AAL2 cookie
+            // to the middleware, causing it to redirect back to verify-2fa silently.
+            // window.location.href forces a fresh HTTP request with the new session.
+            window.location.href = 'https://crm.zentinel.dev';
         } catch (err: any) {
-            alert(err.message || "Invalid verification code");
+            setError(err.message || "Invalid code. Check your authenticator app.");
+            setCode("");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCodeChange = (value: string) => {
+        const cleaned = value.replace(/\D/g, "").slice(0, 6);
+        setCode(cleaned);
+        setError(null);
+        // Auto-submit when all 6 digits entered
+        if (cleaned.length === 6) {
+            handleVerify(cleaned);
         }
     };
 
@@ -80,23 +103,27 @@ export default function CRMVerify2FA() {
                     <p className="text-[#666] text-xs font-mono uppercase tracking-widest">Enter authentication code to proceed</p>
                 </div>
 
-                <form onSubmit={handleVerify} className="space-y-6">
+                <form onSubmit={(e) => { e.preventDefault(); handleVerify(code); }} className="space-y-6">
                     <div>
                         <Input
                             type="text"
+                            inputMode="numeric"
                             maxLength={6}
                             placeholder="000000"
                             value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                            className="bg-white/5 border-white/10 text-white text-center text-3xl h-20 rounded-2xl tracking-[0.5em] font-mono focus:border-[var(--color-cyan)]"
+                            onChange={(e) => handleCodeChange(e.target.value)}
+                            className="bg-white/5 border-white/10 text-white text-center text-3xl h-20 rounded-2xl tracking-[0.5em] font-mono focus:border-[var(--color-cyan)] disabled:opacity-50"
                             autoFocus
+                            disabled={loading || !factorId}
                         />
+                        {error && <p className="text-red-400 text-xs font-mono text-center mt-3">{error}</p>}
+                        {!factorId && !error && <p className="text-[#555] text-xs font-mono text-center mt-3">Loading...</p>}
                     </div>
 
                     <Button
                         type="submit"
                         disabled={loading || code.length !== 6 || !factorId}
-                        className="w-full h-14 rounded-2xl bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold text-base shadow-[0_4px_15px_rgba(0,212,255,0.2)]"
+                        className="w-full h-14 rounded-2xl bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold text-base shadow-[0_4px_15px_rgba(0,212,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? "VERIFYING..." : "UNLOCK CRM ACCESS"}
                         {!loading && <ArrowRight className="h-4 w-4 ml-2" />}
@@ -116,7 +143,7 @@ export default function CRMVerify2FA() {
                         <ShieldCheck className="h-3 w-3" /> SECURE LINK ESTABLISHED
                     </div>
                     <p className="text-[8px] font-mono text-white/50 uppercase tracking-[0.2em]">
-                        Endpoint: {typeof window !== 'undefined' ? window.location.hostname : 'secure-gate'}
+                        Endpoint: {hostname}
                     </p>
                 </div>
             </div>

@@ -29,6 +29,13 @@ export default function RepositoryDetailsPage() {
     const [togglingReview, setTogglingReview] = useState(false);
     const [removing, setRemoving] = useState(false);
 
+    // Schedule state
+    const [scheduleEnabled, setScheduleEnabled] = useState(false);
+    const [scheduleDay, setScheduleDay] = useState("1");
+    const [scheduleTime, setScheduleTime] = useState("09:00");
+    const [scheduleTz, setScheduleTz] = useState("UTC");
+    const [savingSchedule, setSavingSchedule] = useState(false);
+
     useEffect(() => {
         let mounted = true;
         const fetchRepo = async () => {
@@ -44,6 +51,10 @@ export default function RepositoryDetailsPage() {
                     console.error("Failed to fetch repository", error);
                 } else if (data) {
                     setRepo(data);
+                    setScheduleEnabled(data.schedule_enabled || false);
+                    setScheduleDay(data.schedule_day?.toString() || "1");
+                    setScheduleTime(data.schedule_time || "09:00");
+                    setScheduleTz(data.schedule_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
                 }
                 setLoading(false);
             }
@@ -71,6 +82,37 @@ export default function RepositoryDetailsPage() {
             console.error("Failed to toggle auto-review", err);
         } finally {
             setTogglingReview(false);
+        }
+    };
+
+    const handleSaveSchedule = async () => {
+        if (!repo) return;
+        setSavingSchedule(true);
+        try {
+            const res = await fetch(`/api/repos/${repo.id}/schedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enabled: scheduleEnabled,
+                    day: parseInt(scheduleDay),
+                    time: scheduleTime,
+                    timezone: scheduleTz
+                })
+            });
+            if (!res.ok) throw new Error('Failed to save schedule');
+            setRepo({
+                ...repo,
+                schedule_enabled: scheduleEnabled,
+                schedule_day: parseInt(scheduleDay),
+                schedule_time: scheduleTime,
+                schedule_timezone: scheduleTz
+            });
+            alert('Scan schedule saved successfully.');
+        } catch (err) {
+            console.error("Failed to save schedule", err);
+            alert('Error saving schedule');
+        } finally {
+            setSavingSchedule(false);
         }
     };
 
@@ -191,6 +233,71 @@ export default function RepositoryDetailsPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Scheduled Scans */}
+                        <div className="border border-[var(--color-border)] rounded-xl p-6 bg-black">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-sm font-bold text-white">Scheduled Scans</h2>
+                                    <p className="text-xs text-[var(--color-textMuted)] mt-1">Configure automated pentests for this repository</p>
+                                </div>
+                                <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                            </div>
+
+                            {scheduleEnabled && (
+                                <div className="flex flex-col gap-4 mt-4 mb-6">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="text-xs text-[var(--color-textMuted)] mb-1 block">Day of Week</label>
+                                            <select
+                                                value={scheduleDay}
+                                                onChange={e => setScheduleDay(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-white px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors"
+                                            >
+                                                <option value="0" className="text-black">Sunday</option>
+                                                <option value="1" className="text-black">Monday</option>
+                                                <option value="2" className="text-black">Tuesday</option>
+                                                <option value="3" className="text-black">Wednesday</option>
+                                                <option value="4" className="text-black">Thursday</option>
+                                                <option value="5" className="text-black">Friday</option>
+                                                <option value="6" className="text-black">Saturday</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-xs text-[var(--color-textMuted)] mb-1 block">Time</label>
+                                            <input
+                                                type="time"
+                                                value={scheduleTime}
+                                                onChange={e => setScheduleTime(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-white px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors [color-scheme:dark]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-[var(--color-textMuted)] mb-1 block">Timezone</label>
+                                        <input
+                                            type="text"
+                                            value={scheduleTz}
+                                            readOnly
+                                            className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-[var(--color-textMuted)] px-3 py-2 outline-none opacity-70 cursor-not-allowed"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {(scheduleEnabled !== (repo.schedule_enabled || false) ||
+                                scheduleDay !== (repo.schedule_day?.toString() || "1") ||
+                                scheduleTime !== (repo.schedule_time || "09:00") ||
+                                scheduleTz !== (repo.schedule_timezone || scheduleTz)) && (
+                                    <button
+                                        onClick={handleSaveSchedule}
+                                        disabled={savingSchedule}
+                                        className="w-full mt-2 bg-white text-black text-sm font-bold py-2 rounded-lg hover:bg-white/90 disabled:opacity-50 transition-colors flex items-center justify-center"
+                                    >
+                                        {savingSchedule ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Schedule'}
+                                    </button>
+                                )}
                         </div>
 
                         {/* Danger Zone */}

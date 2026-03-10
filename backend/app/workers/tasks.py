@@ -4,8 +4,13 @@ from celery import Celery
 from ..services.redis_service import publish_event
 from ..services.supabase import supabase_admin
 from ..core.scan_types import ScanType, SCAN_CONFIGS
+from ..core.config import settings
 
-celery_app = Celery("zentinel", broker="redis://localhost:6379/0")
+celery_app = Celery(
+    "zentinel",
+    broker=settings.REDIS_URL,
+    backend=settings.REDIS_URL,
+)
 
 
 class StrixLogHandler(logging.Handler):

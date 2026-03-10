@@ -35,10 +35,10 @@ export default function PerformancePage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch daily scorecard data
+            // Fetch daily scorecard — unique_name is now embedded in the view (no join needed)
             const { data: rawData, error: scError } = await supabase
                 .from('crm_daily_scorecard')
-                .select('*, crm_staff(unique_name)');
+                .select('*');
 
             if (scError) throw scError;
 
@@ -47,7 +47,7 @@ export default function PerformancePage() {
 
             // Group by staff and calculate weekly (total) stats
             const aggregated = staffData?.map(staff => {
-                const staffLogs = rawData?.filter(d => d.staff_id === staff.id) || [];
+                const staffLogs = rawData?.filter(d => d.staff_id === staff.user_id) || [];
                 const totals = staffLogs.reduce((acc, curr) => ({
                     outreach: acc.outreach + (Number(curr.messages_sent) || 0),
                     replies: acc.replies + (Number(curr.replies_received) || 0),

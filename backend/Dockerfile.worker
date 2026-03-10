@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git nmap \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir strix-ai
+
+COPY . .
+
+RUN mkdir -p /var/zentinel/scans
+
+ENV PYTHONUNBUFFERED=1
+ENV STRIX_LLM=vertex_ai/gemini-2.5-pro
+ENV STRIX_TELEMETRY=false
+
+# concurrency=2 = 2 parallel scans per worker instance
+# Strix handles its own Docker sandbox per scan — nuked after each test
+CMD ["celery", "-A", "app.workers.tasks.celery_app", "worker", \
+     "--loglevel=info", "--concurrency=2", "-Q", "scans"]

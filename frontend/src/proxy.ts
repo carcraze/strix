@@ -108,13 +108,15 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // 3. Handle crm.zentinel.dev — rewrite / to /crm internally
+    // 3. Handle crm.zentinel.dev — rewrite root and /dashboard* to /crm
     if (isCrmSubdomain) {
-        if (url.pathname === '/') {
+        if (url.pathname === '/' || url.pathname === '/dashboard') {
             return NextResponse.rewrite(new URL('/crm', request.url))
         }
-        // NOTE: Do NOT redirect /dashboard here — the CRM staff check below
-        // may redirect to /crm/sign-in (not /dashboard), so this is safe.
+        // If someone types crm.zentinel.dev/dashboard/anything, still show CRM
+        if (url.pathname.startsWith('/dashboard')) {
+            return NextResponse.rewrite(new URL('/crm', request.url))
+        }
     }
 
     // 4. Fallback for main domain (zentinel.dev) paths

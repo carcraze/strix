@@ -46,11 +46,11 @@ export default function NewProspectPage() {
     });
 
     const [founders, setFounders] = useState([
-        { name: "", role: "Founder", email: "", x_handle: "", linkedin_profile: "" }
+        { name: "", role: "Founder", email: "", x_handle: "", linkedin: "", github: "", bluesky: "", instagram: "", telegram: "", website: "", other_link: "" }
     ]);
 
     const addFounder = () => {
-        setFounders([...founders, { name: "", role: "Founder", email: "", x_handle: "", linkedin_profile: "" }]);
+        setFounders([...founders, { name: "", role: "Founder", email: "", x_handle: "", linkedin: "", github: "", bluesky: "", instagram: "", telegram: "", website: "", other_link: "" }]);
     };
 
     const removeFounder = (index: number) => {
@@ -82,7 +82,7 @@ export default function NewProspectPage() {
                 founders: founders, // the new jsonb column
                 founder_name: mainFounder.name, // legacy column
                 email: mainFounder.email, // legacy column
-                linkedin_profile: mainFounder.linkedin_profile, // legacy column
+                linkedin_profile: mainFounder.linkedin, // legacy column
                 role: mainFounder.role, // legacy column
                 growth_pct: formData.growth_pct || null,
                 ph_launch_date: formData.ph_launch_date || null,
@@ -194,6 +194,16 @@ export default function NewProspectPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Email Address</label>
+                                        <input
+                                            type="email"
+                                            value={founder.email}
+                                            onChange={(e) => updateFounder(index, "email", e.target.value)}
+                                            placeholder="email@company.com"
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">X Handle</label>
                                         <input
                                             type="text"
@@ -204,22 +214,72 @@ export default function NewProspectPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Email Address</label>
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">LinkedIn URL</label>
                                         <input
-                                            type="email"
-                                            value={founder.email}
-                                            onChange={(e) => updateFounder(index, "email", e.target.value)}
-                                            placeholder="email@company.com"
+                                            type="text"
+                                            value={founder.linkedin}
+                                            onChange={(e) => updateFounder(index, "linkedin", e.target.value)}
+                                            placeholder="https://linkedin.com/in/..."
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">GitHub URL</label>
+                                        <input
+                                            type="text"
+                                            value={founder.github}
+                                            onChange={(e) => updateFounder(index, "github", e.target.value)}
+                                            placeholder="https://github.com/..."
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Bluesky</label>
+                                        <input
+                                            type="text"
+                                            value={founder.bluesky}
+                                            onChange={(e) => updateFounder(index, "bluesky", e.target.value)}
+                                            placeholder="@handle.bsky.social"
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Instagram</label>
+                                        <input
+                                            type="text"
+                                            value={founder.instagram}
+                                            onChange={(e) => updateFounder(index, "instagram", e.target.value)}
+                                            placeholder="@instagram"
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Telegram</label>
+                                        <input
+                                            type="text"
+                                            value={founder.telegram}
+                                            onChange={(e) => updateFounder(index, "telegram", e.target.value)}
+                                            placeholder="@telegram"
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Website URL</label>
+                                        <input
+                                            type="text"
+                                            value={founder.website}
+                                            onChange={(e) => updateFounder(index, "website", e.target.value)}
+                                            placeholder="https://example.com"
                                             className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">LinkedIn URL</label>
+                                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">Other Link</label>
                                         <input
                                             type="text"
-                                            value={founder.linkedin_profile}
-                                            onChange={(e) => updateFounder(index, "linkedin_profile", e.target.value)}
-                                            placeholder="https://linkedin.com/in/..."
+                                            value={founder.other_link}
+                                            onChange={(e) => updateFounder(index, "other_link", e.target.value)}
+                                            placeholder="Any other relevant URL"
                                             className="w-full bg-black/50 border border-white/5 rounded-xl py-2 px-4 text-sm focus:border-blue-500/50 transition-all font-mono"
                                         />
                                     </div>
