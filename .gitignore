@@ -111,3 +111,7 @@ rules.md
 lint.json
 lint_final.json
 *.json.log
+
+# Deploy scripts (contain secrets)
+frontend/deploy_frontend_build.sh
+frontend/deploy_frontend_run.sh
