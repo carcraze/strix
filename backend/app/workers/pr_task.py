@@ -285,6 +285,17 @@ def run_pr_review_task(
     access_token: str = "",
 ):
     try:
+        # 0. Validate PR Number
+        if not pr_number or int(pr_number) <= 0:
+            error_msg = "Invalid PR number: must be a real open pull request number"
+            supabase_admin.table("pr_reviews").update({
+                "status": "failed",
+                "completed_at": "now()",
+                "diff_content": error_msg
+            }).eq("id", pr_review_id).execute()
+            print(f"PR Review task failed: {error_msg}")
+            return
+
         # 1. Get OAuth token (prefer token passed in payload, fallback to DB lookup)
         token = access_token
         if not token:
