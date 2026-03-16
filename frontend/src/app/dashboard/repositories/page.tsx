@@ -169,10 +169,11 @@ export default function RepositoriesPage() {
         }
     };
 
-    const [scanModal, setScanModal] = useState<{ repo: any } | null>(null);
+    const [scanModal, setScanModal] = useState<{ repo: any, prs: any[] } | null>(null);
     const [scanMode, setScanMode] = useState<'pr' | 'branch'>('pr');
     const [scanInput, setScanInput] = useState('');
     const [scanning, setScanning] = useState(false);
+    const [fetchingPRs, setFetchingPRs] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
     const showToast = (msg: string) => {
@@ -180,10 +181,31 @@ export default function RepositoriesPage() {
         setTimeout(() => setToast(null), 4000);
     };
 
-    const handleScanNow = (repo: any) => {
-        setScanModal({ repo });
+    const handleScanNow = async (repo: any) => {
+        setFetchingPRs(true);
+        // Temporarily open with empty PRs while fetching
+        setScanModal({ repo, prs: [] });
         setScanMode('pr');
         setScanInput('');
+        
+        try {
+            const provider = repo.provider || 'github';
+            const res = await fetch(`/api/repos/prs?repo=${repo.id}&provider=${provider}&org=${activeWorkspace?.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setScanModal({ repo, prs: data.prs || [] });
+                // auto select first PR if exists
+                if (data.prs && data.prs.length > 0) {
+                    setScanInput(data.prs[0].number.toString());
+                }
+            } else {
+                showToast(`❌ Failed to fetch open PRs for this repository`);
+            }
+        } catch {
+            showToast('❌ Network error while fetching PRs');
+        } finally {
+            setFetchingPRs(false);
+        }
     };
 
     const submitManualScan = async () => {
@@ -277,19 +299,45 @@ export default function RepositoriesPage() {
                                     Branch Name
                                 </button>
                             </div>
-                            {/* Input */}
-                            <input
-                                type={scanMode === 'pr' ? 'number' : 'text'}
-                                placeholder={scanMode === 'pr' ? 'Enter PR number e.g. 42' : `e.g. ${scanModal.repo.default_branch || 'main'}`}
-                                value={scanInput}
-                                onChange={e => setScanInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && scanInput && submitManualScan()}
-                                autoFocus
-                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors font-mono"
-                            />
+                                                {/* Input */}
+                            {scanMode === 'pr' ? (
+                                fetchingPRs ? (
+                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 flex flex-row items-center font-mono">
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        Fetching open pull requests...
+                                    </div>
+                                ) : scanModal.prs.length === 0 ? (
+                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-red-400 font-mono">
+                                        No open pull requests found — Please open a PR on {scanModal.repo.provider} first to begin a security review.
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={scanInput}
+                                        onChange={e => setScanInput(e.target.value)}
+                                        className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20 transition-colors appearance-none font-mono"
+                                    >
+                                        <option value="" disabled>Select an open PR...</option>
+                                        {scanModal.prs.map((pr: any) => (
+                                            <option key={pr.number} value={pr.number} className="bg-[#111] text-white">
+                                                #{pr.number}: {pr.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder={`e.g. ${scanModal.repo.default_branch || 'main'}`}
+                                    value={scanInput}
+                                    onChange={e => setScanInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && scanInput && submitManualScan()}
+                                    autoFocus
+                                    className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors font-mono"
+                                />
+                            )}
                             <p className="text-xs text-white/30">
                                 {scanMode === 'pr'
-                                    ? 'Enter the pull / merge request number to run a security review.'
+                                    ? 'Select an open pull request to run a security review.'
                                     : 'Enter a branch name to scan all changes on that branch.'}
                             </p>
                         </div>
