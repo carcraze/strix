@@ -20,11 +20,9 @@ export async function GET(request: Request) {
         const params = new URLSearchParams({
             client_id: process.env.GITHUB_CLIENT_ID!,
             redirect_uri: redirectUri,
-            // repo: full control of public + private repos (needed for PR comments & code suggestions)
-            // read:org: read org membership to list org repos
-            // workflow: update GitHub Actions workflows (needed when Zentinel suggests fixes via PR)
-            scope: 'repo read:org workflow',
+            scope: 'repo read:org',
             state,
+            allow_signup: 'true',
         });
         authUrl = `https://github.com/login/oauth/authorize?${params}`;
     } else if (provider === 'gitlab') {

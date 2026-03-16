@@ -67,7 +67,7 @@ export async function GET(request: Request) {
             let page = 1;
             while (true) {
                 const res = await fetch(
-                    `https://api.github.com/user/repos?per_page=100&page=${page}&visibility=all&affiliation=owner,collaborator,organization_member&sort=updated`,
+                    `https://api.github.com/user/repos?type=all&per_page=100&page=${page}`,
                     { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/vnd.github+json' } }
                 );
                 const batch: any[] = await res.json();
