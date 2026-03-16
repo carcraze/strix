@@ -20,6 +20,9 @@ steps:
     '--build-arg', 'DODO_PAYMENTS_API_KEY=${_DODO_PAYMENTS_API_KEY}',
     '--build-arg', 'DODO_WEBHOOK_SECRET=${_DODO_WEBHOOK_SECRET}',
     '--build-arg', 'SCANNER_BACKEND_URL=${_SCANNER_BACKEND_URL}',
+    '--build-arg', 'GITHUB_WEBHOOK_SECRET=${_GITHUB_WEBHOOK_SECRET}',
+    '--build-arg', 'GITLAB_WEBHOOK_SECRET=${_GITLAB_WEBHOOK_SECRET}',
+    '--build-arg', 'BITBUCKET_WEBHOOK_SECRET=${_BITBUCKET_WEBHOOK_SECRET}',
     '.'
   ]
 images:

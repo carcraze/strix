@@ -169,9 +169,56 @@ export default function RepositoriesPage() {
         }
     };
 
-    const handleScanNow = async (repo: any) => {
-        // Placeholder for now: triggers an immediate manual scan.
-        alert(`Triggering manual PR-style review for branch ${repo.default_branch || 'main'} on ${repo.full_name}...`);
+    const [scanModal, setScanModal] = useState<{ repo: any } | null>(null);
+    const [scanMode, setScanMode] = useState<'pr' | 'branch'>('pr');
+    const [scanInput, setScanInput] = useState('');
+    const [scanning, setScanning] = useState(false);
+    const [toast, setToast] = useState<string | null>(null);
+
+    const showToast = (msg: string) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    const handleScanNow = (repo: any) => {
+        setScanModal({ repo });
+        setScanMode('pr');
+        setScanInput('');
+    };
+
+    const submitManualScan = async () => {
+        if (!scanModal) return;
+        setScanning(true);
+        try {
+            const body: any = {
+                repo_id: scanModal.repo.id,
+                provider: scanModal.repo.provider || 'github',
+                trigger: 'manual',
+            };
+            if (scanMode === 'pr') {
+                body.pr_number = parseInt(scanInput, 10);
+            } else {
+                body.branch_name = scanInput;
+            }
+
+            const res = await fetch('/api/pr-reviews/manual-launch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (res.ok) {
+                setScanModal(null);
+                showToast('✅ Scan queued — results will appear in the PR Reviews feed.');
+            } else {
+                const err = await res.json();
+                showToast(`❌ ${err.error || 'Failed to queue scan'}`);
+            }
+        } catch {
+            showToast('❌ Network error, please try again.');
+        } finally {
+            setScanning(false);
+        }
     };
 
     const providerIcon = (p: string) => {
@@ -182,6 +229,78 @@ export default function RepositoriesPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+            {/* Toast Notification */}
+            {toast && (
+                <div className="fixed top-6 right-6 z-[100] bg-[#111] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top-2 duration-300 max-w-sm">
+                    {toast}
+                </div>
+            )}
+
+            {/* Scan Now Modal */}
+            {scanModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+                        <div className="p-6 pb-4 flex items-start justify-between border-b border-white/[0.06]">
+                            <div>
+                                <h2 className="text-xl font-syne font-bold text-white">Manual Scan</h2>
+                                <p className="text-sm text-white/40 mt-1 font-mono truncate max-w-xs">{scanModal.repo.full_name}</p>
+                            </div>
+                            <button onClick={() => setScanModal(null)} className="text-white/30 hover:text-white transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {/* Mode toggle */}
+                            <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
+                                <button
+                                    onClick={() => { setScanMode('pr'); setScanInput(''); }}
+                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'pr' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
+                                >
+                                    PR Number
+                                </button>
+                                <button
+                                    onClick={() => { setScanMode('branch'); setScanInput(''); }}
+                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'branch' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
+                                >
+                                    Branch Name
+                                </button>
+                            </div>
+                            {/* Input */}
+                            <input
+                                type={scanMode === 'pr' ? 'number' : 'text'}
+                                placeholder={scanMode === 'pr' ? 'e.g. 42' : `e.g. ${scanModal.repo.default_branch || 'main'}`}
+                                value={scanInput}
+                                onChange={e => setScanInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && scanInput && submitManualScan()}
+                                autoFocus
+                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors font-mono"
+                            />
+                            <p className="text-xs text-white/30">
+                                {scanMode === 'pr'
+                                    ? 'Enter the pull / merge request number to run a security review.'
+                                    : 'Enter a branch name to scan all changes on that branch.'}
+                            </p>
+                        </div>
+                        <div className="px-6 pb-6 flex gap-3">
+                            <button
+                                onClick={() => setScanModal(null)}
+                                className="flex-1 py-2 rounded-lg border border-white/10 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitManualScan}
+                                disabled={!scanInput || scanning}
+                                className="flex-1 py-2 rounded-lg bg-white text-black font-bold text-sm hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                {scanning ? 'Queuing...' : 'Launch Scan'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -199,6 +318,7 @@ export default function RepositoriesPage() {
 
             {/* Add Repository Modal */}
             {isAddModalOpen && (
+
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
 

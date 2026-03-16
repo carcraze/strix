@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ received: true, ignored: true, reason: 'auto_review_disabled' });
         }
 
-        // 3. Create a pending pr_reviews record
+        // 3. Create a running pr_reviews record immediately
         const { data: reviewRecord, error: reviewError } = await supabaseAdmin
             .from('pr_reviews')
             .insert({
@@ -86,9 +86,11 @@ export async function POST(request: NextRequest) {
                 pr_number: prNumber,
                 pr_title: prTitle,
                 pr_url: prUrl,
-                status: 'pending',
+                status: 'running',
                 author_username: authorUsername,
-                commit_sha: commitSha
+                commit_sha: commitSha,
+                trigger_source: 'webhook',
+                provider: 'github',
             })
             .select()
             .single();
@@ -98,8 +100,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Database error" }, { status: 500 });
         }
 
-        // 4. Trigger the backend to run the scan
-        const backendUrl = process.env.NEXT_PUBLIC_SCANNER_BACKEND_URL || "http://127.0.0.1:8000";
+        // 4. Trigger the backend to run the scan (fire-and-forget — return 200 immediately)
+        const backendUrl = process.env.SCANNER_BACKEND_URL || "http://127.0.0.1:8000";
         const backendPayload = {
             organization_id: repository.organization_id,
             repository_id: repository.id,
@@ -109,22 +111,15 @@ export async function POST(request: NextRequest) {
             pr_number: prNumber,
             branch_name: branchName,
             commit_sha: commitSha,
-            block_merge_on_critical: repository.block_merge_on_critical
+            block_merge_on_critical: repository.block_merge_on_critical,
+            provider: 'github',
         };
 
-        const apiRes = await fetch(`${backendUrl}/api/pr-reviews/launch`, {
+        fetch(`${backendUrl}/api/pr-reviews/launch`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // We should ideally secure this call if it's external, maybe passing a shared secret
-                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` 
-            },
-            body: JSON.stringify(backendPayload)
-        });
-
-        if (!apiRes.ok) {
-            console.error("Backend failed to launch PR review", await apiRes.text());
-        }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(backendPayload),
+        }).catch(err => console.error('Failed to launch PR review:', err));
 
         return NextResponse.json({ received: true, launched: true, review_id: reviewRecord.id });
 

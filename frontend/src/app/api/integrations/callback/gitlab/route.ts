@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
 
 const REDIRECT_BASE = 'https://app.zentinel.dev';
 const REDIRECT_URI = `${REDIRECT_BASE}/api/integrations/callback/gitlab`;
+const WEBHOOK_URL = `${REDIRECT_BASE}/api/webhooks/gitlab`;
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -18,7 +19,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${REDIRECT_BASE}/dashboard/integrations?error=missing_callback_params`);
     }
 
-    // state may be base64 JSON ({ orgId }) or plain orgId (legacy)
     let orgId: string;
     try {
         const parsed = JSON.parse(Buffer.from(rawState, 'base64').toString());
@@ -51,9 +51,7 @@ export async function GET(request: Request) {
         const accessToken = tokenData.access_token;
         const refreshToken = tokenData.refresh_token;
         const expiresIn: number = tokenData.expires_in;
-        const tokenExpiresAt = expiresIn
-            ? new Date(Date.now() + expiresIn * 1000).toISOString()
-            : null;
+        const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
 
         // 2. Save token to integrations table
         const { error: integrationError } = await supabaseAdmin
@@ -70,7 +68,7 @@ export async function GET(request: Request) {
 
         if (integrationError) throw integrationError;
 
-        // 3. Fetch ALL repos from GitLab API (public + private, including groups) with pagination
+        // 3. Fetch ALL repos from GitLab API with pagination
         const fetchAllGitLabRepos = async (): Promise<any[]> => {
             const all: any[] = [];
             let page = 1;
@@ -106,7 +104,43 @@ export async function GET(request: Request) {
                 .upsert(repoRows, { onConflict: 'organization_id,provider_repo_id', ignoreDuplicates: true });
         }
 
-        // 5. Redirect to dashboard
+        // 5. Auto-register Zentinel webhook on each GitLab project (best effort)
+        const webhookSecret = process.env.GITLAB_WEBHOOK_SECRET;
+        if (webhookSecret) {
+            const webhookIds: Record<string, string> = {};
+            for (const repo of repos) {
+                try {
+                    const hookRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/hooks`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            url: WEBHOOK_URL,
+                            merge_requests_events: true,
+                            token: webhookSecret,
+                        }),
+                    });
+                    if (hookRes.ok) {
+                        const hook = await hookRes.json();
+                        webhookIds[`${repo.id}`] = `${hook.id}`;
+                    }
+                } catch {
+                    // non-fatal
+                }
+            }
+
+            if (Object.keys(webhookIds).length > 0) {
+                await supabaseAdmin
+                    .from('integrations')
+                    .update({ webhook_id: JSON.stringify(webhookIds) })
+                    .eq('organization_id', orgId)
+                    .eq('provider', 'gitlab');
+            }
+        }
+
+        // 6. Redirect to dashboard
         return NextResponse.redirect(`${REDIRECT_BASE}/dashboard/repositories?connected=gitlab`);
     } catch (err) {
         console.error('GitLab OAuth error:', err);
