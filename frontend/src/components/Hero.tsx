@@ -27,7 +27,7 @@ export function Hero() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
                     <Link href="/sign-up"
                         className="group flex items-center gap-2 bg-[var(--color-cyan)] text-black font-bold px-8 py-4 rounded-xl text-base hover:bg-[var(--color-cyan)]/90 transition-all shadow-[0_0_30px_rgba(0,229,255,0.25)] hover:shadow-[0_0_50px_rgba(0,229,255,0.4)]">
-                        Start free trial
+                        Get Started Now
                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                     <Link href="/demo"
@@ -37,7 +37,7 @@ export function Hero() {
                 </div>
 
                 <div className="flex items-center justify-center gap-8 text-sm text-[#555]">
-                    {["No credit card required", "Cancel anytime", "SOC2 compliant"].map(t => (
+                    {["Pay as you go or Subscribe", "Cancel anytime", "SOC2 compliant"].map(t => (
                         <div key={t} className="flex items-center gap-1.5">
                             <CheckCircle2 className="h-3.5 w-3.5 text-[#00FF88]" />
                             {t}

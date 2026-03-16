@@ -34,6 +34,11 @@ export async function GET(request: Request) {
             const { data: { user } } = await supabase.auth.getUser()
 
             if (user) {
+                // IMPORTANT: If they are recovering a password, force them to the reset page
+                if (next === '/reset-password') {
+                    return NextResponse.redirect(`${origin}/reset-password`)
+                }
+
                 const adminClient = createClient(
                     process.env.NEXT_PUBLIC_SUPABASE_URL!,
                     process.env.SUPABASE_SERVICE_ROLE_KEY!

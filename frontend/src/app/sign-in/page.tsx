@@ -18,6 +18,8 @@ export default function SignInPage() {
     const [signInMethod, setSignInMethod] = useState<'password' | 'magic-link'>('password');
     const [checkingSSO, setCheckingSSO] = useState(false);
     const [ssoUrl, setSsoUrl] = useState<string | null>(null);
+    const [showUnconfirmedEmail, setShowUnconfirmedEmail] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
 
     const handleEmailBlur = async () => {
         if (!email || !email.includes('@')) return;
@@ -56,7 +58,11 @@ export default function SignInPage() {
             });
 
             if (error) {
-                alert(error.message);
+                if (error.message.toLowerCase().includes("email not confirmed")) {
+                    setShowUnconfirmedEmail(true);
+                } else {
+                    alert(error.message);
+                }
             } else {
                 // Let the proxy or a specialized redirect handler take over
                 window.location.href = "/dashboard";
@@ -144,6 +150,33 @@ export default function SignInPage() {
         }
     };
 
+    const handleResendConfirmation = async () => {
+        setResendLoading(true);
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`
+                }
+            });
+            if (error) {
+                if (error.message.toLowerCase().includes("rate limit")) {
+                    alert("Please wait a few minutes before requesting another email.");
+                } else {
+                    alert(error.message);
+                }
+            } else {
+                alert("Confirmation email resent successfully! Please check your inbox and spam folder.");
+            }
+        } catch (err: any) {
+            console.error("Resend error:", err);
+            alert("An error occurred. Please try again later.");
+        } finally {
+            setResendLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background Effects */}
@@ -165,12 +198,41 @@ export default function SignInPage() {
 
                 {/* Sign In Card */}
                 <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-                    <div className="text-center mb-6">
-                        <h2 className="text-xl font-bold font-syne text-white mb-2">Welcome Back</h2>
-                        <p className="text-sm font-mono text-[var(--color-textSecondary)]">Sign in to access your security dashboard</p>
-                    </div>
+                    {showUnconfirmedEmail ? (
+                        <div className="text-center space-y-5 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="mx-auto w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mb-2">
+                                <Mail className="h-6 w-6 text-yellow-500" />
+                            </div>
+                            <h2 className="text-xl font-bold font-syne text-white">Email Not Confirmed</h2>
+                            <p className="text-sm font-mono text-[var(--color-textSecondary)] leading-relaxed">
+                                You need to confirm your email before signing in. We sent a link to <span className="text-white font-medium">{email}</span>.
+                            </p>
+                            
+                            <div className="pt-4 space-y-3">
+                                <Button 
+                                    onClick={handleResendConfirmation} 
+                                    disabled={resendLoading}
+                                    className="w-full bg-[var(--color-cyan)] text-black hover:bg-cyan-400 font-bold border-none"
+                                >
+                                    {resendLoading ? "Sending..." : "Resend Confirmation Email"}
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => setShowUnconfirmedEmail(false)}
+                                    className="w-full bg-transparent border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 hover:text-white"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-center mb-6">
+                                <h2 className="text-xl font-bold font-syne text-white mb-2">Welcome Back</h2>
+                                <p className="text-sm font-mono text-[var(--color-textSecondary)]">Sign in to access your security dashboard</p>
+                            </div>
 
-                    <div className="space-y-3 mb-6">
+                            <div className="space-y-3 mb-6">
                         <Button
                             type="button"
                             onClick={handleGoogleSignIn}
@@ -192,7 +254,7 @@ export default function SignInPage() {
                     <form onSubmit={handleEmailSignIn} className="space-y-4 mt-2">
                         <div>
                             <Label htmlFor="email" className="text-[var(--color-textSecondary)] text-xs font-mono mb-2 block">
-                                WORK EMAIL
+                                EMAIL ADDRESS
                             </Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-textMuted)]" />
@@ -289,6 +351,8 @@ export default function SignInPage() {
                             )}
                         </div>
                     </form>
+                    </>
+                    )}
 
                 </div>
 

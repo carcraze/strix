@@ -137,7 +137,7 @@ function IntegrationRow({
                             Disconnect
                         </button>
                     </>
-                ) : connectHref ? (
+                ) : connectHref && orgId ? (
                     <a
                         href={connectHref}
                         className="flex items-center gap-1.5 text-xs font-bold text-black px-3 py-1.5 rounded-lg transition-all hover:opacity-90"
@@ -148,7 +148,8 @@ function IntegrationRow({
                         <ExternalLink className="h-2.5 w-2.5 opacity-70" />
                     </a>
                 ) : (
-                    <button className="flex items-center gap-1.5 text-xs font-medium text-white/50 border border-white/10 px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50">
+                    <button disabled className="flex items-center gap-1.5 text-xs font-medium text-white/50 border border-white/10 px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50 bg-white/5">
+                        <PlugZap className="h-3 w-3 opacity-50" />
                         Connect
                     </button>
                 )}
@@ -242,7 +243,7 @@ export default function IntegrationsPage() {
                             description="Scan code and automate fixes via Pull Requests"
                             logoColor="#ffffff"
                             connected={isConnected("github")}
-                            connectHref={`/api/oauth/github?org=${orgId}`}
+                            connectHref={`/api/integrations/authorize?provider=github&state=${orgId}`}
                             manageHref="/dashboard/repositories"
                             providerId="github"
                             orgId={orgId}
@@ -254,7 +255,7 @@ export default function IntegrationsPage() {
                             description="Deep source analysis via Merge Requests"
                             logoColor="#FC6D26"
                             connected={isConnected("gitlab")}
-                            connectHref={`/api/oauth/gitlab?org=${orgId}`}
+                            connectHref={`/api/integrations/authorize?provider=gitlab&state=${orgId}`}
                             manageHref="/dashboard/repositories"
                             providerId="gitlab"
                             orgId={orgId}
@@ -266,7 +267,7 @@ export default function IntegrationsPage() {
                             description="Enterprise code scanning for Atlassian Bitbucket"
                             logoColor="#2684FF"
                             connected={isConnected("bitbucket")}
-                            connectHref={`/api/oauth/bitbucket?org=${orgId}`}
+                            connectHref={`/api/integrations/authorize?provider=bitbucket&state=${orgId}`}
                             manageHref="/dashboard/repositories"
                             providerId="bitbucket"
                             orgId={orgId}

@@ -115,3 +115,4 @@ lint_final.json
 # Deploy scripts (contain secrets)
 frontend/deploy_frontend_build.sh
 frontend/deploy_frontend_run.sh
+worker_setup.sh

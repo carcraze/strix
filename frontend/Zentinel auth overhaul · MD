@@ -1,0 +1,397 @@
+# Zentinel — Complete Auth & Signup Overhaul
+# Hand this entire file to Cursor as a single prompt.
+# Do NOT break it into pieces — execute everything in sequence.
+
+---
+
+## CONTEXT
+The current signup is broken. This is a full overhaul of:
+1. Database schema + RLS
+2. Supabase auth configuration
+3. Signup flow (multi-step)
+4. Sign in flow
+5. Forgot password flow
+6. Email confirmation → dashboard redirect
+7. Google OAuth redirect fix
+8. Rate limiting
+
+Do everything. Do not skip sections. Use Supabase MCP for all DB changes.
+
+---
+
+## PART 1 — DATABASE + RLS (run via Supabase MCP first)
+
+```sql
+-- ── ORGANIZATIONS ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS organizations (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name              text NOT NULL,
+  website           text,
+  size              text CHECK (size IN ('1-10','11-50','51-200','201-500','500+')),
+  created_at        timestamptz DEFAULT now(),
+  updated_at        timestamptz DEFAULT now()
+);
+
+-- ── PROFILES (extends auth.users) ────────────────────────────────
+CREATE TABLE IF NOT EXISTS profiles (
+  id                uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  first_name        text NOT NULL DEFAULT '',
+  last_name         text NOT NULL DEFAULT '',
+  role              text DEFAULT 'founder',
+  organization_id   uuid REFERENCES organizations(id),
+  onboarding_done   boolean DEFAULT false,
+  created_at        timestamptz DEFAULT now(),
+  updated_at        timestamptz DEFAULT now()
+);
+
+-- ── ORGANIZATION MEMBERS ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS organization_members (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id   uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  role              text DEFAULT 'owner' CHECK (role IN ('owner','admin','member')),
+  created_at        timestamptz DEFAULT now(),
+  UNIQUE(organization_id, user_id)
+);
+
+-- ── SUBSCRIPTIONS ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id   uuid REFERENCES organizations(id) ON DELETE CASCADE UNIQUE,
+  plan              text DEFAULT 'starter' CHECK (plan IN ('starter','growth','scale','enterprise')),
+  status            text DEFAULT 'trialing' CHECK (status IN ('trialing','active','canceled','past_due')),
+  trial_ends_at     timestamptz DEFAULT (now() + interval '14 days'),
+  created_at        timestamptz DEFAULT now(),
+  updated_at        timestamptz DEFAULT now()
+);
+
+-- ── RLS ──────────────────────────────────────────────────────────
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- profiles: user can only see/edit their own
+CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- organizations: member can see their org
+CREATE POLICY "org_select" ON organizations FOR SELECT
+  USING (id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid()));
+CREATE POLICY "org_insert" ON organizations FOR INSERT WITH CHECK (true);
+CREATE POLICY "org_update" ON organizations FOR UPDATE
+  USING (id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid() AND role IN ('owner','admin')));
+
+-- organization_members: see own memberships
+CREATE POLICY "members_select" ON organization_members FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "members_insert" ON organization_members FOR INSERT WITH CHECK (user_id = auth.uid());
+
+-- subscriptions: org members can see
+CREATE POLICY "subs_select" ON subscriptions FOR SELECT
+  USING (organization_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid()));
+
+-- ── AUTO-CREATE PROFILE ON SIGNUP ────────────────────────────────
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  INSERT INTO profiles (id, first_name, last_name)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', '')
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+```
+
+---
+
+## PART 2 — SUPABASE AUTH SETTINGS (configure in Supabase dashboard)
+
+Set these in Supabase → Authentication → Settings:
+- Site URL: `https://zentinel.dev`
+- Redirect URLs (add all):
+  - `https://app.zentinel.dev/auth/callback`
+  - `https://zentinel.dev/auth/callback`
+  - `http://localhost:3000/auth/callback`
+- Email confirmation: ENABLED
+- Email rate limit: 3 per hour per email
+- Password minimum length: 8
+- Google OAuth: redirect to `https://app.zentinel.dev/auth/callback`
+
+---
+
+## PART 3 — AUTH CALLBACK ROUTE
+File: `src/app/auth/callback/route.ts`
+
+```typescript
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') ?? '/'
+
+  if (code) {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, {
+                ...options,
+                domain: '.zentinel.dev', // ← cross-subdomain sessions
+              })
+            )
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error && user) {
+      // Check if CRM staff
+      const { data: crmStaff } = await supabase
+        .from('crm_staff')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single()
+
+      if (crmStaff) {
+        return NextResponse.redirect('https://crm.zentinel.dev')
+      }
+
+      // Check if onboarding done
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_done, organization_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.onboarding_done && profile?.organization_id) {
+        return NextResponse.redirect('https://app.zentinel.dev/dashboard')
+      }
+
+      return NextResponse.redirect('https://app.zentinel.dev/setup')
+    }
+  }
+
+  return NextResponse.redirect('https://app.zentinel.dev/sign-in?error=auth_failed')
+}
+```
+
+---
+
+## PART 4 — SIGNUP PAGE
+File: `src/app/(auth)/sign-up/page.tsx`
+
+Multi-step signup. 3 steps total. Clean, minimal design. No step indicators needed — just flows naturally.
+
+### STEP 1 — Your Account
+Fields:
+- First name (required)
+- Last name (required)  
+- Work email (required, validate format)
+- Password (required, min 8 chars, show strength indicator: weak/fair/strong)
+- Confirm password (required, must match, eye icon toggle for both fields)
+
+Validation:
+- Password strength: weak = <8 chars or common word, fair = 8+ mixed, strong = 12+ with symbol+number
+- Show red error if passwords don't match on blur
+- Enforce work email — block gmail/yahoo/hotmail/outlook with message "Please use your work email"
+
+### STEP 2 — Your Company
+Fields:
+- Company name (required)
+- Company website (required, must be valid URL starting with https://)
+- Your role (required dropdown):
+  - Founder / Co-founder
+  - CTO / VP Engineering
+  - Security Engineer
+  - DevOps / Platform Engineer
+  - Developer
+  - Other
+- Company size (required):
+  - 1–10 employees
+  - 11–50 employees
+  - 51–200 employees
+  - 201–500 employees
+  - 500+ employees
+
+### STEP 3 — Your Stack
+Two questions as card selectors (multi-select allowed):
+
+Question 1: "Where is your code?"
+Cards (icon + label):
+- GitHub
+- GitLab  
+- Bitbucket
+- Azure DevOps
+
+Question 2: "What are you most worried about?"
+Cards (icon + label):
+- API Security
+- Cloud Misconfigs
+- Dependency Vulnerabilities
+- Compliance (SOC2 / ISO27001)
+- Code Security
+- All of the above
+
+CTA button: "Set up my dashboard →"
+
+On submit:
+1. Call `supabase.auth.signUp()` with email + password + metadata (first_name, last_name)
+2. Create organization row
+3. Create organization_members row (role: owner)
+4. Create subscriptions row (plan: starter, status: trialing)
+5. Update profile with role, onboarding_done: false
+6. Show success screen: "Check your email — we sent a confirmation link to {email}. Click it to activate your account."
+7. Do NOT redirect yet — wait for email confirmation
+
+### SUCCESS SCREEN (after signup submit)
+Full page, centered:
+- ✉️ large icon
+- Heading: "Check your inbox"
+- Body: "We sent a confirmation link to **{email}**. Click it to activate your Zentinel account."
+- Small text: "Didn't get it? Check spam, or {resend link} after 3 minutes"
+- Resend button: disabled for 180 seconds, shows countdown "Resend in 2:47"
+- On resend click: call `supabase.auth.resend({ type: 'signup', email })`
+
+---
+
+## PART 5 — SIGN IN PAGE
+File: `src/app/(auth)/sign-in/page.tsx`
+
+Layout:
+- Google OAuth button (primary, full width) with Google icon
+- Divider: "or continue with email"
+- Email field
+- Password field with eye icon toggle
+- "Forgot password?" link (right-aligned, opens forgot password flow)
+- Sign in button
+- "Don't have an account? Sign up" link
+
+Google OAuth:
+```typescript
+await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: 'https://app.zentinel.dev/auth/callback',
+    queryParams: { access_type: 'offline', prompt: 'consent' }
+  }
+})
+```
+
+Email sign in:
+```typescript
+const { error } = await supabase.auth.signInWithPassword({ email, password })
+if (error?.message === 'Email not confirmed') {
+  // Show: "Please confirm your email first. {Resend confirmation}"
+}
+// On success: redirect to /auth/callback which handles routing
+```
+
+Rate limiting on frontend:
+- After 3 failed attempts: show "Too many attempts. Please wait 3 minutes." and disable button for 180 seconds with countdown
+
+---
+
+## PART 6 — FORGOT PASSWORD
+File: `src/app/(auth)/forgot-password/page.tsx`
+
+Step 1 — Request reset:
+- Email field
+- "Send reset link" button
+- On submit: `supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://app.zentinel.dev/auth/reset-password' })`
+- Show success: "Password reset link sent to {email}"
+- Rate limit: disable button for 300 seconds after submit
+
+Step 2 — Reset password (page: `/auth/reset-password`):
+- New password field (strength indicator)
+- Confirm new password field
+- On submit: `supabase.auth.updateUser({ password: newPassword })`
+- On success: redirect to `https://app.zentinel.dev/sign-in?message=password_reset`
+
+---
+
+## PART 7 — SETUP PAGE (after email confirmation)
+Route: `app.zentinel.dev/setup`
+File: `src/app/setup/page.tsx`
+
+This is where users land after clicking the confirmation email link.
+The auth/callback already ran and created the session.
+
+This page:
+1. Checks if profile has onboarding_done = true → redirect to /dashboard
+2. If not → shows a single clean page:
+
+Heading: "Welcome to Zentinel, {first_name} 👋"
+Subheading: "Let's finish setting up your workspace."
+
+Show summary of what was collected in signup (company name, size, stack).
+Single CTA: "Launch my dashboard →"
+
+On click:
+1. Update profile: `onboarding_done = true`
+2. Redirect to `https://app.zentinel.dev/dashboard`
+
+---
+
+## PART 8 — MIDDLEWARE UPDATE
+File: `src/middleware.ts`
+
+Add to existing middleware — protect /setup and /dashboard routes:
+
+```typescript
+// If user hits /setup or /dashboard without a session → redirect to /sign-in
+// If user hits /sign-in or /sign-up WITH a session → redirect to /dashboard
+// Cookie domain must be .zentinel.dev for cross-subdomain sessions
+```
+
+Also add: if user lands on `app.zentinel.dev/` with a valid session → redirect to `/dashboard`
+
+---
+
+## PART 9 — RENAME ROUTES
+- `/dashboard/setup` or `/onboarding` → rename to `/setup`  
+- Update all references in middleware, auth callback, and any redirect strings
+- "Onboarding" should not appear anywhere in the UI — use "Setup" or "Get started"
+
+---
+
+## PART 10 — WHAT NOT TO TOUCH
+- CRM routes (`/crm/*`) — leave completely alone
+- `zentinel-api` backend — no changes
+- Celery worker — no changes
+- Any existing dashboard pages that already work
+
+---
+
+## VERIFICATION CHECKLIST (test after implementation)
+- [ ] Sign up with email → confirmation email arrives → click link → land on /setup → click launch → land on /dashboard
+- [ ] Sign up with Google → land on /setup (first time) or /dashboard (returning)
+- [ ] Sign in with correct credentials → route to /dashboard
+- [ ] Sign in with wrong password 3x → rate limit activates
+- [ ] Forgot password → email arrives → reset works → can sign in with new password
+- [ ] CRM user signs in → routes to crm.zentinel.dev
+- [ ] Resend confirmation: disabled for 3 min, countdown visible
+- [ ] Passwords must match — error shown on mismatch
+- [ ] Weak password rejected with strength indicator
+- [ ] Gmail/yahoo blocked with "use work email" message

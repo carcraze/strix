@@ -42,7 +42,7 @@ export function Navbar() {
                     </Link>
                     <Link href="/sign-up"
                         className="bg-[var(--color-cyan)] text-black text-sm font-bold px-4 py-2 rounded-lg hover:bg-[var(--color-cyan)]/90 transition-colors shadow-[0_0_20px_rgba(0,229,255,0.2)]">
-                        Start free trial
+                        Get Started Now
                     </Link>
                 </div>
 
@@ -68,7 +68,7 @@ export function Navbar() {
                         </Link>
                         <Link href="/sign-up" onClick={() => setMobileOpen(false)}
                             className="block text-center bg-[var(--color-cyan)] text-black text-sm font-bold px-4 py-2.5 rounded-lg">
-                            Start free trial
+                            Get Started Now
                         </Link>
                     </div>
                 </div>

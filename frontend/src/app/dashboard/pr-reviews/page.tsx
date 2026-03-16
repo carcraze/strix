@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, CalendarIcon as Cal, ChevronDown, ChevronLeft, ChevronRight, Check, X, Loader2, GitPullRequest, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Search, CalendarIcon as Cal, ChevronDown, ChevronLeft, ChevronRight, Check, X, Loader2, GitPullRequest, ExternalLink, Plus } from "lucide-react";
 import { Card } from "@/components/ui/zentinel-card";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getPrReviews } from "@/lib/queries";
@@ -316,6 +317,13 @@ export default function PRReviewsPage() {
                     <h1 className="text-3xl font-syne font-bold text-white tracking-tight">PR Reviews</h1>
                     <p className="text-[var(--color-textSecondary)] mt-1">Automated security reviews on pull requests across connected repositories.</p>
                 </div>
+                <Link
+                    href="/dashboard/repositories"
+                    className="inline-flex items-center justify-center bg-white text-black font-bold py-2 px-4 rounded-lg hover:bg-gray-100 transition-all shadow-sm"
+                >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Connect Repository
+                </Link>
             </div>
 
             {/* Filters */}

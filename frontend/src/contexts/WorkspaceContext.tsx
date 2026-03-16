@@ -7,7 +7,7 @@ export type Workspace = {
     id: string;
     name: string;
     slug: string;
-    plan: "starter" | "growth" | "scale" | "enterprise";
+    plan: "free" | "starter" | "growth" | "scale" | "enterprise";
     role: string;
 };
 
@@ -40,7 +40,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                     organizations (
                         id,
                         name,
-                        slug
+                        slug,
+                        plan
                     )
                 `)
                 .eq('user_id', session.user.id);
@@ -56,7 +57,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                             id: org.id,
                             name: org.name,
                             slug: org.slug,
-                            plan: "starter", // Defaulting for now, could be fetched if there's a billing table
+                            plan: org.plan || "free",
                             role: m.role
                         };
                     });

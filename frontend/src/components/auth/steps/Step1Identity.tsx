@@ -78,7 +78,7 @@ export function Step1Identity({ formData, updateData, loading, setLoading }: Ste
             </div>
 
             <div className="space-y-1">
-                <Label className="text-[var(--color-textSecondary)] text-xs font-mono">WORK EMAIL</Label>
+                <Label className="text-[var(--color-textSecondary)] text-xs font-mono">EMAIL ADDRESS</Label>
                 <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-textMuted)]" />
                     <Input

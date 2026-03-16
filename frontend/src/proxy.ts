@@ -108,15 +108,18 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // 3. Handle crm.zentinel.dev — rewrite root and /dashboard* to /crm
+    // 3. Handle crm.zentinel.dev — rewrite ONLY root / and /dashboard to /crm
+    //    IMPORTANT: do NOT rewrite /crm to /crm (that causes an infinite loop!)
     if (isCrmSubdomain) {
+        // Only rewrite bare root to /crm – do NOT match /crm paths (they are already correct)
         if (url.pathname === '/' || url.pathname === '/dashboard') {
             return NextResponse.rewrite(new URL('/crm', request.url))
         }
-        // If someone types crm.zentinel.dev/dashboard/anything, still show CRM
+        // If someone types /dashboard/anything on CRM subdomain, show CRM dashboard
         if (url.pathname.startsWith('/dashboard')) {
             return NextResponse.rewrite(new URL('/crm', request.url))
         }
+        // /crm/* paths already map directly — no rewrite needed, just fall through
     }
 
     // 4. Fallback for main domain (zentinel.dev) paths
@@ -135,56 +138,39 @@ export async function proxy(request: NextRequest) {
     const isCrmSignIn = pathname === '/crm/sign-in'
     const isCrm2FA = pathname.startsWith('/crm/setup-2fa') || pathname.startsWith('/crm/verify-2fa')
 
-    // Protect /crm routes
+    // Protect /crm routes — middleware only handles auth & 2FA
+    // Staff authorization is handled by layout.tsx (shows Claim Identity / Suspended screens)
+    // IMPORTANT: no staff DB check here — that caused a redirect loop:
+    //   staff-fails → /crm/sign-in → user logged in → /crm → staff-fails → ∞
     if (isCrmPath) {
-        // 1. If user is logged in and on sign-in page, redirect to main CRM
-        if (user && isCrmSignIn) {
-            return NextResponse.redirect(new URL('/crm', request.url))
+        // Let sign-in and 2FA pages through without auth check
+        if (isCrmSignIn || isCrm2FA) {
+            // If user is already logged in and lands on sign-in, send them to /crm
+            if (user && isCrmSignIn) {
+                return NextResponse.redirect(new URL('/crm', request.url))
+            }
+            // Otherwise render the page as-is (sign-in form, 2FA setup/verify)
+            return response
         }
 
-        // 2. If not logged in and not on sign-in page, redirect to sign-in
-        if (!user && !isCrmSignIn && !isCrm2FA) {
+        // Not on sign-in/2FA page: must be authenticated
+        if (!user) {
             return NextResponse.redirect(new URL('/crm/sign-in', request.url))
         }
 
-        // 3. If logged in and on protected crm route (not sign-in/2fa pages themselves)
-        if (user && !isCrmSignIn && !isCrm2FA) {
-            // Check MFA / AAL status
-            const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-
-            if (mfaData) {
-                if (mfaData.nextLevel === 'aal2' && mfaData.currentLevel !== 'aal2') {
-                    // Factors exist but not verified
-                    return NextResponse.redirect(new URL('/crm/verify-2fa', request.url))
-                } else if (mfaData.currentLevel === 'aal1' && mfaData.nextLevel === 'aal1') {
-                    // No factors enrolled, force setup
-                    return NextResponse.redirect(new URL('/crm/setup-2fa', request.url))
-                }
-            }
-
-            // 4. Staff Check — use maybeSingle() to avoid PostgREST throwing on 0 rows
-            try {
-                const adminClient = createClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    process.env.SUPABASE_SERVICE_ROLE_KEY!
-                )
-
-                const { data: staff, error } = await adminClient
-                    .from('crm_staff')
-                    .select('is_active')
-                    .eq('user_id', user.id)
-                    .maybeSingle()  // FIXED: was .single() which throws on 0 rows
-
-                if (error || !staff || !staff.is_active) {
-                    console.error('CRM staff access denied for:', user.email, error?.message)
-                    // Redirect to CRM sign-in (NOT /dashboard which would loop on crm subdomain)
-                    return NextResponse.redirect(new URL('/crm/sign-in', request.url))
-                }
-            } catch (err) {
-                console.error('CRM proxy error:', err)
-                return NextResponse.redirect(new URL('/crm/sign-in', request.url))
+        // Logged in — enforce 2FA (MFA level check)
+        const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (mfaData) {
+            if (mfaData.nextLevel === 'aal2' && mfaData.currentLevel !== 'aal2') {
+                // Has a 2FA factor enrolled but hasn't verified this session
+                return NextResponse.redirect(new URL('/crm/verify-2fa', request.url))
+            } else if (mfaData.currentLevel === 'aal1' && mfaData.nextLevel === 'aal1') {
+                // No 2FA factor enrolled at all — force setup
+                return NextResponse.redirect(new URL('/crm/setup-2fa', request.url))
             }
         }
+
+        // All good — let the layout handle staff check and render the page
     }
 
     return response

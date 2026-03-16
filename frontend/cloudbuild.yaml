@@ -11,6 +11,15 @@ steps:
     '--build-arg', 'WORKOS_CLIENT_ID=${_WORKOS_CLIENT_ID}',
     '--build-arg', 'WORKOS_API_KEY=${_WORKOS_API_KEY}',
     '--build-arg', 'SUPABASE_SERVICE_ROLE_KEY=${_SUPABASE_SERVICE_ROLE_KEY}',
+    '--build-arg', 'GITHUB_CLIENT_ID=${_GITHUB_CLIENT_ID}',
+    '--build-arg', 'GITHUB_CLIENT_SECRET=${_GITHUB_CLIENT_SECRET}',
+    '--build-arg', 'GITLAB_CLIENT_ID=${_GITLAB_CLIENT_ID}',
+    '--build-arg', 'GITLAB_CLIENT_SECRET=${_GITLAB_CLIENT_SECRET}',
+    '--build-arg', 'BITBUCKET_CLIENT_ID=${_BITBUCKET_CLIENT_ID}',
+    '--build-arg', 'BITBUCKET_CLIENT_SECRET=${_BITBUCKET_CLIENT_SECRET}',
+    '--build-arg', 'DODO_PAYMENTS_API_KEY=${_DODO_PAYMENTS_API_KEY}',
+    '--build-arg', 'DODO_WEBHOOK_SECRET=${_DODO_WEBHOOK_SECRET}',
+    '--build-arg', 'SCANNER_BACKEND_URL=${_SCANNER_BACKEND_URL}',
     '.'
   ]
 images:

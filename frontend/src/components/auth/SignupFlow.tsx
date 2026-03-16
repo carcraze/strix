@@ -8,12 +8,14 @@ import { Step2Company } from "./steps/Step2Company";
 import { Step3Stack } from "./steps/Step3Stack";
 import { supabase } from "@/lib/supabase";
 import { submitSignupData } from "@/lib/auth/signup";
-import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 
 function SignupFlowInner() {
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [setupLoading, setSetupLoading] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
+    const [createdUserId, setCreatedUserId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -72,6 +74,9 @@ function SignupFlowInner() {
             if (sessionData.session?.user) {
                 // Logged in via SSO/Google, they're already in Auth.
                 userId = sessionData.session.user.id;
+            } else if (createdUserId) {
+                // We already created the auth user in a previous failed submission of this step
+                userId = createdUserId;
             } else {
                 // Create new user with Email/Password
                 const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -81,16 +86,29 @@ function SignupFlowInner() {
                         data: {
                             first_name: formData.firstName,
                             last_name: formData.lastName
-                        }
+                        },
+                        emailRedirectTo: `${window.location.origin}/auth/callback`
                     }
                 });
-                if (authError) throw authError;
+                if (authError) {
+                    if (authError.message.toLowerCase().includes("rate limit")) {
+                        // They've requested too many emails. Their user likely exists.
+                        setEmailSent(true);
+                        setSetupLoading(false);
+                        return;
+                    }
+                    throw authError;
+                }
                 if (!authData.user) throw new Error("No user created");
                 userId = authData.user.id;
+                setCreatedUserId(userId);
             }
 
             // 2. Save Onboarding details
             await submitSignupData(userId, {
+                email: formData.email,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
                 company_name: formData.companyName,
                 company_website: formData.companyWebsite,
                 role: formData.role,
@@ -102,7 +120,16 @@ function SignupFlowInner() {
             // 3. Fake artificial delay for "AI Setup" feeling
             await new Promise(res => setTimeout(res, 1500));
 
-            // 4. Redirect based on tracking personalization logic
+            // 4. Check if confirmation email was sent
+            // If email confirmation is required, there's no active session
+            const { data: sessionDataCheck } = await supabase.auth.getSession();
+            if (!sessionDataCheck.session) {
+                setEmailSent(true);
+                setSetupLoading(false);
+                return;
+            }
+
+            // 5. Redirect based on tracking personalization logic
             let destination = "/dashboard";
             if (formData.concerns.includes("compliance")) destination = "/dashboard/compliance";
             else if (formData.concerns.includes("api_security")) destination = "/dashboard/surface";
@@ -122,6 +149,27 @@ function SignupFlowInner() {
     const isStep1Valid = formData.firstName && formData.lastName && formData.email && formData.password.length >= 8;
     const isStep2Valid = formData.companyName && formData.companyWebsite && formData.role && formData.companySize;
     const isFormValid = isStep1Valid && isStep2Valid && formData.codePlatforms.length > 0 && formData.concerns.length > 0;
+
+    if (emailSent) {
+        return (
+            <div className="bg-[#0D1117] border border-[var(--color-border)] rounded-2xl w-full max-w-lg p-10 flex flex-col items-center justify-center space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="rounded-full bg-green-500/20 p-4">
+                    <CheckCircle2 className="h-10 w-10 text-green-500" />
+                </div>
+                <h3 className="text-xl font-syne font-bold text-white tracking-tight">Check Your Email</h3>
+                <p className="text-sm font-mono text-[var(--color-textSecondary)] text-center leading-relaxed">
+                    We've sent a secure confirmation link to <span className="text-white font-medium">{formData.email}</span>.
+                    <br/><br/>
+                    Please click the link inside to verify your account and activate your dashboard.
+                </p>
+                <div className="pt-4">
+                    <Button onClick={() => window.location.href="/sign-in"} className="bg-[var(--color-cyan)] text-black hover:bg-cyan-400 font-bold border-none">
+                        Back to Login
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     if (setupLoading) {
         return (
@@ -168,10 +216,10 @@ function SignupFlowInner() {
                     <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
                         <Button
                             type="submit"
-                            disabled={!isFormValid || loading}
+                            disabled={!isFormValid || setupLoading || loading}
                             className="w-full bg-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/90 text-black font-bold h-12 shadow-[0_0_15px_var(--color-cyan)]/20 transition-all group text-lg"
                         >
-                            Set Up My Dashboard <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                            {setupLoading ? "Setting up..." : "Set Up My Dashboard"} <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                         </Button>
                     </div>
                 </form>

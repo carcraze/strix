@@ -1,30 +1,54 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+const APP_BASE = 'https://app.zentinel.dev';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get('provider'); // github, gitlab, bitbucket
-    const orgId = searchParams.get('state'); // pass org ID through state to link it back
+    const orgId = searchParams.get('state'); // org ID passed as state
 
     if (!provider || !orgId) {
         return NextResponse.json({ error: 'Missing provider or org ID' }, { status: 400 });
     }
 
+    // Encode state as base64 JSON so callbacks can decode gracefully
+    const state = Buffer.from(JSON.stringify({ orgId })).toString('base64');
+    const redirectUri = `${APP_BASE}/api/integrations/callback/${provider}`;
     let authUrl = '';
 
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/integrations/callback/${provider}`;
-
     if (provider === 'github') {
-        authUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:org&state=${orgId}`;
+        const params = new URLSearchParams({
+            client_id: process.env.GITHUB_CLIENT_ID!,
+            redirect_uri: redirectUri,
+            // repo: full control of public + private repos (needed for PR comments & code suggestions)
+            // read:org: read org membership to list org repos
+            // workflow: update GitHub Actions workflows (needed when Zentinel suggests fixes via PR)
+            scope: 'repo read:org workflow',
+            state,
+        });
+        authUrl = `https://github.com/login/oauth/authorize?${params}`;
     } else if (provider === 'gitlab') {
-        authUrl = `https://gitlab.com/oauth/authorize?client_id=${process.env.GITLAB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${orgId}&scope=api`;
+        const params = new URLSearchParams({
+            client_id: process.env.GITLAB_CLIENT_ID!,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            state,
+            // api: full access (MR comments, code suggestions, private repos)
+            // write_repository: push access needed for AI-suggested fixes
+            scope: 'api read_repository write_repository',
+        });
+        authUrl = `https://gitlab.com/oauth/authorize?${params}`;
     } else if (provider === 'bitbucket') {
-        authUrl = `https://bitbucket.org/site/oauth2/authorize?client_id=${process.env.BITBUCKET_CLIENT_ID}&response_type=code&state=${orgId}`;
+        const params = new URLSearchParams({
+            client_id: process.env.BITBUCKET_CLIENT_ID!,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            // repository:write allows cloning private + pushing fixes
+            // pullrequest allows reading PRs. (Removed pullrequest:write to fix invalid_scope error)
+            scope: 'repository repository:write pullrequest',
+            state,
+        });
+        authUrl = `https://bitbucket.org/site/oauth2/authorize?${params}`;
     } else {
         return NextResponse.json({ error: 'Unsupported provider' }, { status: 400 });
     }

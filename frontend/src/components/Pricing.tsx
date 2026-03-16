@@ -5,12 +5,12 @@ const plans = [
     {
         name: "Starter", price: 149, description: "Essential security for early-stage teams",
         features: ["3 scans/month", "1 domain", "3 repos", "2 users", "API & web app pentesting", "Auto-fix PRs"],
-        cta: "Start free trial", href: "/sign-up", highlight: false,
+        cta: "Get Started Now", href: "/sign-up", highlight: false,
     },
     {
         name: "Growth", price: 399, description: "Unlimited scanning and continuous monitoring",
         features: ["Unlimited scans", "5 domains", "15 repos", "5 users", "Everything in Starter", "Attack surface monitoring", "Scheduled pentesting"],
-        cta: "Start free trial", href: "/sign-up", highlight: true, badge: "Most Popular",
+        cta: "Get Started Now", href: "/sign-up", highlight: true, badge: "Most Popular",
     },
 ];
 
