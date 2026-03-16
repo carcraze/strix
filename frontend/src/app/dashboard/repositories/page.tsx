@@ -188,11 +188,23 @@ export default function RepositoriesPage() {
 
     const submitManualScan = async () => {
         if (!scanModal) return;
+        
+        const provider = scanModal.repo.provider || 'github';
+        if (!connectedProviders.includes(provider)) {
+            showToast('❌ Connect your repository first');
+            return;
+        }
+
+        if (scanMode === 'pr' && (!scanInput || parseInt(scanInput, 10) <= 0)) {
+            showToast('❌ Please enter a valid PR number');
+            return;
+        }
+
         setScanning(true);
         try {
             const body: any = {
                 repo_id: scanModal.repo.id,
-                provider: scanModal.repo.provider || 'github',
+                provider: provider,
                 trigger: 'manual',
             };
             if (scanMode === 'pr') {
@@ -268,7 +280,7 @@ export default function RepositoriesPage() {
                             {/* Input */}
                             <input
                                 type={scanMode === 'pr' ? 'number' : 'text'}
-                                placeholder={scanMode === 'pr' ? 'e.g. 42' : `e.g. ${scanModal.repo.default_branch || 'main'}`}
+                                placeholder={scanMode === 'pr' ? 'Enter PR number e.g. 42' : `e.g. ${scanModal.repo.default_branch || 'main'}`}
                                 value={scanInput}
                                 onChange={e => setScanInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && scanInput && submitManualScan()}
