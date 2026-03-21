@@ -1,11 +1,11 @@
 import asyncio
-import httpx
+import httpx  # type: ignore
 import json
 import logging
 import time
-from celery import shared_task
-from app.services.supabase import supabase_admin
-from app.core.config import settings
+from celery import shared_task  # type: ignore
+from app.services.supabase import supabase_admin  # type: ignore
+from app.core.config import settings  # type: ignore
 
 log = logging.getLogger(__name__)
 
@@ -143,9 +143,9 @@ class GitHubAdapter(GitProvider):
                 if isinstance(f, dict):
                     if f.get("status") == "added" and f.get("raw_url"):
                         raw_url = str(f.get("raw_url"))
-                        raw = client.get(raw_url, headers=self.headers)
+                        raw = client.get(raw_url, headers=self.headers)  # type: ignore
                         filename = str(f.get("filename", ""))
-                        content += f"\n\n--- NEW FILE: {filename} ---\n{raw.text}\n"
+                        content += f"\n\n--- NEW FILE: {filename} ---\n{raw.text}\n"  # type: ignore
         return content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -157,7 +157,7 @@ class GitHubAdapter(GitProvider):
     def set_commit_status(self, client: httpx.Client, sha: str, state: str, description: str) -> None:
         url = f"https://api.github.com/repos/{self.repo}/statuses/{sha}"
         desc_str = str(description)
-        payload = {"state": state, "description": desc_str[:140], "context": "Zentinel Security Scanner"}
+        payload = {"state": state, "description": desc_str[:140], "context": "Zentinel Security Scanner"}  # type: ignore
         res = client.post(url, headers=self.headers, json=payload)
         if res.status_code >= 400:
             print("GitHub status failed:", res.text)
@@ -185,8 +185,8 @@ class GitLabAdapter(GitProvider):
                     if isinstance(change, dict):
                         old_path = str(change.get("old_path", ""))
                         new_path = str(change.get("new_path", ""))
-                        diff_text += f"\n--- a/{old_path}\n+++ b/{new_path}\n"
-                        diff_text += str(change.get("diff", ""))
+                        diff_text += f"\n--- a/{old_path}\n+++ b/{new_path}\n"  # type: ignore
+                        diff_text += str(change.get("diff", ""))  # type: ignore
         return diff_text
 
     def get_new_files(self, client: httpx.Client, pr_id: int) -> str:
@@ -205,7 +205,7 @@ class GitLabAdapter(GitProvider):
                     if isinstance(change, dict) and change.get("new_file"):
                         new_path = str(change.get("new_path", ""))
                         file_diff = str(change.get("diff", ""))
-                        content += f"\n\n--- NEW FILE: {new_path} ---\n{file_diff}\n"
+                        content += f"\n\n--- NEW FILE: {new_path} ---\n{file_diff}\n"  # type: ignore
         return content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -219,7 +219,7 @@ class GitLabAdapter(GitProvider):
         gitlab_state = "failed" if state == "failure" else "success"
         url = f"{self.base}/projects/{self.project_id}/statuses/{sha}"
         desc_str = str(description)
-        payload = {"state": gitlab_state, "description": desc_str[:140], "name": "Zentinel Security Scanner"}
+        payload = {"state": gitlab_state, "description": desc_str[:140], "name": "Zentinel Security Scanner"}  # type: ignore
         res = client.post(url, headers=self.headers, json=payload)
         if res.status_code >= 400:
             print("GitLab status failed:", res.text)
@@ -253,19 +253,19 @@ class BitbucketAdapter(GitProvider):
             if line.startswith("--- /dev/null"):
                 is_new = True
             elif line.startswith("+++ b/") and is_new:
-                current_file = line[6:]
+                current_file = line[6:]  # type: ignore
                 buffer = []
             elif current_file and is_new:
                 if line.startswith("diff --git"):
                     # flush
-                    new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)
+                    new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)  # type: ignore
                     current_file = None
                     is_new = False
                     buffer = []
                 else:
-                    buffer.append(line)
+                    buffer.append(line)  # type: ignore
         if current_file and is_new and buffer:
-            new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)
+            new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)  # type: ignore
         return new_files_content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -283,7 +283,7 @@ class BitbucketAdapter(GitProvider):
             "key": "zentinel-security",
             "state": bb_state,
             "name": "Zentinel Security Scanner",
-            "description": desc_str[:255],
+            "description": desc_str[:255],  # type: ignore
             "url": "https://app.zentinel.dev/dashboard/pr-reviews",
         }
         res = client.post(url, headers=self.headers, json=payload)
@@ -414,10 +414,10 @@ def run_pr_review_task(
                 }).eq("id", pr_review_id).execute()
 
         # 6. Construct Agent Instruction
-        from strix.agents.StrixAgent import StrixAgent
-        from strix.llm.config import LLMConfig
-        from strix.telemetry.tracer import Tracer, set_global_tracer
-        from strix.interface.utils import infer_target_type
+        from strix.agents.StrixAgent import StrixAgent  # type: ignore
+        from strix.llm.config import LLMConfig  # type: ignore
+        from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
+        from strix.interface.utils import infer_target_type  # type: ignore
 
         if trigger == "full_repo":
             full_instruction = STRIX_FULL_REPO_INSTRUCTION
@@ -435,7 +435,7 @@ def run_pr_review_task(
                 targets_info.append({'url': t, 'type': target_type, **extra})
             except Exception as e:
                 t_str = str(t)
-                log.warning(f"[ZENTINEL] infer_target_type failed on {t_str[:30]}... error={str(e)}")
+                log.warning(f"[ZENTINEL] infer_target_type failed on {t_str[:30]}... error={str(e)}")  # type: ignore
                 # Fallback in case raw_diff isn't parsed well
                 targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t})
 
