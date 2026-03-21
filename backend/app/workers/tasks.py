@@ -1,12 +1,12 @@
 import logging
 import asyncio
 import datetime
-from celery import Celery
-from app.services.redis_service import publish_event
-from app.services.supabase import supabase_admin
-from app.core.scan_types import ScanType, SCAN_CONFIGS
-from app.core.config import settings
-from app.workers.pr_task import run_pr_review_task
+from celery import Celery  # type: ignore
+from app.services.redis_service import publish_event  # type: ignore
+from app.services.supabase import supabase_admin  # type: ignore
+from app.core.scan_types import ScanType, SCAN_CONFIGS  # type: ignore
+from app.core.config import settings  # type: ignore
+from app.workers.pr_task import run_pr_review_task  # type: ignore
 
 celery_app = Celery(
     "zentinel",
@@ -84,9 +84,9 @@ def run_pentest_task(
 
     try:
         # ── DIRECT EXECUTOR INVOCATION ────────────────────────────
-        from strix.agents.StrixAgent import StrixAgent
-        from strix.llm.config import LLMConfig
-        from strix.telemetry.tracer import Tracer, set_global_tracer
+        from strix.agents.StrixAgent import StrixAgent  # type: ignore
+        from strix.llm.config import LLMConfig  # type: ignore
+        from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
 
         # 1. Build instruction string from all context
         instruction_parts = []
@@ -104,19 +104,23 @@ def run_pentest_task(
         # 2. Build target info list in the exact format StrixAgent expects
         targets_info = []
         for d in domains:
+            url = f"https://{d}" if not d.startswith("http") else d
             targets_info.append({
-                "type": "web", 
-                "details": {"url": f"https://{d}" if not d.startswith("http") else d}, 
-                "original": f"https://{d}" if not d.startswith("http") else d
+                "type": "web_application",
+                "details": {"target_url": url},
             })
         if config.allow_repos:
             for r in repos:
                 repo_url = f"https://github.com/{r}" if not r.startswith("http") else r
-                targets_info.append({
-                    "type": "repository", 
-                    "details": {"target_repo": repo_url}, 
-                    "original": repo_url
-                })
+                repo_target: dict = {  # type: ignore[annotation]
+                    "type": "repository",
+                    "details": {
+                        "target_repo": repo_url,
+                        "workspace_subdir": None,
+                        "cloned_repo_path": None,
+                    },
+                }
+                targets_info.append(repo_target)
 
         # 3. Formulate configs
         llm_config = LLMConfig(scan_mode=scan_mode)

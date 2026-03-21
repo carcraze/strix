@@ -417,7 +417,6 @@ def run_pr_review_task(
         from strix.agents.StrixAgent import StrixAgent  # type: ignore
         from strix.llm.config import LLMConfig  # type: ignore
         from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
-        from strix.interface.utils import infer_target_type  # type: ignore
 
         if trigger == "full_repo":
             full_instruction = STRIX_FULL_REPO_INSTRUCTION
@@ -432,20 +431,25 @@ def run_pr_review_task(
 
         targets_info = []
         for t in targets:
-            try:
-                target_type, extra = infer_target_type(t)
-                targets_info.append({'url': t, 'type': target_type, 'details': extra})
-            except Exception as e:
-                t_str = str(t)
-                log.warning(f"[ZENTINEL] infer_target_type failed on {t_str[:30]}... error={str(e)}")  # type: ignore
-                # Fallback in case raw_diff isn't parsed well
-                targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t, 'details': {}})
+            targets_info.append({
+                'type': 'repository',
+                'details': {
+                    'target_repo': t,
+                    'workspace_subdir': None,
+                    'cloned_repo_path': None,
+                }
+            })
 
         log.info(f'[ZENTINEL] targets_info: {targets_info}')
 
         # 7. Call Strix
         agent_config = {"llm_config": LLMConfig(scan_mode="deep"), "max_iterations": 200, "non_interactive": True}
-        scan_config = {"scan_id": f"pr_{pr_review_id}", "targets": targets_info, "user_instructions": full_instruction, "run_name": f"pr_{pr_review_id}"}
+        scan_config = {
+            'scan_id': f'pr_{pr_review_id}',
+            'targets': targets_info,
+            'user_instructions': full_instruction,
+            'run_name': f'pr_{pr_review_id}',
+        }
 
         tracer = Tracer(f"pr_{pr_review_id}")
         tracer.set_scan_config(scan_config)
