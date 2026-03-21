@@ -117,17 +117,25 @@ export default function RepositoriesPage() {
         setAddingRepos(prev => new Set(prev).add(repo.id));
 
         try {
-            await supabase.from('repositories').upsert(
-                [{
-                    organization_id: activeWorkspace.id,
-                    full_name: repo.name,
+            const res = await fetch('/api/repos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orgId: activeWorkspace.id,
                     provider: repo.provider,
-                    provider_repo_id: repo.id,
-                    default_branch: repo.default_branch || 'main',
-                    auto_review_enabled: false,
-                }],
-                { onConflict: 'organization_id,provider_repo_id' }
-            );
+                    repoId: repo.id,
+                    repoName: repo.name,
+                    defaultBranch: repo.default_branch || 'main'
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                if (typeof showToast === 'function') showToast(`❌ Failed to connect repo: ${err.error || 'Unknown error'}`);
+                throw new Error(err.error);
+            }
+
+            if (typeof showToast === 'function') showToast(`✅ Repository connected securely.`);
 
             // Re-fetch repos after adding
             const data = await getRepositories(activeWorkspace.id);
@@ -145,11 +153,30 @@ export default function RepositoriesPage() {
     };
 
     // Remove repo
-    const handleRemoveRepo = async (id: string) => {
-        if (!confirm("Are you sure you want to remove this repository from your workspace?")) return;
+    const handleRemoveRepo = async (repo: any) => {
+        if (!activeWorkspace) return;
+        if (!confirm("Are you sure you want to remove this repository from your workspace and delete its webhook?")) return;
         try {
-            await supabase.from('repositories').delete().eq('id', id);
-            setRepositories(prev => prev.filter(r => r.id !== id));
+            const res = await fetch('/api/repos', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orgId: activeWorkspace.id,
+                    provider: repo.provider,
+                    repoId: repo.provider_repo_id,
+                    repoName: repo.full_name || repo.name
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                if (typeof showToast === 'function') showToast(`❌ Failed to remove repo: ${err.error || 'Unknown error'}`);
+                throw new Error(err.error);
+            }
+
+            if (typeof showToast === 'function') showToast(`✅ Repository removed.`);
+
+            setRepositories(prev => prev.filter(r => r.id !== repo.id));
         } catch (err) {
             console.error("Failed to remove repo", err);
         }
@@ -170,7 +197,7 @@ export default function RepositoriesPage() {
     };
 
     const [scanModal, setScanModal] = useState<{ repo: any, prs: any[] } | null>(null);
-    const [scanMode, setScanMode] = useState<'pr' | 'branch'>('pr');
+    const [scanMode, setScanMode] = useState<'pr' | 'full_repo'>('pr');
     const [scanInput, setScanInput] = useState('');
     const [scanning, setScanning] = useState(false);
     const [fetchingPRs, setFetchingPRs] = useState(false);
@@ -227,12 +254,12 @@ export default function RepositoriesPage() {
             const body: any = {
                 repo_id: scanModal.repo.id,
                 provider: provider,
-                trigger: 'manual',
+                trigger: scanMode === 'full_repo' ? 'full_repo' : 'manual',
             };
             if (scanMode === 'pr') {
                 body.pr_number = parseInt(scanInput, 10);
             } else {
-                body.branch_name = scanInput;
+                body.branch_name = scanModal.repo.default_branch || 'main';
             }
 
             const res = await fetch('/api/pr-reviews/manual-launch', {
@@ -290,13 +317,13 @@ export default function RepositoriesPage() {
                                     onClick={() => { setScanMode('pr'); setScanInput(''); }}
                                     className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'pr' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
                                 >
-                                    PR Number
+                                    PR Scan
                                 </button>
                                 <button
-                                    onClick={() => { setScanMode('branch'); setScanInput(''); }}
-                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'branch' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
+                                    onClick={() => { setScanMode('full_repo'); setScanInput(''); }}
+                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'full_repo' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
                                 >
-                                    Branch Name
+                                    Full Repo Scan
                                 </button>
                             </div>
                                                 {/* Input */}
@@ -325,20 +352,14 @@ export default function RepositoriesPage() {
                                     </select>
                                 )
                             ) : (
-                                <input
-                                    type="text"
-                                    placeholder={`e.g. ${scanModal.repo.default_branch || 'main'}`}
-                                    value={scanInput}
-                                    onChange={e => setScanInput(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && scanInput && submitManualScan()}
-                                    autoFocus
-                                    className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors font-mono"
-                                />
+                                <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 font-mono">
+                                    Full repository scan on default branch ({scanModal.repo.default_branch || 'main'})
+                                </div>
                             )}
                             <p className="text-xs text-white/30">
                                 {scanMode === 'pr'
                                     ? 'Select an open pull request to run a security review.'
-                                    : 'Enter a branch name to scan all changes on that branch.'}
+                                    : 'Perform a full deep scan of the entire repository codebase. Results will appear in the Issues dashboard.'}
                             </p>
                         </div>
                         <div className="px-6 pb-6 flex gap-3">
@@ -350,7 +371,7 @@ export default function RepositoriesPage() {
                             </button>
                             <button
                                 onClick={submitManualScan}
-                                disabled={!scanInput || scanning}
+                                disabled={(scanMode === 'pr' && !scanInput) || scanning}
                                 className="flex-1 py-2 rounded-lg bg-white text-black font-bold text-sm hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -599,7 +620,7 @@ export default function RepositoriesPage() {
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            handleRemoveRepo(repo.id);
+                                                            handleRemoveRepo(repo);
                                                         }}
                                                         className="text-[var(--color-textMuted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded hover:bg-red-400/10"
                                                         title="Remove repository"

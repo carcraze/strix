@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Server configuration error: Missing Payment Key" }, { status: 500 });
         }
 
-        const rURL = new URL(req.url);
-        const returnUrl = `${rURL.protocol}//${rURL.host}/dashboard/pentests/new?checkout_success=true`;
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zentinel.dev';
+        const returnUrl = `${baseUrl}/dashboard/settings/billing?checkout_success=true`;
 
         console.log("Creating checkout for Product ID:", productId);
 

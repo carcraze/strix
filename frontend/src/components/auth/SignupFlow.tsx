@@ -87,7 +87,7 @@ function SignupFlowInner() {
                             first_name: formData.firstName,
                             last_name: formData.lastName
                         },
-                        emailRedirectTo: `${window.location.origin}/auth/callback`
+                        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`
                     }
                 });
                 if (authError) {
@@ -158,13 +158,14 @@ function SignupFlowInner() {
                 </div>
                 <h3 className="text-xl font-syne font-bold text-white tracking-tight">Check Your Email</h3>
                 <p className="text-sm font-mono text-[var(--color-textSecondary)] text-center leading-relaxed">
-                    We've sent a secure confirmation link to <span className="text-white font-medium">{formData.email}</span>.
+                    We've sent a confirmation link to <span className="text-white font-medium">{formData.email}</span>.
                     <br/><br/>
-                    Please click the link inside to verify your account and activate your dashboard.
+                    <span className="text-[var(--color-cyan)]">Clicking the link will sign you in automatically</span> and take you straight to your dashboard — no extra steps needed.
                 </p>
-                <div className="pt-4">
-                    <Button onClick={() => window.location.href="/sign-in"} className="bg-[var(--color-cyan)] text-black hover:bg-cyan-400 font-bold border-none">
-                        Back to Login
+                <p className="text-xs font-mono text-white/30 text-center">Can't find it? Check your spam folder.</p>
+                <div className="pt-2">
+                    <Button onClick={() => window.location.href="/sign-in"} variant="outline" className="bg-transparent border-[var(--color-border)] text-[var(--color-textSecondary)] hover:text-white hover:bg-white/5 font-bold">
+                        Back to Sign In
                     </Button>
                 </div>
             </div>

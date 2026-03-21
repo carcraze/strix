@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Missing config" }, { status: 500 });
         }
 
-        const rURL = new URL(req.url);
-        const returnUrl = `${rURL.protocol}//${rURL.host}/dashboard/pentests/new?credit=granted`;
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zentinel.dev';
+        const returnUrl = `${baseUrl}/dashboard/settings/billing?credit=granted`;
 
         const dodo = new DodoPayments({ bearerToken: apiKey });
 

@@ -43,13 +43,17 @@ export function Step1Identity({ formData, updateData, loading, setLoading }: Ste
 
     return (
         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-            <AuthButtons checkingSSO={checkingSSO} ssoUrl={ssoUrl} loading={loading} setLoading={setLoading} />
+            {ssoUrl && (
+                <>
+                    <AuthButtons checkingSSO={checkingSSO} ssoUrl={ssoUrl} loading={loading} setLoading={setLoading} />
 
-            <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                <span className="shrink-0 mx-4 text-xs font-mono text-[var(--color-textMuted)]">OR</span>
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-            </div>
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                        <span className="shrink-0 mx-4 text-xs font-mono text-[var(--color-textMuted)]">OR</span>
+                        <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                    </div>
+                </>
+            )}
 
             <div className="grid grid-cols-2 gap-4 mt-2">
                 <div className="space-y-1">

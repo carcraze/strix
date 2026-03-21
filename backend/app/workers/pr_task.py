@@ -54,6 +54,47 @@ FINDING_1:
 If the PR is completely clean and secure, state: PASSED, with a 1-sentence explanation.
 """
 
+STRIX_FULL_REPO_INSTRUCTION = """
+You are an elite security engineer performing a comprehensive security review of a repository codebase. You have access to the full repository, a live Docker sandbox, and a browser. Do not just read the code — actively attack it.
+
+PHASE 1 — STATIC ANALYSIS
+- Scan the entire codebase for security anti-patterns, OWASP Top 10 vulnerabilities, and misconfigurations.
+- Secrets and credentials (API keys, tokens, private keys, connection strings)
+- Dangerous function calls (eval, exec, system, shell_exec)
+- SQL injection or command injection vectors
+- Missing authorization checks on routes
+- Insecure direct object references (IDOR) on parameters
+- Race conditions in async/threaded code
+- Cryptographic issues (weak hashes, hardcoded salts, insecure randoms)
+
+PHASE 2 — DYNAMIC VALIDATION (run it)
+Spin up the application in the sandbox using the provided repository and branch.
+- Send actual HTTP requests to API endpoints
+- Attempt authentication bypass
+- Upload malicious files
+- Fuzz any input fields
+
+PHASE 3 — DEPENDENCY EXPLOIT CHECK
+- Look for published exploit proofs-of-concept (PoCs) for any outdated dependencies.
+- Map out the dependency chain to flag transitive dependencies with critical CVEs.
+
+PHASE 4 — BUSINESS LOGIC EVALUATOR
+- Understand the intent of the application.
+- How could a legitimate user abuse workflows?
+- Test for price manipulation, privilege escalation, etc.
+
+PHASE 5 — REPORT
+Output your findings exactly like this. Do not hallucinate. Do not skip checking the dynamic sandbox.
+
+FINDING_1:
+- Severity: CRITICAL | HIGH | MEDIUM | LOW
+- File: path/to/file.py (Line X)
+- Vulnerability: concise description
+- Proof: curl command or python script that executes the attack
+- Fix: Exact one-line code replacement
+
+If the codebase is completely clean and secure, state: PASSED, with a 1-sentence explanation.
+"""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Git Provider Adapter Pattern
@@ -283,10 +324,11 @@ def run_pr_review_task(
     provider: str = "github",
     provider_repo_id: str = "",
     access_token: str = "",
+    trigger: str = "manual",
 ):
     try:
-        # 0. Validate PR Number
-        if not pr_number or int(pr_number) <= 0:
+        # 0. Validate PR Number (skip if full_repo)
+        if trigger != "full_repo" and (not pr_number or int(pr_number) <= 0):
             error_msg = "Invalid PR number: must be a real open pull request number"
             supabase_admin.table("pr_reviews").update({
                 "status": "failed",
@@ -308,33 +350,51 @@ def run_pr_review_task(
         adapter = get_adapter(provider, token, repo_full_name, provider_repo_id)
 
         with httpx.Client(timeout=60) as client:
-            # 3. Fetch diff
-            raw_diff = adapter.get_diff(client, pr_number)
+            raw_diff = ""
+            new_file_contents = ""
+            
+            if trigger != "full_repo":
+                # 3. Fetch diff
+                raw_diff = adapter.get_diff(client, pr_number)
 
-            # 4. Update DB
-            supabase_admin.table("pr_reviews").update({
-                "diff_content": raw_diff,
-                "status": "running"
-            }).eq("id", pr_review_id).execute()
+                # 4. Update DB
+                supabase_admin.table("pr_reviews").update({
+                    "diff_content": raw_diff,
+                    "status": "running"
+                }).eq("id", pr_review_id).execute()
 
-            # 5. Fetch new file contents
-            new_file_contents = adapter.get_new_files(client, pr_number)
+                # 5. Fetch new file contents
+                new_file_contents = adapter.get_new_files(client, pr_number)
+            else:
+                raw_diff = "Full Repository Scan Initiated"
+                supabase_admin.table("pr_reviews").update({
+                    "diff_content": raw_diff,
+                    "status": "running"
+                }).eq("id", pr_review_id).execute()
 
         # 6. Construct Agent Instruction
-        full_instruction = STRIX_PR_INSTRUCTION + "\n\n=== PR RAW DIFF ===\n" + raw_diff
-        if new_file_contents:
-            full_instruction += "\n\n=== NEW FILES ADDED FULL CONTEXT ===\n" + new_file_contents
+        if trigger == "full_repo":
+            full_instruction = STRIX_FULL_REPO_INSTRUCTION
+            targets_info = [{
+                "type": "repository",
+                "details": {"target_repo": clone_url, "target_branch": branch_name},
+                "original": clone_url
+            }]
+        else:
+            full_instruction = STRIX_PR_INSTRUCTION + "\n\n=== PR RAW DIFF ===\n" + raw_diff
+            if new_file_contents:
+                full_instruction += "\n\n=== NEW FILES ADDED FULL CONTEXT ===\n" + new_file_contents
+            # Strix internally clones the branch to run dynamic checks and deep SAST on diffed files
+            targets_info = [{
+                "type": "repository",
+                "details": {"target_repo": clone_url, "target_branch": branch_name},
+                "original": clone_url
+            }]
 
         # 7. Call Strix
         from strix.agents.StrixAgent import StrixAgent
         from strix.llm.config import LLMConfig
         from strix.telemetry.tracer import Tracer, set_global_tracer
-
-        targets_info = [{
-            "type": "repository",
-            "details": {"target_repo": clone_url, "target_branch": branch_name},
-            "original": clone_url
-        }]
 
         agent_config = {"llm_config": LLMConfig(scan_mode="deep"), "max_iterations": 200, "non_interactive": True}
         scan_config = {"scan_id": f"pr_{pr_review_id}", "targets": targets_info, "user_instructions": full_instruction, "run_name": f"pr_{pr_review_id}"}
@@ -357,19 +417,35 @@ def run_pr_review_task(
         high_count = sum(1 for f in findings if f.get("severity", "").lower() == "high")
         medium_count = sum(1 for f in findings if f.get("severity", "").lower() == "medium")
 
-        # 9. Post comment to PR
-        comment_body = _format_comment(findings, final_report)
-        with httpx.Client(timeout=30) as client:
-            adapter.post_comment(client, pr_number, comment_body)
+        # 9. Post comment to PR & CI/CD Gating (only for PR scans)
+        if trigger != "full_repo":
+            comment_body = _format_comment(findings, final_report)
+            with httpx.Client(timeout=30) as client:
+                adapter.post_comment(client, pr_number, comment_body)
 
-            # 10. CI/CD Gating
-            if block_merge_on_critical and commit_sha:
-                status_state = "failure" if critical_count > 0 else "success"
-                status_desc = (
-                    f"{critical_count} critical issues found by Zentinel." if critical_count > 0
-                    else "Zentinel security checks passed."
-                )
-                adapter.set_commit_status(client, commit_sha, status_state, status_desc)
+                # 10. CI/CD Gating
+                if block_merge_on_critical and commit_sha:
+                    status_state = "failure" if critical_count > 0 else "success"
+                    status_desc = (
+                        f"{critical_count} critical issues found by Zentinel." if critical_count > 0
+                        else "Zentinel security checks passed."
+                    )
+                    adapter.set_commit_status(client, commit_sha, status_state, status_desc)
+        else:
+            # Save all findings to the issues table for Full Repo Scans
+            for idx, fw in enumerate(findings):
+                issue_data = {
+                    "repository_id": repo_id,
+                    "title": fw.get("title", f"Vulnerability {idx+1}")[:255],
+                    "severity": fw.get("severity", "medium").lower(),
+                    "status": "open",
+                    "file_path": fw.get("file_path", ""),
+                    "description": fw.get("description", ""),
+                    "remediation_steps": fw.get("remediation_steps", ""),
+                    "poc_script_code": fw.get("poc_script_code", ""),
+                    "poc_description": fw.get("poc_description", ""),
+                }
+                supabase_admin.table("issues").insert(issue_data).execute()
 
         # 11. Update DB with final results
         supabase_admin.table("pr_reviews").update({

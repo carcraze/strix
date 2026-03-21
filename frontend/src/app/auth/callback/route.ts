@@ -64,16 +64,18 @@ export async function GET(request: Request) {
                     .limit(1)
                     .maybeSingle()
 
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zentinel.dev';
+
                 if (orgMember) {
                     // Respect "next" param if it points to app or dashboard
                     if (next.startsWith('/dashboard') || next.startsWith('/settings')) {
-                        return NextResponse.redirect(`https://app.zentinel.dev${next}`)
+                        return NextResponse.redirect(`${baseUrl}${next}`)
                     }
-                    return NextResponse.redirect('https://app.zentinel.dev/dashboard')
+                    return NextResponse.redirect(`${baseUrl}/dashboard`)
                 }
 
                 // 3. Fallback to onboarding/signup
-                return NextResponse.redirect('https://zentinel.dev/sign-up')
+                return NextResponse.redirect(`${baseUrl.replace('app.', '')}/sign-up`)
             }
         }
     }

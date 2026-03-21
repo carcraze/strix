@@ -18,6 +18,7 @@ class PRReviewLaunchRequest(BaseModel):
     provider: str = "github"
     provider_repo_id: Optional[str] = ""
     access_token: Optional[str] = ""
+    trigger: Optional[str] = "manual"
 
 @router.post("/launch")
 async def launch_pr_review(payload: PRReviewLaunchRequest):
@@ -34,6 +35,7 @@ async def launch_pr_review(payload: PRReviewLaunchRequest):
         provider=payload.provider,
         provider_repo_id=payload.provider_repo_id or "",
         access_token=payload.access_token or "",
+        trigger=payload.trigger,
     )
     
     return {"status": "enqueued", "pr_review_id": payload.pr_review_id}

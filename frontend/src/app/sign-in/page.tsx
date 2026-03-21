@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldAlert, Mail, Lock, Chrome, Eye, EyeOff, Globe } from "lucide-react";
+import { ShieldAlert, Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { detectSSO } from "@/lib/auth/detect-sso";
@@ -104,26 +104,6 @@ export default function SignInPage() {
         }
     };
 
-    const handleGoogleSignIn = async () => {
-        setLoading(true);
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                }
-            });
-
-            if (error) {
-                alert(error.message);
-                setLoading(false);
-            }
-        } catch (err) {
-            console.error("Google sign in error:", err);
-            alert("An error occurred during Google sign in");
-            setLoading(false);
-        }
-    };
 
     const handleForgotPassword = async () => {
         if (!email) {
@@ -232,25 +212,7 @@ export default function SignInPage() {
                                 <p className="text-sm font-mono text-[var(--color-textSecondary)]">Sign in to access your security dashboard</p>
                             </div>
 
-                            <div className="space-y-3 mb-6">
-                        <Button
-                            type="button"
-                            onClick={handleGoogleSignIn}
-                            disabled={loading || checkingSSO}
-                            variant="outline"
-                            className="w-full bg-[var(--background)] border border-[var(--color-border)] text-white hover:bg-white/5 h-11"
-                        >
-                            <Chrome className="h-4 w-4 mr-2" /> Continue with Google
-                        </Button>
-                    </div>
 
-                    <div className="relative flex py-2 items-center">
-                        <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                        <span className="shrink-0 mx-4 text-xs font-mono text-[var(--color-textMuted)]">OR</span>
-                        <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                    </div>
-
-                    {/* Email Sign In Form */}
                     <form onSubmit={handleEmailSignIn} className="space-y-4 mt-2">
                         <div>
                             <Label htmlFor="email" className="text-[var(--color-textSecondary)] text-xs font-mono mb-2 block">

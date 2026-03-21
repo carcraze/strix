@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
         commit_sha: commitSha,
         block_merge_on_critical: repo.block_merge_on_critical || false,
         provider,
+        trigger: trigger || 'manual',
     };
 
     fetch(`${BACKEND_URL}/api/pr-reviews/launch`, {
