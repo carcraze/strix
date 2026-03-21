@@ -396,28 +396,33 @@ def run_pr_review_task(
                 }).eq("id", pr_review_id).execute()
 
         # 6. Construct Agent Instruction
+        from strix.agents.StrixAgent import StrixAgent
+        from strix.llm.config import LLMConfig
+        from strix.telemetry.tracer import Tracer, set_global_tracer
+        from strix.interface.utils import infer_target_type
+
         if trigger == "full_repo":
             full_instruction = STRIX_FULL_REPO_INSTRUCTION
-            targets_info = [{
-                "type": "repository",
-                "details": {"target_repo": auth_clone_url, "target_branch": branch_name},
-                "original": auth_clone_url
-            }]
+            targets = [auth_clone_url]
         else:
             full_instruction = STRIX_PR_INSTRUCTION + "\n\n=== PR RAW DIFF ===\n" + raw_diff
             if new_file_contents:
                 full_instruction += "\n\n=== NEW FILES ADDED FULL CONTEXT ===\n" + new_file_contents
-            targets_info = [{
-                "type": "repository",
-                "details": {"target_repo": auth_clone_url, "target_branch": branch_name},
-                "original": auth_clone_url
-            }]
+            targets = [raw_diff]  # PR diff only
+
+        targets_info = []
+        for t in targets:
+            try:
+                target_type, extra = infer_target_type(t)
+                targets_info.append({'url': t, 'type': target_type, **extra})
+            except Exception as e:
+                log.warning(f"[ZENTINEL] infer_target_type failed on {t[:30]}... error={str(e)}")
+                # Fallback in case raw_diff isn't parsed well
+                targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t})
+
+        log.info(f'[ZENTINEL] targets_info: {targets_info}')
 
         # 7. Call Strix
-        from strix.agents.StrixAgent import StrixAgent
-        from strix.llm.config import LLMConfig
-        from strix.telemetry.tracer import Tracer, set_global_tracer
-
         agent_config = {"llm_config": LLMConfig(scan_mode="deep"), "max_iterations": 200, "non_interactive": True}
         scan_config = {"scan_id": f"pr_{pr_review_id}", "targets": targets_info, "user_instructions": full_instruction, "run_name": f"pr_{pr_review_id}"}
 
@@ -425,12 +430,16 @@ def run_pr_review_task(
         tracer.set_scan_config(scan_config)
         set_global_tracer(tracer)
 
+        log.info(f'[ZENTINEL] scan_config: {json.dumps(scan_config, default=str)}')
         log.info(f"[ZENTINEL] Starting StrixAgent.execute_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
+        
         agent = StrixAgent(agent_config)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(agent.execute_scan(scan_config))
+        result = loop.run_until_complete(agent.execute_scan(scan_config))
         loop.close()
+
+        log.info(f'[ZENTINEL] execute_scan result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}')
 
         findings = tracer.vulnerability_reports
         final_report = tracer.final_scan_result
@@ -496,7 +505,7 @@ def run_pr_review_task(
             "high_count": high_count,
             "medium_count": medium_count,
             "final_report": (final_report or "")[:50000],
-            "scan_duration_s": scan_duration_s,
+            "strix_duration_seconds": scan_duration_s,
         }).eq("id", pr_review_id).execute()
 
         log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed")
