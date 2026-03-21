@@ -432,12 +432,12 @@ def run_pr_review_task(
         for t in targets:
             try:
                 target_type, extra = infer_target_type(t)
-                targets_info.append({'url': t, 'type': target_type, **extra})
+                targets_info.append({'url': t, 'type': target_type, 'details': extra})
             except Exception as e:
                 t_str = str(t)
                 log.warning(f"[ZENTINEL] infer_target_type failed on {t_str[:30]}... error={str(e)}")  # type: ignore
                 # Fallback in case raw_diff isn't parsed well
-                targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t})
+                targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t, 'details': {}})
 
         log.info(f'[ZENTINEL] targets_info: {targets_info}')
 
@@ -531,7 +531,9 @@ def run_pr_review_task(
 
     except Exception as e:
         import traceback
-        log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={str(e)}")
+        # APIError in postgrest often puts the real error in e.message or e.details
+        err_msg = getattr(e, "message", None) or getattr(e, "details", None) or repr(e)
+        log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={err_msg}")
         log.error(f"[ZENTINEL] Full traceback: \n{traceback.format_exc()}")
         supabase_admin.table("pr_reviews").update({
             "status": "failed",

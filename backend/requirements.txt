@@ -7,4 +7,7 @@ tenacity
 google-cloud-aiplatform
 pydantic-settings
 supabase
-pyjwt[crypto]
+pyjwt
+opentelemetry-exporter-otlp-proto-http
+traceloop-sdk
+scrubadub[crypto]
