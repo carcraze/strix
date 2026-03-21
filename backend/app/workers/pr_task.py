@@ -550,3 +550,12 @@ def run_pr_review_task(
             "completed_at": "now()"
         }).eq("id", pr_review_id).execute()
         raise
+
+    finally:
+        # Always clean up the Strix sandbox container for this scan
+        import subprocess
+        scan_container = f"strix-scan-pr_{pr_review_id}"
+        log.info(f"[ZENTINEL] Cleaning up Docker container: {scan_container}")
+        subprocess.run(["docker", "stop", scan_container], capture_output=True)
+        subprocess.run(["docker", "rm", scan_container], capture_output=True)
+        log.info(f"[ZENTINEL] Docker cleanup done for {scan_container}")
