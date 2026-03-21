@@ -426,7 +426,9 @@ def run_pr_review_task(
             full_instruction = STRIX_PR_INSTRUCTION + "\n\n=== PR RAW DIFF ===\n" + raw_diff
             if new_file_contents:
                 full_instruction += "\n\n=== NEW FILES ADDED FULL CONTEXT ===\n" + new_file_contents
-            targets = [raw_diff]  # PR diff only
+            # StrixAgent needs standard targets (like 'repository') to function correctly.
+            # Passing raw text doesn't configure its workspace. We pass auth_clone_url for both!
+            targets = [auth_clone_url]
 
         targets_info = []
         for t in targets:
@@ -451,14 +453,18 @@ def run_pr_review_task(
 
         log.info(f'[ZENTINEL] scan_config: {json.dumps(scan_config, default=str)}')
         log.info(f"[ZENTINEL] Starting StrixAgent.execute_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
+        log.info(f"[ZENTINEL] About to call StrixAgent.execute_scan")
         
         agent = StrixAgent(agent_config)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(agent.execute_scan(scan_config))
-        loop.close()
+        try:
+            result = loop.run_until_complete(agent.execute_scan(scan_config))
+        finally:
+            loop.close()
 
-        log.info(f'[ZENTINEL] execute_scan result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}')
+        res_str = str(result)
+        log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
 
         findings = tracer.vulnerability_reports
         final_report = tracer.final_scan_result

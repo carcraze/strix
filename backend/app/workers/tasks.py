@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import datetime
 from celery import Celery
 from app.services.redis_service import publish_event
 from app.services.supabase import supabase_admin
@@ -148,11 +149,17 @@ def run_pentest_task(
         # 5. Execute synchronously inside the Celery worker
         agent = StrixAgent(agent_config)
         
+        strix_logger.info(f"[ZENTINEL] About to call StrixAgent.execute_scan for pentest {pentest_id}")
         # Async run wrapper
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(agent.execute_scan(scan_config))
-        loop.close()
+        try:
+            result = loop.run_until_complete(agent.execute_scan(scan_config))
+        finally:
+            loop.close()
+            
+        res_str = str(result)
+        strix_logger.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
         
         findings = tracer.vulnerability_reports
         final_report_markdown = tracer.final_scan_result
@@ -179,7 +186,7 @@ def run_pentest_task(
                 "message": "Scan failed. This scan has not counted against your monthly limit.",
             })
             # Also decrement the usage counter back for subscription scans
-            current_month = __import__('datetime').datetime.now().strftime("%Y-%m")
+            current_month = datetime.datetime.now().strftime("%Y-%m")
             supabase_admin.rpc("decrement_scan_usage_on_failure", {
                 "org_id": org_id,
                 "month": current_month,
