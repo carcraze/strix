@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     Search, ChevronDown, ChevronLeft, ChevronRight, Check, X,
     Loader2, GitPullRequest, ExternalLink, Plus, ShieldCheck,
@@ -396,6 +397,7 @@ export default function PRReviewsPage() {
     const [reviews, setReviews] = useState<any[]>([]);
     const [selectedReview, setSelectedReview] = useState<any | null>(null);
     const { activeWorkspace } = useWorkspace();
+    const router = useRouter();
 
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -562,7 +564,7 @@ export default function PRReviewsPage() {
                                     const isFullRepo = r.trigger_source === 'full_repo';
                                     return (
                                         <tr key={r.id}
-                                            onClick={() => setSelectedReview(r)}
+                                            onClick={() => router.push(`/dashboard/pr-reviews/${r.id}`)}
                                             className="hover:bg-white/5 transition-colors group cursor-pointer">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
@@ -635,10 +637,6 @@ export default function PRReviewsPage() {
                 )}
             </Card>
 
-            {/* Detail modal */}
-            {selectedReview && (
-                <ScanDetailModal review={selectedReview} onClose={() => setSelectedReview(null)} />
-            )}
         </div>
     );
 }

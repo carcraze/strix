@@ -2,6 +2,8 @@ import asyncio
 import httpx  # type: ignore
 import json
 import logging
+import os
+import re
 import time
 from celery import shared_task  # type: ignore
 from app.services.supabase import supabase_admin  # type: ignore
@@ -458,7 +460,7 @@ def run_pr_review_task(
         log.info(f'[ZENTINEL] scan_config: {json.dumps(scan_config, default=str)}')
         log.info(f"[ZENTINEL] Starting StrixAgent.execute_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
         log.info(f"[ZENTINEL] About to call StrixAgent.execute_scan")
-        
+
         agent = StrixAgent(agent_config)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -470,14 +472,25 @@ def run_pr_review_task(
         res_str = str(result)
         log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
 
-        findings = tracer.vulnerability_reports
+        findings = list(tracer.vulnerability_reports or [])
         final_report = tracer.final_scan_result
         scan_duration_s = int(time.time() - scan_start_time)
 
-        log.info(f"[ZENTINEL] Strix scan complete | findings={len(findings)} duration={scan_duration_s}s")
+        # ── Read Strix report file (primary source of truth) ──────────────────
+        report_path = f"/home/alvin/zentinel/strix_runs/pr_{pr_review_id}/penetration_test_report.md"
+        report_content = None
+        if os.path.exists(report_path):
+            with open(report_path, "r") as _rf:
+                report_content = _rf.read()
+            log.info(f"[ZENTINEL] Report file found | path={report_path} length={len(report_content)}")
+            final_report = report_content  # file overrides tracer
+        else:
+            log.warning(f"[ZENTINEL] Report file NOT found at {report_path} — using tracer data")
+
+        log.info(f"[ZENTINEL] Strix scan complete | findings_from_tracer={len(findings)} duration={scan_duration_s}s")
 
         if not findings:
-            log.warning(f"[ZENTINEL] Zero findings returned — verifying Strix ran correctly | final_report_length={len(final_report or '')}")
+            log.warning(f"[ZENTINEL] Zero findings from tracer | final_report_length={len(final_report or '')}")
 
         # 8. Count by severity
         critical_count = sum(1 for f in findings if f.get("severity", "").lower() == "critical")
@@ -498,21 +511,46 @@ def run_pr_review_task(
                     )
                     adapter.set_commit_status(client, commit_sha, status_state, status_desc)
         else:
-            # Full repo scans: save findings to issues table
-            log.info(f"[ZENTINEL] Saving {len(findings)} findings to issues table | repo_id={repo_id}")
-            for idx, fw in enumerate(findings):
+            # Full repo scans: parse FINDING blocks from report file into issues table
+            parsed_findings = []
+            if report_content:
+                pattern = (
+                    r"FINDING_(\d+):\n- Severity:\s*(\w+)\n- File:\s*(.+?)\n"
+                    r"- Vulnerability:\s*(.+?)\n- Proof:(.*?)\n- Fix:(.*?)(?=\nFINDING_|\n#|\Z)"
+                )
+                for m in re.finditer(pattern, report_content, re.DOTALL):
+                    parsed_findings.append({
+                        "severity": m.group(2).strip().lower(),
+                        "file_path": m.group(3).strip(),
+                        "title": str(m.group(4).strip())[:255],  # type: ignore[index]
+                        "poc_description": m.group(5).strip(),
+                        "remediation_steps": m.group(6).strip(),
+                    })
+                log.info(f"[ZENTINEL] Parsed {len(parsed_findings)} FINDING blocks from report file")
+
+            # Use parsed findings if we got them, else fall back to tracer
+            save_findings = parsed_findings if parsed_findings else findings
+            log.info(f"[ZENTINEL] Saving {len(save_findings)} findings to issues table | repo_id={repo_id}")
+            for idx, fw in enumerate(save_findings):
                 issue_data = {
                     "repository_id": repo_id,
                     "title": fw.get("title", f"Vulnerability {idx+1}")[:255],
                     "severity": fw.get("severity", "medium").lower(),
                     "status": "open",
-                    "file_path": fw.get("file_path", ""),
-                    "description": fw.get("description", ""),
+                    "file_path": fw.get("file_path", fw.get("endpoint", "")),
+                    "description": fw.get("title", fw.get("description", "")),
                     "remediation_steps": fw.get("remediation_steps", ""),
                     "poc_script_code": fw.get("poc_script_code", ""),
                     "poc_description": fw.get("poc_description", ""),
                 }
                 supabase_admin.table("issues").insert(issue_data).execute()
+
+            # Recount from parsed findings if they exist
+            if parsed_findings:
+                critical_count = sum(1 for f in parsed_findings if f["severity"] == "critical")
+                high_count = sum(1 for f in parsed_findings if f["severity"] == "high")
+                medium_count = sum(1 for f in parsed_findings if f["severity"] == "medium")
+                findings = parsed_findings  # update for issues_found count
 
             # Always post a commit status for full_repo scans (even if clean)
             if commit_sha:
@@ -533,11 +571,11 @@ def run_pr_review_task(
             "critical_count": critical_count,
             "high_count": high_count,
             "medium_count": medium_count,
-            "final_report": (final_report or "")[:50000],
+            "final_report": str(final_report or "")[:100000],  # type: ignore[index]
             "strix_duration_seconds": scan_duration_s,
         }).eq("id", pr_review_id).execute()
 
-        log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed")
+        log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed findings={len(findings)}")
 
     except Exception as e:
         import traceback
