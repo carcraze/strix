@@ -1,9 +1,13 @@
 import asyncio
 import httpx
 import json
+import logging
+import time
 from celery import shared_task
 from app.services.supabase import supabase_admin
 from app.core.config import settings
+
+log = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Strix Prompt
@@ -326,7 +330,10 @@ def run_pr_review_task(
     access_token: str = "",
     trigger: str = "manual",
 ):
+    scan_start_time = time.time()
     try:
+        log.info(f"[ZENTINEL] Task started | pr_review_id={pr_review_id} repo={repo_full_name} trigger={trigger} provider={provider}")
+
         # 0. Validate PR Number (skip if full_repo)
         if trigger != "full_repo" and (not pr_number or int(pr_number) <= 0):
             error_msg = "Invalid PR number: must be a real open pull request number"
@@ -335,16 +342,33 @@ def run_pr_review_task(
                 "completed_at": "now()",
                 "diff_content": error_msg
             }).eq("id", pr_review_id).execute()
-            print(f"PR Review task failed: {error_msg}")
+            log.error(f"[ZENTINEL] Validation failed: {error_msg}")
             return
 
         # 1. Get OAuth token (prefer token passed in payload, fallback to DB lookup)
         token = access_token
         if not token:
+            log.info(f"[ZENTINEL] No access_token in payload — looking up from integrations table")
             integ = supabase_admin.table("integrations").select("access_token").eq("organization_id", org_id).eq("provider", provider).execute().data
             if not integ:
                 raise Exception(f"{provider} integration not found for organization")
             token = integ[0]["access_token"]
+
+        # 1b. Build authenticated clone URL for private repos
+        # Inject OAuth token so Strix can clone private repos without interactive auth
+        if token and clone_url:
+            if provider == "github" and "github.com" in clone_url:
+                auth_clone_url = clone_url.replace("https://", f"https://oauth2:{token}@")
+            elif provider == "gitlab" and "gitlab.com" in clone_url:
+                auth_clone_url = clone_url.replace("https://", f"https://oauth2:{token}@")
+            elif provider == "bitbucket" and "bitbucket.org" in clone_url:
+                auth_clone_url = clone_url.replace("https://", f"https://x-token-auth:{token}@")
+            else:
+                auth_clone_url = clone_url
+        else:
+            auth_clone_url = clone_url
+
+        log.info(f"[ZENTINEL] Auth clone URL ready | provider={provider} private_auth=True")
 
         # 2. Build adapter
         adapter = get_adapter(provider, token, repo_full_name, provider_repo_id)
@@ -352,18 +376,17 @@ def run_pr_review_task(
         with httpx.Client(timeout=60) as client:
             raw_diff = ""
             new_file_contents = ""
-            
-            if trigger != "full_repo":
-                # 3. Fetch diff
-                raw_diff = adapter.get_diff(client, pr_number)
 
-                # 4. Update DB
+            if trigger != "full_repo":
+                log.info(f"[ZENTINEL] Fetching PR diff | pr_number={pr_number}")
+                raw_diff = adapter.get_diff(client, pr_number)
+                log.info(f"[ZENTINEL] Diff fetched | chars={len(raw_diff)}")
+
                 supabase_admin.table("pr_reviews").update({
                     "diff_content": raw_diff,
                     "status": "running"
                 }).eq("id", pr_review_id).execute()
 
-                # 5. Fetch new file contents
                 new_file_contents = adapter.get_new_files(client, pr_number)
             else:
                 raw_diff = "Full Repository Scan Initiated"
@@ -377,18 +400,17 @@ def run_pr_review_task(
             full_instruction = STRIX_FULL_REPO_INSTRUCTION
             targets_info = [{
                 "type": "repository",
-                "details": {"target_repo": clone_url, "target_branch": branch_name},
-                "original": clone_url
+                "details": {"target_repo": auth_clone_url, "target_branch": branch_name},
+                "original": auth_clone_url
             }]
         else:
             full_instruction = STRIX_PR_INSTRUCTION + "\n\n=== PR RAW DIFF ===\n" + raw_diff
             if new_file_contents:
                 full_instruction += "\n\n=== NEW FILES ADDED FULL CONTEXT ===\n" + new_file_contents
-            # Strix internally clones the branch to run dynamic checks and deep SAST on diffed files
             targets_info = [{
                 "type": "repository",
-                "details": {"target_repo": clone_url, "target_branch": branch_name},
-                "original": clone_url
+                "details": {"target_repo": auth_clone_url, "target_branch": branch_name},
+                "original": auth_clone_url
             }]
 
         # 7. Call Strix
@@ -403,6 +425,7 @@ def run_pr_review_task(
         tracer.set_scan_config(scan_config)
         set_global_tracer(tracer)
 
+        log.info(f"[ZENTINEL] Starting StrixAgent.execute_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
         agent = StrixAgent(agent_config)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -411,19 +434,24 @@ def run_pr_review_task(
 
         findings = tracer.vulnerability_reports
         final_report = tracer.final_scan_result
+        scan_duration_s = int(time.time() - scan_start_time)
+
+        log.info(f"[ZENTINEL] Strix scan complete | findings={len(findings)} duration={scan_duration_s}s")
+
+        if not findings:
+            log.warning(f"[ZENTINEL] Zero findings returned — verifying Strix ran correctly | final_report_length={len(final_report or '')}")
 
         # 8. Count by severity
         critical_count = sum(1 for f in findings if f.get("severity", "").lower() == "critical")
         high_count = sum(1 for f in findings if f.get("severity", "").lower() == "high")
         medium_count = sum(1 for f in findings if f.get("severity", "").lower() == "medium")
 
-        # 9. Post comment to PR & CI/CD Gating (only for PR scans)
+        # 9. Post comment/status (PR scans → comment; full_repo → commit status always)
         if trigger != "full_repo":
             comment_body = _format_comment(findings, final_report)
             with httpx.Client(timeout=30) as client:
                 adapter.post_comment(client, pr_number, comment_body)
 
-                # 10. CI/CD Gating
                 if block_merge_on_critical and commit_sha:
                     status_state = "failure" if critical_count > 0 else "success"
                     status_desc = (
@@ -432,7 +460,8 @@ def run_pr_review_task(
                     )
                     adapter.set_commit_status(client, commit_sha, status_state, status_desc)
         else:
-            # Save all findings to the issues table for Full Repo Scans
+            # Full repo scans: save findings to issues table
+            log.info(f"[ZENTINEL] Saving {len(findings)} findings to issues table | repo_id={repo_id}")
             for idx, fw in enumerate(findings):
                 issue_data = {
                     "repository_id": repo_id,
@@ -447,7 +476,18 @@ def run_pr_review_task(
                 }
                 supabase_admin.table("issues").insert(issue_data).execute()
 
-        # 11. Update DB with final results
+            # Always post a commit status for full_repo scans (even if clean)
+            if commit_sha:
+                status_state = "failure" if critical_count > 0 else "success"
+                status_desc = (
+                    f"Zentinel: {critical_count} critical vulnerabilities found." if critical_count > 0
+                    else "✅ Zentinel security scan passed — no vulnerabilities found"
+                )
+                with httpx.Client(timeout=30) as client:
+                    adapter.set_commit_status(client, commit_sha, status_state, status_desc)
+                log.info(f"[ZENTINEL] Commit status posted for full_repo scan | state={status_state}")
+
+        # 11. Update DB with final results (store final_report for UI drill-down)
         supabase_admin.table("pr_reviews").update({
             "status": "completed",
             "completed_at": "now()",
@@ -455,12 +495,16 @@ def run_pr_review_task(
             "critical_count": critical_count,
             "high_count": high_count,
             "medium_count": medium_count,
+            "final_report": (final_report or "")[:50000],
+            "scan_duration_s": scan_duration_s,
         }).eq("id", pr_review_id).execute()
 
+        log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed")
+
     except Exception as e:
+        log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={str(e)}", exc_info=True)
         supabase_admin.table("pr_reviews").update({
             "status": "failed",
             "completed_at": "now()"
         }).eq("id", pr_review_id).execute()
-        print(f"PR Review task failed: {str(e)}")
         raise
