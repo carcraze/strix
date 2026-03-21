@@ -118,3 +118,4 @@ frontend/deploy_frontend_run.sh
 worker_setup.sh
 nul
 *.sh
+frontend/build_logs.txt
