@@ -138,10 +138,14 @@ class GitHubAdapter(GitProvider):
         res.raise_for_status()
         files = res.json()
         content = ""
-        for f in files:
-            if f.get("status") == "added" and f.get("raw_url"):
-                raw = client.get(f["raw_url"], headers=self.headers)
-                content += f"\n\n--- NEW FILE: {f['filename']} ---\n{raw.text}\n"
+        if isinstance(files, list):
+            for f in files:
+                if isinstance(f, dict):
+                    if f.get("status") == "added" and f.get("raw_url"):
+                        raw_url = str(f.get("raw_url"))
+                        raw = client.get(raw_url, headers=self.headers)
+                        filename = str(f.get("filename", ""))
+                        content += f"\n\n--- NEW FILE: {filename} ---\n{raw.text}\n"
         return content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -152,7 +156,8 @@ class GitHubAdapter(GitProvider):
 
     def set_commit_status(self, client: httpx.Client, sha: str, state: str, description: str) -> None:
         url = f"https://api.github.com/repos/{self.repo}/statuses/{sha}"
-        payload = {"state": state, "description": description[:140], "context": "Zentinel Security Scanner"}
+        desc_str = str(description)
+        payload = {"state": state, "description": desc_str[:140], "context": "Zentinel Security Scanner"}
         res = client.post(url, headers=self.headers, json=payload)
         if res.status_code >= 400:
             print("GitHub status failed:", res.text)
@@ -173,9 +178,15 @@ class GitLabAdapter(GitProvider):
         data = res.json()
         # Build unified diff text from changes array
         diff_text = ""
-        for change in data.get("changes", []):
-            diff_text += f"\n--- a/{change.get('old_path', '')}\n+++ b/{change.get('new_path', '')}\n"
-            diff_text += change.get("diff", "")
+        if isinstance(data, dict):
+            changes = data.get("changes", [])
+            if isinstance(changes, list):
+                for change in changes:
+                    if isinstance(change, dict):
+                        old_path = str(change.get("old_path", ""))
+                        new_path = str(change.get("new_path", ""))
+                        diff_text += f"\n--- a/{old_path}\n+++ b/{new_path}\n"
+                        diff_text += str(change.get("diff", ""))
         return diff_text
 
     def get_new_files(self, client: httpx.Client, pr_id: int) -> str:
@@ -187,9 +198,14 @@ class GitLabAdapter(GitProvider):
             return ""
         data = res.json()
         content = ""
-        for change in data.get("changes", []):
-            if change.get("new_file"):
-                content += f"\n\n--- NEW FILE: {change.get('new_path', '')} ---\n{change.get('diff', '')}\n"
+        if isinstance(data, dict):
+            changes = data.get("changes", [])
+            if isinstance(changes, list):
+                for change in changes:
+                    if isinstance(change, dict) and change.get("new_file"):
+                        new_path = str(change.get("new_path", ""))
+                        file_diff = str(change.get("diff", ""))
+                        content += f"\n\n--- NEW FILE: {new_path} ---\n{file_diff}\n"
         return content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -202,7 +218,8 @@ class GitLabAdapter(GitProvider):
         # GitLab states: pending, running, success, failed, canceled
         gitlab_state = "failed" if state == "failure" else "success"
         url = f"{self.base}/projects/{self.project_id}/statuses/{sha}"
-        payload = {"state": gitlab_state, "description": description[:140], "name": "Zentinel Security Scanner"}
+        desc_str = str(description)
+        payload = {"state": gitlab_state, "description": desc_str[:140], "name": "Zentinel Security Scanner"}
         res = client.post(url, headers=self.headers, json=payload)
         if res.status_code >= 400:
             print("GitLab status failed:", res.text)
@@ -241,14 +258,14 @@ class BitbucketAdapter(GitProvider):
             elif current_file and is_new:
                 if line.startswith("diff --git"):
                     # flush
-                    new_files_content += f"\n\n--- NEW FILE: {current_file} ---\n" + "\n".join(buffer)
+                    new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)
                     current_file = None
                     is_new = False
                     buffer = []
                 else:
                     buffer.append(line)
         if current_file and is_new and buffer:
-            new_files_content += f"\n\n--- NEW FILE: {current_file} ---\n" + "\n".join(buffer)
+            new_files_content += f"\n\n--- NEW FILE: {str(current_file)} ---\n" + "\n".join(buffer)
         return new_files_content
 
     def post_comment(self, client: httpx.Client, pr_id: int, body: str) -> None:
@@ -261,11 +278,12 @@ class BitbucketAdapter(GitProvider):
         # Bitbucket states: INPROGRESS, SUCCESSFUL, FAILED, STOPPED
         bb_state = "FAILED" if state == "failure" else "SUCCESSFUL"
         url = f"{self.base}/repositories/{self.workspace}/{self.slug}/commit/{sha}/statuses/build"
+        desc_str = str(description)
         payload = {
             "key": "zentinel-security",
             "state": bb_state,
             "name": "Zentinel Security Scanner",
-            "description": description[:255],
+            "description": desc_str[:255],
             "url": "https://app.zentinel.dev/dashboard/pr-reviews",
         }
         res = client.post(url, headers=self.headers, json=payload)
@@ -416,7 +434,8 @@ def run_pr_review_task(
                 target_type, extra = infer_target_type(t)
                 targets_info.append({'url': t, 'type': target_type, **extra})
             except Exception as e:
-                log.warning(f"[ZENTINEL] infer_target_type failed on {t[:30]}... error={str(e)}")
+                t_str = str(t)
+                log.warning(f"[ZENTINEL] infer_target_type failed on {t_str[:30]}... error={str(e)}")
                 # Fallback in case raw_diff isn't parsed well
                 targets_info.append({'url': 'pr_diff.txt', 'type': 'file', 'content': t})
 
@@ -511,7 +530,9 @@ def run_pr_review_task(
         log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed")
 
     except Exception as e:
-        log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={str(e)}", exc_info=True)
+        import traceback
+        log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={str(e)}")
+        log.error(f"[ZENTINEL] Full traceback: \n{traceback.format_exc()}")
         supabase_admin.table("pr_reviews").update({
             "status": "failed",
             "completed_at": "now()"
