@@ -171,10 +171,15 @@ class DockerRuntime(AbstractRuntime):
             else:
                 return container
 
+        if last_error:
+            raise SandboxInitializationError(
+                "Failed to create container",
+                f"Container creation failed after {max_retries + 1} attempts: {last_error}",
+            ) from last_error
         raise SandboxInitializationError(
             "Failed to create container",
-            f"Container creation failed after {max_retries + 1} attempts: {last_error}",
-        ) from last_error
+            f"Container creation failed after {max_retries + 1} attempts.",
+        )
 
     def _get_or_create_container(self, scan_id: str) -> Container:
         container_name = f"strix-scan-{scan_id}"
@@ -239,7 +244,7 @@ class DockerRuntime(AbstractRuntime):
                 for item in local_path_obj.rglob("*"):
                     if item.is_file():
                         rel_path = item.relative_to(local_path_obj)
-                        arcname = Path(target_name) / rel_path if target_name else rel_path
+                        arcname = Path(str(target_name)) / rel_path if target_name else rel_path
                         tar.add(item, arcname=arcname)
 
             tar_buffer.seek(0)
@@ -320,7 +325,7 @@ class DockerRuntime(AbstractRuntime):
 
             parsed = urlparse(docker_host)
             if parsed.scheme in ("tcp", "http", "https") and parsed.hostname:
-                return parsed.hostname
+                return str(parsed.hostname)
         return "127.0.0.1"
 
     async def destroy_sandbox(self, container_id: str) -> None:
