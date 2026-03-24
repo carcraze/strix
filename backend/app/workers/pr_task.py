@@ -474,6 +474,16 @@ def run_pr_review_task(
         res_str = str(result)
         log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
 
+        if isinstance(result, dict) and not result.get("success", True):
+            error_msg = result.get("error", "Unknown Strix LLM execution error")
+            log.error(f"[ZENTINEL] execute_scan failed: {error_msg}")
+            supabase_admin.table("pr_reviews").update({
+                "status": "failed",
+                "completed_at": "now()",
+                "final_report": f"Scan failed to complete due to an internal execution error: {error_msg}"
+            }).eq("id", pr_review_id).execute()
+            return
+
         run_dir = f"/home/alvin/zentinel/strix_runs/pr_{pr_review_id}"
         csv_path = f"{run_dir}/vulnerabilities.csv"
         findings = []
