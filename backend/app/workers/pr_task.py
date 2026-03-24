@@ -5,7 +5,9 @@ import logging
 import os
 import re
 import time
+import csv
 from celery import shared_task  # type: ignore
+from celery.exceptions import SoftTimeLimitExceeded  # type: ignore
 from app.services.supabase import supabase_admin  # type: ignore
 from app.core.config import settings  # type: ignore
 
@@ -333,7 +335,7 @@ def _format_comment(findings: list, final_report: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Celery Task
 # ─────────────────────────────────────────────────────────────────────────────
-@shared_task(name="run_pr_review_task", bind=True, max_retries=1)
+@shared_task(name="run_pr_review_task", bind=True, max_retries=1, soft_time_limit=5400, time_limit=7200)
 def run_pr_review_task(
     self,
     org_id: str,
@@ -472,12 +474,42 @@ def run_pr_review_task(
         res_str = str(result)
         log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
 
-        findings = list(tracer.vulnerability_reports or [])
+        run_dir = f"/home/alvin/zentinel/strix_runs/pr_{pr_review_id}"
+        csv_path = f"{run_dir}/vulnerabilities.csv"
+        findings = []
+
+        if os.path.exists(csv_path):
+            log.info(f"[ZENTINEL] Reading findings from {csv_path}")
+            with open(csv_path, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    vuln_path = f'{run_dir}/{row["file"]}'
+                    vuln_content = ''
+                    if os.path.exists(vuln_path):
+                        with open(vuln_path, "r") as vf:
+                            vuln_content = vf.read()
+                    
+                    findings.append({
+                        "id": row.get("id", ""),
+                        "title": row.get("title", ""),
+                        "severity": row.get("severity", "medium").lower(),
+                        "timestamp": row.get("timestamp", ""),
+                        "content": vuln_content,
+                        "description": vuln_content[:2000] if vuln_content else row.get("title", ""),  # type: ignore[index]
+                        "file_path": row.get("file", ""),
+                        "poc_description": "",
+                        "poc_script_code": "",
+                    })
+            log.info(f"[ZENTINEL] Found {len(findings)} findings from file {csv_path}")
+        else:
+            log.warning(f"[ZENTINEL] {csv_path} not found, using tracer fallback")
+            findings = list(tracer.vulnerability_reports or [])
+
         final_report = tracer.final_scan_result
         scan_duration_s = int(time.time() - scan_start_time)
 
         # ── Read Strix report file (primary source of truth) ──────────────────
-        report_path = f"/home/alvin/zentinel/strix_runs/pr_{pr_review_id}/penetration_test_report.md"
+        report_path = f"{run_dir}/penetration_test_report.md"
         report_content = None
         if os.path.exists(report_path):
             with open(report_path, "r") as _rf:
@@ -576,6 +608,15 @@ def run_pr_review_task(
         }).eq("id", pr_review_id).execute()
 
         log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed findings={len(findings)}")
+
+    except SoftTimeLimitExceeded:
+        log.error(f"[ZENTINEL] Scan timed out: {pr_review_id}")
+        supabase_admin.table("pr_reviews").update({
+            "status": "failed",
+            "completed_at": "now()",
+            "final_report": "Scan timed out after 90 minutes. Please retry."
+        }).eq("id", pr_review_id).execute()
+        return
 
     except Exception as e:
         import traceback
