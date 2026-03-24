@@ -63,9 +63,13 @@ class DockerRuntime(AbstractRuntime):
                 if not image.id or not image.attrs:
                     raise ImageNotFound(f"Image {image_name} metadata incomplete")  # noqa: TRY301
             except (ImageNotFound, DockerException):
-                if attempt == max_retries - 1:
-                    raise
-                time.sleep(2**attempt)
+                try:
+                    self.client.images.pull(image_name)
+                    return
+                except DockerException:
+                    if attempt == max_retries - 1:
+                        raise
+                    time.sleep(2**attempt)
             else:
                 return
 
