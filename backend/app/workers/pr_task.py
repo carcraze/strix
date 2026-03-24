@@ -7,7 +7,7 @@ import re
 import time
 import csv
 from celery import shared_task  # type: ignore
-from celery.exceptions import SoftTimeLimitExceeded  # type: ignore
+from celery.exceptions import SoftTimeLimitExceeded, Retry  # type: ignore
 from app.services.supabase import supabase_admin  # type: ignore
 from app.core.config import settings  # type: ignore
 
@@ -476,6 +476,12 @@ def run_pr_review_task(
 
         if isinstance(result, dict) and not result.get("success", True):
             error_msg = result.get("error", "Unknown Strix LLM execution error")
+            err_lower = error_msg.lower()
+            
+            if "429" in err_lower or "quota" in err_lower or "resource" in err_lower and "exhausted" in err_lower or "too many requests" in err_lower:
+                log.warning(f"[ZENTINEL] 429 Rate Limit caught during execute_scan. Retrying Celery task. Error: {error_msg}")
+                raise self.retry(exc=Exception(error_msg), countdown=180, max_retries=4)
+
             log.error(f"[ZENTINEL] execute_scan failed: {error_msg}")
             supabase_admin.table("pr_reviews").update({
                 "status": "failed",
@@ -628,10 +634,19 @@ def run_pr_review_task(
         }).eq("id", pr_review_id).execute()
         return
 
+    except Retry:
+        raise
+
     except Exception as e:
         import traceback
         # APIError in postgrest often puts the real error in e.message or e.details
         err_msg = getattr(e, "message", None) or getattr(e, "details", None) or repr(e)
+        
+        err_lower = str(err_msg).lower()
+        if "429" in err_lower or "quota" in err_lower or "resource" in err_lower and "exhausted" in err_lower or "too many requests" in err_lower:
+            log.warning(f"[ZENTINEL] 429 Rate Limit caught in outer exception: {err_msg}. Retrying Celery task...")
+            raise self.retry(exc=e, countdown=180, max_retries=4)
+
         log.error(f"[ZENTINEL] Task FAILED | pr_review_id={pr_review_id} repo={repo_full_name} error={err_msg}")
         log.error(f"[ZENTINEL] Full traceback: \n{traceback.format_exc()}")
         supabase_admin.table("pr_reviews").update({
