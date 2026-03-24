@@ -10,8 +10,38 @@ from celery import shared_task  # type: ignore
 from celery.exceptions import SoftTimeLimitExceeded, Retry  # type: ignore
 from app.services.supabase import supabase_admin  # type: ignore
 from app.core.config import settings  # type: ignore
+from app.services.redis_service import publish_event  # type: ignore
 
 log = logging.getLogger(__name__)
+
+def _classify_log(message: str) -> str:
+    msg = message.lower()
+    if any(k in msg for k in ["thinking", "reasoning", "considering", "analyzing", "planning"]):
+        return "thought"
+    if any(k in msg for k in ["testing", "attempting", "sending", "requesting", "trying", "injecting", "probing"]):
+        return "action"
+    if any(k in msg for k in ["found", "vulnerable", "critical", "high severity", "confirmed", "exploit", "poc"]):
+        return "finding"
+    if any(k in msg for k in ["error", "failed", "exception", "timeout", "refused"]):
+        return "error"
+    return "info"
+
+class StrixLogHandler(logging.Handler):
+    """Intercepts strix internal logs and pipes them to Redis for live streaming"""
+
+    def __init__(self, pentest_id: str, redis_channel: str):
+        super().__init__()
+        self.pentest_id = pentest_id
+        self.redis_channel = redis_channel
+
+    def emit(self, record: logging.LogRecord):
+        msg = self.format(record)
+        publish_event(self.redis_channel, "log", {
+            "scan_id": self.pentest_id,
+            "message": msg,
+            "type": _classify_log(msg),
+            "timestamp": record.created,
+        })
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Strix Prompt
@@ -32,6 +62,7 @@ PHASE 1 — STATIC ANALYSIS (read the diff)
 
 PHASE 2 — DYNAMIC VALIDATION (run it)
 Spin up the application in the sandbox using the provided repository and branch.
+- Run `npm audit` or equivalent dependency checker in the sandbox to get real CVEs, CVSS scores, and identify exact outdated packages.
 - Send actual HTTP requests to new API endpoints
 - Attempt authentication bypass on added features
 - Upload malicious files if file upload logic was changed
@@ -40,8 +71,8 @@ Spin up the application in the sandbox using the provided repository and branch.
 - If background jobs are added, test deserialization attacks (if applicable)
 
 PHASE 3 — DEPENDENCY EXPLOIT CHECK
-- If a new dependency is added, look for published exploit proofs-of-concept (PoCs).
-- Map out the dependency chain to flag transitive dependencies with critical CVEs.
+- If a new dependency is added or flagged by `npm audit`, look for published exploit proofs-of-concept (PoCs).
+- Map out the dependency chain to flag transitive dependencies with critical CVEs. Include exact CVSS scores.
 
 PHASE 4 — BUSINESS LOGIC EVALUATOR
 - Understand the intent of the PR. What is this feature trying to do?
@@ -50,14 +81,16 @@ PHASE 4 — BUSINESS LOGIC EVALUATOR
 - If it introduces admin features, check privilege escalation from standard users.
 
 PHASE 5 — REPORT
-Output your findings exactly like this. Do not hallucinate. Do not skip checking the dynamic sandbox.
+Output your findings exactly like this. Do not hallucinate. Do not skip checking the dynamic sandbox. Ensure you inject the npm audit findings with CVSS scores directly into the report.
 
 FINDING_1:
 - Severity: CRITICAL | HIGH | MEDIUM | LOW
+- CVSS Score: 0.0 - 10.0 (if applicable)
+- OWASP Category: e.g., A01:2021-Broken Access Control
 - File: path/to/file.py (Line X)
-- Vulnerability: concise description
-- Proof: curl command or python script that executes the attack
-- Fix: Exact one-line code replacement
+- Vulnerability: concise description (include CVE if known)
+- Proof: curl command, python script that executes the attack, or npm audit output snippet
+- Fix: Exact one-line code replacement or npm install command
 
 If the PR is completely clean and secure, state: PASSED, with a 1-sentence explanation.
 """
@@ -77,14 +110,15 @@ PHASE 1 — STATIC ANALYSIS
 
 PHASE 2 — DYNAMIC VALIDATION (run it)
 Spin up the application in the sandbox using the provided repository and branch.
+- Run `npm audit` or equivalent dependency checker in the sandbox to get real CVEs, CVSS scores, and identify exact outdated packages.
 - Send actual HTTP requests to API endpoints
 - Attempt authentication bypass
 - Upload malicious files
 - Fuzz any input fields
 
 PHASE 3 — DEPENDENCY EXPLOIT CHECK
-- Look for published exploit proofs-of-concept (PoCs) for any outdated dependencies.
-- Map out the dependency chain to flag transitive dependencies with critical CVEs.
+- Look for published exploit proofs-of-concept (PoCs) for any outdated dependencies flagged by `npm audit`.
+- Map out the dependency chain to flag transitive dependencies with critical CVEs. Include exact CVSS scores.
 
 PHASE 4 — BUSINESS LOGIC EVALUATOR
 - Understand the intent of the application.
@@ -92,14 +126,16 @@ PHASE 4 — BUSINESS LOGIC EVALUATOR
 - Test for price manipulation, privilege escalation, etc.
 
 PHASE 5 — REPORT
-Output your findings exactly like this. Do not hallucinate. Do not skip checking the dynamic sandbox.
+Output your findings exactly like this. Do not hallucinate. Do not skip checking the dynamic sandbox. Ensure you inject the npm audit findings with CVSS scores directly into the report.
 
 FINDING_1:
 - Severity: CRITICAL | HIGH | MEDIUM | LOW
+- CVSS Score: 0.0 - 10.0 (if applicable)
+- OWASP Category: e.g., A01:2021-Broken Access Control
 - File: path/to/file.py (Line X)
-- Vulnerability: concise description
-- Proof: curl command or python script that executes the attack
-- Fix: Exact one-line code replacement
+- Vulnerability: concise description (include CVE if known)
+- Proof: curl command, python script that executes the attack, or npm audit output snippet
+- Fix: Exact one-line code replacement or npm install command
 
 If the codebase is completely clean and secure, state: PASSED, with a 1-sentence explanation.
 """
@@ -353,7 +389,17 @@ def run_pr_review_task(
     trigger: str = "manual",
 ):
     scan_start_time = time.time()
+    redis_channel = f"pr_review:{pr_review_id}:logs"
+    
+    # Attach log interceptor to strix logger
+    log_handler = StrixLogHandler(pr_review_id, redis_channel)
+    log_handler.setLevel(logging.DEBUG)
+    strix_logger = logging.getLogger("strix")
+    strix_logger.addHandler(log_handler)
+    strix_logger.setLevel(logging.DEBUG)
+    
     try:
+        publish_event(redis_channel, "status", {"status": "running", "message": "PR Scan started"})
         log.info(f"[ZENTINEL] Task started | pr_review_id={pr_review_id} repo={repo_full_name} trigger={trigger} provider={provider}")
 
         # 0. Validate PR Number (skip if full_repo)
@@ -563,7 +609,10 @@ def run_pr_review_task(
             parsed_findings = []
             if report_content:
                 pattern = (
-                    r"FINDING_(\d+):\n- Severity:\s*(\w+)\n- File:\s*(.+?)\n"
+                    r"FINDING_(\d+):\n- Severity:\s*(\w+)\n"
+                    r"(?:- CVSS Score:[^\n]*\n)?"
+                    r"(?:- OWASP Category:[^\n]*\n)?"
+                    r"- File:\s*(.+?)\n"
                     r"- Vulnerability:\s*(.+?)\n- Proof:(.*?)\n- Fix:(.*?)(?=\nFINDING_|\n#|\Z)"
                 )
                 for m in re.finditer(pattern, report_content, re.DOTALL):
@@ -624,6 +673,11 @@ def run_pr_review_task(
         }).eq("id", pr_review_id).execute()
 
         log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed findings={len(findings)}")
+        publish_event(redis_channel, "status", {
+            "status": "completed",
+            "message": f"Scan complete — {len(findings)} finding{'s' if len(findings) != 1 else ''} discovered.",
+            "findings_count": len(findings)
+        })
 
     except SoftTimeLimitExceeded:
         log.error(f"[ZENTINEL] Scan timed out: {pr_review_id}")
@@ -632,6 +686,7 @@ def run_pr_review_task(
             "completed_at": "now()",
             "final_report": "Scan timed out after 90 minutes. Please retry."
         }).eq("id", pr_review_id).execute()
+        publish_event(redis_channel, "error", {"message": "Scan timed out after 90 minutes. Please retry."})
         return
 
     except Retry:
@@ -663,3 +718,4 @@ def run_pr_review_task(
         subprocess.run(["docker", "stop", scan_container], capture_output=True)
         subprocess.run(["docker", "rm", scan_container], capture_output=True)
         log.info(f"[ZENTINEL] Docker cleanup done for {scan_container}")
+        strix_logger.removeHandler(log_handler)

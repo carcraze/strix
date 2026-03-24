@@ -13,9 +13,11 @@ export default function DashboardLayout({
     return (
         <SecurityCheck>
             <WorkspaceProvider>
-                <div className="min-h-screen bg-[var(--background)] text-foreground">
-                    <Sidebar />
-                    <div className="pl-[280px]">
+                <div className="min-h-screen bg-background text-foreground">
+                    <div className="print:hidden">
+                        <Sidebar />
+                    </div>
+                    <div className="pl-[280px] print:pl-0">
                         {children}
                     </div>
                 </div>

@@ -61,6 +61,8 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV GITHUB_WEBHOOK_SECRET=$GITHUB_WEBHOOK_SECRET
 ENV GITLAB_WEBHOOK_SECRET=$GITLAB_WEBHOOK_SECRET
 ENV BITBUCKET_WEBHOOK_SECRET=$BITBUCKET_WEBHOOK_SECRET
+
+RUN env > .env.production
 # Build the application
 RUN npm run build
 
@@ -77,8 +79,10 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN text="mkdir" && mkdir .next && chown nextjs:nodejs .next
+
+# Copy the env file with secrets
+COPY --from=builder --chown=nextjs:nodejs /app/.env.production ./
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
