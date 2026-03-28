@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 import { plans, oneTimeScans } from "@/lib/pricingData";
+import { FAQAccordion, pricingFaqs } from "@/components/FAQAccordion";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 const competitors = [
     { name: "Traditional Pentest", price: "$5K–$30K", per: "per engagement", note: "Once a year · 2–4 week wait", us: false },
@@ -107,8 +110,8 @@ export default function PricingPage() {
 
     return (
         <div style={{ background: "#000", minHeight: "100vh", color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif", overflowX: "hidden" }}>
+            <Navbar />
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
 
         .plan-card{
@@ -416,9 +419,12 @@ export default function PricingPage() {
                     ))}
                 </div>
 
-
+                <div className="mt-20">
+                    <FAQAccordion items={pricingFaqs} title="Pricing & Pentest FAQs" />
+                </div>
 
             </div>
+            <Footer />
         </div>
     );
 }

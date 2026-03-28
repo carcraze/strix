@@ -1,0 +1,55 @@
+How does Aikido know which alerts are relevant?
+We’ve built a rule engine that takes the context of your environment into account. This allows us to easily adapt the criticality score for your environment & filter out false positives. If we’re not sure, the algorithm always reverts to the safest option...
+
+What happens to my data?
+We clone the repositories inside of temporary environments (such as docker containers unique to you). Those containers are disposed of, after analysis. The duration of the test and scans themselves take about 1-5 mins. All the clones and containers are then auto-removed after that, always, every time, for every customer.
+
+Does Aikido make changes to my codebase?
+We can’t & won’t, this is guaranteed by read-only access.
+
+I don’t want to connect my repository. Can I try it with a test account?
+Of course! When you sign up with your git, don’t give access to any repo & select the demo repo instead!
+
+How is Aikido different?
+Aikido combines features from lots of different platforms in one. By bringing together multiple tools in one platform, we’re able to contextualize vulnerabilities, filter out false positives and reduce noise by 95%.
+
+How can I trust Aikido?
+We’re doing everything we can to be fully secure & compliant. Aikido has been examined to attest that its system and the suitability of the design of controls meets the AICPA's SOC 2 Type II & ISO 27001:2022 requirements.
+
+pricigpage faq 
+Do I need to pay upfront to start a pentest?
+No. Start the pentest with “Skip payment.” When it’s done, you’ll see the results summary. High/critical issues and the full report unlock only if you decide to pay. No upfront cost. No risk to try.
+
+How does AI pentesting compare to a human pentest?
+For web applications, AI Pentesting delivers coverage comparable to a traditional human-led pentest, with results available in hours instead of weeks.
+
+In side-by-side evaluations, autonomous agents have matched and in some cases exceeded human coverage by exploring more paths consistently. Human testers remain valuable for non-web targets and highly contextual edge cases.
+
+How is scope and safety enforced?
+You define which domains can be attacked and which are only reachable. All traffic is enforced through strict guardrails, with pre-flight checks before the run and a panic button that stops all agents instantly.
+
+What kinds of vulnerabilities can AI Pentesting find?
+AI Pentesting covers everything expected from a penetration test, including injection flaws, access control issues, authentication weaknesses, and unsafe API behavior.
+
+It also detects business logic and authorization issues such as IDOR and cross-tenant access by reasoning about how the application is supposed to behave.
+
+How does Aikido prevent false positives?
+Findings are only reported after they are successfully exploited and confirmed against the live target. If an attack attempt cannot be validated, it is discarded and never shown in the results.
+
+Do I need to give access to my source code?
+No, but providing code access significantly improves results. When repositories are connected, agents understand application logic, roles, and data flows, which leads to deeper coverage and more accurate findings.
+
+What role does AutoFix play?
+Because Aikido already understands your code and environment, AutoFix generates targeted code changes for confirmed vulnerabilities. Once applied, the issue can be immediately retested to verify that it is fully resolved.
+
+Can I use it for compliance or audit reports?
+Yes. Every run produces an audit-ready penetration test report with validated findings, proof-of-exploit details, and remediation guidance, structured to meet SOC 2 and ISO 27001 requirements.
+
+How fast can I get results?
+Usually within minutes. Connect your target, define scope, and the system starts testing immediately - no coordination, no back-and-forth. Almost 100% of AI pentest find actual vulnerabilities.
+
+How is it different from a traditional pentest?
+Traditional pentests take weeks to schedule and deliver. AI Pentesting runs instantly, scales to your full environment, and gives reproducible, detailed results in minutes.
+
+What is AI Pentesting?
+AI Pentesting simulates real-world attacks on your app or API using AI models trained on thousands of real exploits. It finds and validates vulnerabilities automatically - no waiting for a human pentester to start.

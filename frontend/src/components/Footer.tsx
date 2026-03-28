@@ -1,52 +1,54 @@
+"use client";
+
 import Link from "next/link";
+import { Mail } from "lucide-react";
 
 export function Footer() {
     return (
-        <footer className="border-t border-white/5 bg-black mt-auto">
-            <div className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-                    <div className="col-span-2 md:col-span-1">
-                        <div className="flex items-center gap-2.5 mb-4">
-                            <div className="h-7 w-7 rounded-lg bg-[var(--color-cyan)] flex items-center justify-center">
-                                <span className="text-black font-black text-xs font-syne">Z</span>
-                            </div>
-                            <span className="font-syne font-black text-lg text-white">Zentinel</span>
+        <footer className="bg-[#000000] border-t border-[#161616] px-6 pt-14 pb-10">
+            <div className="max-w-6xl mx-auto">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 mb-12">
+                    <div>
+                        <div className="flex items-center gap-2 mb-3 group hover:opacity-90 transition-opacity">
+                            <img src="/logo.png" alt="Zentinel Logo" className="h-6 w-auto object-contain" />
                         </div>
-                        <p className="text-sm text-[#555] leading-relaxed">
-                            The AI pentester that finds real bugs and fixes them automatically.
-                        </p>
+                        <p className="text-[12px] text-[#888888] font-mono mb-1">Move Fast. Break Nothing.</p>
                     </div>
-
-                    <div>
-                        <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-[#444] mb-4">Product</h4>
-                        <nav className="flex flex-col gap-3">
-                            {[["Pricing", "/pricing"], ["Sample Report", "/demo"]].map(([l, h]) => (
-                                <Link key={h} href={h} className="text-sm text-[#666] hover:text-white transition-colors">{l}</Link>
-                            ))}
-                        </nav>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-16 gap-y-4">
+                        {[
+                            { label: "Platform",  href: "/platform" },
+                            { label: "Pricing",   href: "/pricing" },
+                            { label: "Get a Demo",href: "https://cal.com/alvin-zentinel/15min", external: true },
+                            { label: "Sign In",   href: "/sign-in" },
+                            { label: "Get Started", href: "/sign-up" },
+                        ].map((link) => (
+                            <Link 
+                                key={link.label} 
+                                href={link.href} 
+                                {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                                className="text-[13px] text-[#888888] hover:text-white transition-colors duration-300"
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
                     </div>
-
-                    <div>
-                        <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-[#444] mb-4">Legal</h4>
-                        <nav className="flex flex-col gap-3">
-                            {[["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"]].map(([l, h]) => (
-                                <Link key={h} href={h} className="text-sm text-[#666] hover:text-white transition-colors">{l}</Link>
-                            ))}
-                        </nav>
-                    </div>
-
-                    <div>
-                        <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-[#444] mb-4">Account</h4>
-                        <nav className="flex flex-col gap-3">
-                            {[["Sign In", "/sign-in"], ["Sign Up", "/sign-up"]].map(([l, h]) => (
-                                <Link key={h} href={h} className="text-sm text-[#666] hover:text-white transition-colors">{l}</Link>
-                            ))}
-                        </nav>
+                    <div className="flex flex-col gap-2 text-[13px] text-[#888888]">
+                        <p className="font-semibold text-white text-[13px] mb-1">Get in touch</p>
+                        <a href="mailto:hi@zentinel.dev" className="flex items-center gap-2 hover:text-white transition-colors duration-300">
+                            <Mail className="h-4 w-4" /> hi@zentinel.dev
+                        </a>
                     </div>
                 </div>
-
-                <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-[#333]">© {new Date().getFullYear()} Zentinel. All rights reserved.</p>
+                <div className="border-t border-[#161616] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                        <p className="text-[11px] text-[#888888] font-mono">© 2026 Zentinel Inc. All rights reserved.</p>
+                        <Link href="/terms"   className="text-[11px] text-[#888888] hover:text-white transition-colors">Terms</Link>
+                        <Link href="/privacy" className="text-[11px] text-[#888888] hover:text-white transition-colors">Privacy</Link>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-[#888888] bg-[#070707] px-3 py-1.5 rounded-md border border-[#161616]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
+                        All systems operational
+                    </div>
                 </div>
             </div>
         </footer>

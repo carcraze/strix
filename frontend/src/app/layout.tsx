@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Syne, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import AuthListener from "@/components/AuthListener";
 import Script from "next/script";
 import { CSPostHogProvider } from "@/components/PostHogProvider";
 
-const syne = Syne({
-    variable: "--font-syne",
+const dmSans = DM_Sans({
+    variable: "--font-dm-sans",
     subsets: ["latin"],
-    weight: ["800"],
+    weight: ["400", "500", "600", "700"],
 });
 
-const jetBrainsMono = JetBrains_Mono({
-    variable: "--font-jetbrains-mono",
+const dmMono = DM_Mono({
+    variable: "--font-dm-mono",
     subsets: ["latin"],
-    weight: ["400", "600"],
+    weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body
-                className={`${syne.variable} ${jetBrainsMono.variable} antialiased bg-background text-foreground font-body`}
+                className={`${dmSans.variable} ${dmMono.variable} antialiased bg-background text-foreground font-body`}
             >
                 <ThemeProvider
                     attribute="class"
