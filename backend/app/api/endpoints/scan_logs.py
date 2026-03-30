@@ -1,21 +1,31 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services.redis_service import subscribe_to_channel
 from app.services.supabase import supabase_admin
-from app.core.security import get_current_user
+from app.core.security import get_current_user, validate_uuid, verify_organization_access
 import json
 
 router = APIRouter(prefix="/api/scans", tags=["scans-logs"])
 
 @router.get("/{pentest_id}/logs")
 async def stream_scan_logs(pentest_id: str, user=Depends(get_current_user)):
+    # 🔐 SECURITY: Validate UUID format to prevent SQL injection
+    validate_uuid(pentest_id, "pentest_id")
+
     # Auth check — user must belong to org that owns this pentest
     pentest = supabase_admin.table("pentests") \
         .select("organization_id, status") \
         .eq("id", pentest_id).single().execute().data
 
     if not pentest:
-        return {"error": "Not found"}
+        raise HTTPException(404, "Pentest not found")
+
+    # 🔐 SECURITY: Verify user belongs to this organization
+    user_id = user.get("sub")
+    org_id = pentest["organization_id"]
+
+    if not verify_organization_access(user_id, org_id):
+        raise HTTPException(403, "Access denied: You don't have permission to view this scan")
 
     # If scan already completed, return stored logs from DB instead of Redis
     if pentest["status"] in ("completed", "failed"):

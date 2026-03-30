@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.scan_types import ScanType, SCAN_CONFIGS, PLAN_SCAN_PERMISSIONS
 from app.services.supabase import supabase_admin
 from app.workers.tasks import run_pentest_task
-from app.core.security import get_current_user
+from app.core.security import get_current_user, validate_uuid, verify_organization_access
 
 router = APIRouter(prefix="/api/scans", tags=["scans"])
+limiter = Limiter(key_func=get_remote_address)
 
 class ScanRequest(BaseModel):
     organization_id: str
@@ -28,11 +31,20 @@ class ScanRequest(BaseModel):
     custom_headers: Optional[list[dict]] = None # [{"name": "Authorization", "value": "Bearer ..."}]
 
 @router.post("/launch")
-async def launch_scan(payload: ScanRequest, user=Depends(get_current_user)):
+@limiter.limit("5/minute")  # 🔐 SECURITY: Prevent credit drain via automated attacks
+async def launch_scan(request: Request, payload: ScanRequest, user=Depends(get_current_user)):
     org_id = payload.organization_id
     scan_type = payload.scan_type
     config = SCAN_CONFIGS[scan_type]
     credit_type = scan_type.value  # "quick" | "web_api" | "full_stack" | "compliance"
+
+    # 🔐 SECURITY: Validate UUID format to prevent SQL injection
+    validate_uuid(org_id, "organization_id")
+
+    # 🔐 SECURITY: Verify user belongs to this organization
+    user_id = user.get("sub")
+    if not verify_organization_access(user_id, org_id):
+        raise HTTPException(403, "Access denied: You don't belong to this organization")
 
     # ── GATE 1: FETCH ORG ────────────────────────────────────────
     org = supabase_admin.table("organizations") \

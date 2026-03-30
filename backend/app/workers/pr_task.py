@@ -713,9 +713,17 @@ def run_pr_review_task(
     finally:
         # Always clean up the Strix sandbox container for this scan
         import subprocess
-        scan_container = f"strix-scan-pr_{pr_review_id}"
-        log.info(f"[ZENTINEL] Cleaning up Docker container: {scan_container}")
-        subprocess.run(["docker", "stop", scan_container], capture_output=True)
-        subprocess.run(["docker", "rm", scan_container], capture_output=True)
-        log.info(f"[ZENTINEL] Docker cleanup done for {scan_container}")
+        import re
+
+        # 🔐 SECURITY: Validate pr_review_id is UUID format before using in shell command
+        # Prevents command injection even though UUID4s are safe by design
+        if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', pr_review_id):
+            log.error(f"[ZENTINEL] Invalid pr_review_id format, skipping Docker cleanup: {pr_review_id}")
+        else:
+            scan_container = f"strix-scan-pr_{pr_review_id}"
+            log.info(f"[ZENTINEL] Cleaning up Docker container: {scan_container}")
+            subprocess.run(["docker", "stop", scan_container], capture_output=True)
+            subprocess.run(["docker", "rm", scan_container], capture_output=True)
+            log.info(f"[ZENTINEL] Docker cleanup done for {scan_container}")
+
         strix_logger.removeHandler(log_handler)

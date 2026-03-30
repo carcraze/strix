@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import json
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.workers.pr_task import run_pr_review_task
 from app.services.redis_service import subscribe_to_channel
 from app.services.supabase import supabase_admin
-from app.core.security import get_current_user
+from app.core.security import get_current_user, validate_uuid, verify_organization_access
 
 router = APIRouter(prefix="/api/pr-reviews", tags=["pr-reviews"])
+limiter = Limiter(key_func=get_remote_address)
 
 class PRReviewLaunchRequest(BaseModel):
     organization_id: str
@@ -27,7 +30,8 @@ class PRReviewLaunchRequest(BaseModel):
     trigger: Optional[str] = "manual"
 
 @router.post("/launch")
-async def launch_pr_review(payload: PRReviewLaunchRequest):
+@limiter.limit("10/minute")  # 🔐 SECURITY: Prevent webhook spam
+async def launch_pr_review(request: Request, payload: PRReviewLaunchRequest):
     run_pr_review_task.delay(
         org_id=payload.organization_id,
         repo_id=payload.repository_id,
@@ -46,16 +50,24 @@ async def launch_pr_review(payload: PRReviewLaunchRequest):
     return {"status": "enqueued", "pr_review_id": payload.pr_review_id}
 
 @router.get("/{pr_review_id}/logs")
-async def stream_pr_review_logs(pr_review_id: str):
-    # Skip strict auth for PR logs by default because it's typically a webhook triggering it
-    # But you could enforce get_current_user if the dashboard is viewing it.
-    # We will just verify the PR exists.
+async def stream_pr_review_logs(pr_review_id: str, user=Depends(get_current_user)):
+    # 🔐 SECURITY: Validate UUID format to prevent SQL injection
+    validate_uuid(pr_review_id, "pr_review_id")
+
+    # Fetch PR review with organization context
     pr = supabase_admin.table("pr_reviews") \
-        .select("id, status") \
+        .select("id, status, organization_id") \
         .eq("id", pr_review_id).single().execute()
 
     if not pr.data:
-        return {"error": "Not found"}
+        raise HTTPException(404, "PR review not found")
+
+    # 🔐 SECURITY: Verify user belongs to this organization
+    user_id = user.get("sub")
+    org_id = pr.data["organization_id"]
+
+    if not verify_organization_access(user_id, org_id):
+        raise HTTPException(403, "Access denied: You don't have permission to view this PR review")
 
     channel = f"pr_review:{pr_review_id}:logs"
 

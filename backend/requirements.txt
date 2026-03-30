@@ -8,6 +8,8 @@ google-cloud-aiplatform
 pydantic-settings
 supabase
 pyjwt
+cryptography
+slowapi
 opentelemetry-exporter-otlp-proto-http
 traceloop-sdk
 scrubadub[crypto]
