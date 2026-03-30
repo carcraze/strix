@@ -713,9 +713,12 @@ def run_pr_review_task(
     finally:
         # Always clean up the Strix sandbox container for this scan
         import subprocess
-        import re
 
         # 🔐 SECURITY: Validate pr_review_id is UUID format before using in shell command
+        # Note: `re` is already imported at the top of the file. Do NOT re-import it here —
+        # a local `import re` inside a finally block causes Python to treat `re` as a local
+        # variable for the ENTIRE function scope, making `re.finditer()` on line 618 raise
+        # UnboundLocalError even though the top-level import is present.
         # Prevents command injection even though UUID4s are safe by design
         if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', pr_review_id):
             log.error(f"[ZENTINEL] Invalid pr_review_id format, skipping Docker cleanup: {pr_review_id}")
