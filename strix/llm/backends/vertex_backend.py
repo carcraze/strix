@@ -237,8 +237,9 @@ async def vertex_stream(
 
     # ── Build GenerateContentConfig ───────────────────────────────────────────
     config_kwargs: dict[str, Any] = {
-        "temperature": 0.1,
-        "max_output_tokens": 8192,
+        "temperature": 0.0,   # Deterministic output — reduces result variance across runs.
+        "max_output_tokens": 16384,  # Larger budget reduces mid-analysis cutoffs.
+        "seed": 42,           # Fixed seed for reproducible sampling (best-effort).
     }
 
     if system_instruction:

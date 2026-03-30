@@ -628,16 +628,31 @@ def run_pr_review_task(
             # Use parsed findings if we got them, else fall back to tracer
             save_findings = parsed_findings if parsed_findings else findings
             log.info(f"[ZENTINEL] Saving {len(save_findings)} findings to issues table | repo_id={repo_id}")
+
+            # Fetch existing issue titles for this repo to avoid duplicates across re-runs.
+            # The AI may find 6 issues one run, 3 the next — without this check every run
+            # would pile up duplicate rows in the DB for the same vulnerability.
+            existing_resp = supabase_admin.table("issues").select("title").eq("repository_id", repo_id).execute()
+            existing_titles = {row["title"].lower().strip() for row in (existing_resp.data or [])}
+            log.info(f"[ZENTINEL] {len(existing_titles)} existing issues in DB for this repo (dedup check)")
+
+            inserted = 0
             for idx, fw in enumerate(save_findings):
+                title = fw.get("title", f"Vulnerability {idx+1}")[:255]
+                # Skip if a finding with the same title already exists for this repo.
+                # Prevents duplicate rows when the same codebase is scanned multiple times.
+                if title.lower().strip() in existing_titles:
+                    log.info(f"[ZENTINEL] Skipping duplicate finding: {title}")
+                    continue
+
                 # Column mapping matches actual `issues` table schema:
-                #   file_path/endpoint     → not a column; stored in poc_request as context
-                #   remediation_steps      → fix_description
-                #   poc_script_code        → poc_response
-                #   poc_description        → poc_request
+                #   remediation_steps → fix_description
+                #   poc_description   → poc_request
+                #   poc_script_code   → poc_response
                 issue_data = {
                     "organization_id": org_id,
                     "repository_id": repo_id,
-                    "title": fw.get("title", f"Vulnerability {idx+1}")[:255],
+                    "title": title,
                     "severity": fw.get("severity", "medium").lower(),
                     "status": "open",
                     "description": fw.get("description", fw.get("title", "")),
@@ -646,6 +661,10 @@ def run_pr_review_task(
                     "poc_response": fw.get("poc_script_code", ""),
                 }
                 supabase_admin.table("issues").insert(issue_data).execute()
+                existing_titles.add(title.lower().strip())  # Guard within this run too
+                inserted += 1
+
+            log.info(f"[ZENTINEL] Inserted {inserted} new findings (skipped {len(save_findings) - inserted} duplicates)")
 
             # Recount from parsed findings if they exist
             if parsed_findings:
