@@ -374,12 +374,12 @@ export default function IssuesPage() {
                                     {paginatedIssues.map((issue) => {
                                         const conf = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.info;
 
-                                        // Target display logic
+                                        // Target display logic — repositories use full_name or name
                                         let targetName = 'Unknown Target';
-                                        if (issue.repository_id && issue.repositories?.name) {
-                                            targetName = `Repo: ${issue.repositories.name}`;
+                                        if (issue.repository_id && issue.repositories) {
+                                            targetName = issue.repositories.full_name || issue.repositories.name || 'Repo';
                                         } else if (issue.domain_id && issue.domains?.domain) {
-                                            targetName = `Domain: ${issue.domains.domain}`;
+                                            targetName = issue.domains.domain;
                                         } else if (issue.pentests?.name) {
                                             targetName = issue.pentests.name;
                                         }
@@ -403,7 +403,7 @@ export default function IssuesPage() {
                                                     {targetName}
                                                 </td>
                                                 <td className="px-6 py-4 text-[var(--color-textSecondary)] text-xs whitespace-nowrap">
-                                                    {new Date(issue.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                                    {new Date(issue.found_at || issue.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                                 </td>
                                             </tr>
                                         );
