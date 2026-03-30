@@ -19,8 +19,24 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Zentinel | The AI Pentester for Solo Founders",
-    description: "Automated pentesting that validates bugs with real PoCs. No false positives, just fixes.",
+    title: "Zentinel | The AI Pentester for High-Growth Startups",
+    description: "Automated offensive security that finds, proves, and fixes vulnerabilities with zero false positives. Secure your code, APIs, and cloud in minutes.",
+    keywords: ["AI Pentesting", "Offensive Security", "Vulnerability Scanning", "SOC 2 Compliance", "AutoFix", "Zentinel"],
+    openGraph: {
+        title: "Zentinel | The AI Pentester for High-Growth Startups",
+        description: "Automated offensive security with zero false positives.",
+        url: "https://zentinel.dev",
+        siteName: "Zentinel",
+        images: [
+            {
+                url: "/logo.png",
+                width: 1200,
+                height: 630,
+            },
+        ],
+        locale: "en_US",
+        type: "website",
+    },
 };
 
 export default function RootLayout({
@@ -30,6 +46,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
+            <head>
+                <link rel="llms-txt" href="/llms.txt" />
+            </head>
             <body
                 className={`${dmSans.variable} ${dmMono.variable} antialiased bg-background text-foreground font-body`}
             >

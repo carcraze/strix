@@ -12,60 +12,67 @@ export function Navbar() {
     const links = [
         { href: "/platform", label: "Platform" },
         { href: "/pricing", label: "Pricing" },
+        { href: "/demo", label: "Get a Demo" },
     ];
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center group hover:opacity-90 transition-opacity">
-                    <img src="/logo.png" alt="Zentinel Logo" className="h-7 w-auto object-contain" />
-                </Link>
-
-                {/* Desktop Nav */}
-                <nav className="hidden md:flex items-center gap-1">
-                    {links.map(l => (
-                        <Link key={l.href} href={l.href}
-                            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${pathname === l.href ? "text-white bg-white/5" : "text-[#888888] hover:text-white hover:bg-white/5"}`}>
-                            {l.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                {/* CTA */}
-                <div className="hidden md:flex items-center gap-4">
-                    <Link href="/sign-in" className="text-[13px] text-[#888888] hover:text-white transition-colors">
-                        Sign in
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 pointer-events-none">
+            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between pointer-events-auto">
+                {/* Left: Logo + Desktop Links */}
+                <div className="flex items-center gap-8">
+                    <Link href="/" className="flex items-center gap-3 group">
+                        <div className="relative w-8 h-8 flex items-center justify-center group-hover:scale-105 transition-all drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_20px_rgba(0,229,255,0.4)]">
+                            <img src="/logo.png" alt="Zentinel" className="w-full h-full object-contain" />
+                        </div>
+                        <span className="text-sm font-black tracking-[0.2em] text-white uppercase group-hover:text-primary transition-colors">
+                            Zentinel
+                        </span>
                     </Link>
-                    <Link href="/sign-up"
-                        className="bg-[#00E5FF] text-black text-[13px] font-bold px-5 py-2 rounded-lg hover:bg-[#2eeeff] transition-colors">
-                        Get Started
-                    </Link>
+
+                    <nav className="hidden lg:flex items-center gap-6">
+                        {links.map(l => (
+                            <Link key={l.href} href={l.href}
+                                className={`text-[13px] font-medium transition-colors ${pathname === l.href ? "text-white" : "text-[#94a3b8] hover:text-white"}`}>
+                                {l.label}
+                            </Link>
+                        ))}
+                    </nav>
                 </div>
 
-                {/* Mobile toggle */}
-                <button className="md:hidden text-[#888888] hover:text-white" onClick={() => setMobileOpen(v => !v)}>
-                    {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
+                {/* Right: Sign In + Get Started */}
+                <div className="flex items-center gap-6">
+                    <Link href="/sign-in" className="hidden sm:block text-[13px] font-bold text-muted-foreground hover:text-white transition-colors uppercase tracking-widest">
+                        Sign In
+                    </Link>
+                    <Link href="/sign-up"
+                        className="bg-primary text-black text-[11px] font-black px-6 py-2.5 rounded-full hover:bg-primary-dim transition-all shadow-[0_0_30px_rgba(0,229,255,0.2)] hover:scale-[1.05] uppercase tracking-widest">
+                        Get started
+                    </Link>
+
+                    {/* Mobile toggle */}
+                    <button className="lg:hidden text-[#94a3b8] hover:text-white" onClick={() => setMobileOpen(v => !v)}>
+                        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </button>
+                </div>
             </div>
 
             {/* Mobile menu */}
             {mobileOpen && (
-                <div className="md:hidden border-t border-[#161616] bg-[#000000] px-4 py-4 space-y-2">
+                <div className="absolute top-[65px] left-0 right-0 border-b border-white/5 bg-[#020617]/95 backdrop-blur-2xl p-6 flex flex-col gap-4 lg:hidden pointer-events-auto shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
                     {links.map(l => (
                         <Link key={l.href} href={l.href} onClick={() => setMobileOpen(false)}
-                            className="block px-4 py-2.5 rounded-lg text-sm text-[#888888] hover:text-white hover:bg-[#0c0c0c] transition-colors">
+                            className="text-lg font-medium text-[#94a3b8] hover:text-white py-2">
                             {l.label}
                         </Link>
                     ))}
-                    <div className="pt-2 flex flex-col gap-2">
+                    <div className="pt-4 flex flex-col gap-3 border-t border-white/10">
                         <Link href="/sign-in" onClick={() => setMobileOpen(false)}
-                            className="block text-center px-4 py-2.5 rounded-lg text-sm text-[#888888] hover:text-white hover:bg-[#0c0c0c] border border-[#161616]">
-                            Sign in
+                            className="text-[#94a3b8] font-medium py-2">
+                            Sign In
                         </Link>
                         <Link href="/sign-up" onClick={() => setMobileOpen(false)}
-                            className="block text-center bg-[#00E5FF] text-black text-sm font-bold px-4 py-2.5 rounded-lg transition-colors hover:bg-[#2eeeff]">
-                            Get Started
+                            className="bg-[#6366f1] text-white text-center font-bold px-4 py-3 rounded-xl hover:bg-[#4f46e5]">
+                            Get started
                         </Link>
                     </div>
                 </div>

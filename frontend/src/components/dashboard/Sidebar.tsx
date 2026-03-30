@@ -29,7 +29,7 @@ const navItems = [
     { icon: GitBranch, label: "Integrations", href: "/dashboard/integrations" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (v: boolean) => void }) {
     const pathname = usePathname();
     const router = useRouter();
     const { activeWorkspace } = useWorkspace();
@@ -74,7 +74,10 @@ export function Sidebar() {
     };
 
     return (
-        <aside className="fixed left-0 top-0 z-40 h-screen w-[240px] border-r border-[var(--color-border)] bg-[var(--background)] flex flex-col py-6 overflow-visible">
+        <aside className={cn(
+            "fixed left-0 top-0 z-50 h-[100dvh] w-[240px] border-r border-[var(--color-border)] bg-[var(--background)] flex flex-col py-6 transition-transform duration-300 ease-in-out",
+            isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}>
 
             <WorkspaceSwitcher />
 
@@ -98,6 +101,7 @@ export function Sidebar() {
                         <div className="px-3 text-[10px] font-mono text-[var(--color-textMuted)] font-medium mb-1 tracking-wider uppercase">General</div>
                         <Link
                             href="/dashboard/settings/general"
+                            onClick={() => setIsOpen?.(false)}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm",
                                 pathname === "/dashboard/settings/general"
@@ -109,6 +113,7 @@ export function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/settings/members"
+                            onClick={() => setIsOpen?.(false)}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm",
                                 pathname === "/dashboard/settings/members"
@@ -121,6 +126,7 @@ export function Sidebar() {
                         {canSeeBilling && (
                             <Link
                                 href="/dashboard/settings/billing"
+                                onClick={() => setIsOpen?.(false)}
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm",
                                     pathname === "/dashboard/settings/billing"
@@ -133,6 +139,7 @@ export function Sidebar() {
                         )}
                         <Link
                             href="/dashboard/settings/notifications"
+                            onClick={() => setIsOpen?.(false)}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm",
                                 pathname === "/dashboard/settings/notifications"
@@ -145,6 +152,7 @@ export function Sidebar() {
                         {((activeWorkspace?.plan === "scale" || activeWorkspace?.plan === "enterprise") && ["owner", "admin"].includes(userRole)) && (
                             <Link
                                 href="/dashboard/settings/sso"
+                                onClick={() => setIsOpen?.(false)}
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm",
                                     pathname === "/dashboard/settings/sso"
@@ -167,6 +175,7 @@ export function Sidebar() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    onClick={() => setIsOpen?.(false)}
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors font-medium text-sm group",
                                         isActive
@@ -186,6 +195,7 @@ export function Sidebar() {
 
                         <Link
                             href="/dashboard/settings/general"
+                            onClick={() => setIsOpen?.(false)}
                             className={cn(
                                 "flex items-center justify-between px-3 py-2 rounded-lg transition-colors font-medium text-sm group",
                                 isSettingsActive

@@ -126,6 +126,35 @@
   .animate-marquee {
     animation: marquee 20s linear infinite;
   }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+  }
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
+  }
+  .indigo-glow {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.15);
+  }
+  .text-glow {
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+  .bg-grid-pattern {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-glow {
+    background: radial-gradient(circle at center, rgba(0, 229, 255, 0.15) 0%, transparent 70%);
+  }
+  .chip-replaces {
+    @apply px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] text-muted-foreground font-mono uppercase tracking-wider;
+  }
 }
 
 @keyframes marquee {

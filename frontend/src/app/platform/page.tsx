@@ -12,7 +12,7 @@ const modules = [
     {
         num: "01",
         tag: "AI Pentest",
-        accent: "#c180ff",
+        accent: "#00E5FF",
         icon: Zap,
         title: "Autonomous AI Pentesting",
         tagline: "The future of pentesting. Delivered in hours, not months.",
@@ -29,7 +29,7 @@ const modules = [
     {
         num: "02",
         tag: "SAST",
-        accent: "#a3a6ff",
+        accent: "#00FF88",
         icon: Code,
         title: "Static Code Analysis (SAST)",
         tagline: "Fix vulnerabilities before they ever merge.",
@@ -46,7 +46,7 @@ const modules = [
     {
         num: "03",
         tag: "DAST & APIs",
-        accent: "#34b5fa",
+        accent: "#00E5FF",
         icon: Globe,
         title: "DAST & API Security",
         tagline: "Find what code review can't see.",
@@ -63,7 +63,7 @@ const modules = [
     {
         num: "04",
         tag: "SCA",
-        accent: "#a3a6ff",
+        accent: "#c180ff",
         icon: Package,
         title: "Software Composition Analysis (SCA)",
         tagline: "Know every risk in every dependency.",
@@ -97,7 +97,7 @@ const modules = [
     {
         num: "06",
         tag: "IaC",
-        accent: "#34b5fa",
+        accent: "#FFD60A",
         icon: FileCode2,
         title: "Infrastructure as Code (IaC) Scanning",
         tagline: "Catch misconfigs before they reach your cloud.",
@@ -114,7 +114,7 @@ const modules = [
     {
         num: "07",
         tag: "CSPM",
-        accent: "#a3a6ff",
+        accent: "#00E5FF",
         icon: Cloud,
         title: "Cloud Posture Management (CSPM)",
         tagline: "Your cloud attack surface — fully visible.",
@@ -224,11 +224,11 @@ export default function PlatformPage() {
                             Trusted by 50+ startups · 500+ scans completed · Results in under 6 minutes
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link href="/sign-up" className="inline-flex items-center gap-2 bg-[#00E5FF] hover:bg-[#2eeeff] text-black font-bold px-9 py-4 rounded-full text-[15px] transition-all shadow-[0_0_30px_rgba(96,99,238,0.4)]">
-                                Start for Free <span className="text-white/50 text-[12px] font-normal">No CC required</span>
+                            <Link href="/sign-up" className="inline-flex items-center gap-2 bg-[#00E5FF] hover:bg-[#2eeeff] text-black font-black px-12 py-5 rounded-full text-[16px] transition-all  shadow-[0_0_40px_rgba(0,229,255,0.2)]">
+                                Start Your Free Pentest
                             </Link>
                             <Link href={DEMO_URL} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-[#2a2a2a] text-white font-semibold px-9 py-4 rounded-full text-[15px] transition-all">
+                                className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-12 py-5 rounded-full text-[16px] transition-all">
                                 Book a Demo
                             </Link>
                         </div>

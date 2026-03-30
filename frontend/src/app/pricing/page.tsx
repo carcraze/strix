@@ -17,16 +17,6 @@ const competitors = [
     { name: "Our Growth Plan", price: "$399", per: "per month", note: "Unlimited scans · 5 domains · 15 repos", us: true },
 ];
 
-const faqs = [
-    { q: "What counts as a scan?", a: "One scan = one pentest run. A quick blackbox domain check or a full whitebox code + API + domain scan both count as one scan. Growth and Scale have unlimited scans so you never hit a wall mid-month." },
-    { q: "Growth says unlimited — is there really no cap?", a: "Truly unlimited. Growth and Scale have no monthly scan limit. We can do this because our scanning infrastructure runs on Google Cloud and is built for cost efficiency. Starter has 3 scans/month to keep the entry price accessible." },
-    { q: "What's the difference between Starter's 3 scans and a one-time scan?", a: "Starter gives you 3 scans every month plus the full dashboard — issue tracking, PR reviews, integrations, history. One-time scans are for founders who want a single report without a monthly commitment. Just results, no dashboard." },
-    { q: "How are scans powered?", a: "Autonomous AI agents backed by Google Gemini, running on our cloud. Each scan spins up an isolated container, agents actively probe your targets like a real hacker, validate every finding with a proof-of-concept, then the container is destroyed. No code or data is retained." },
-    { q: "Can I self-host Zentinel?", a: "No — Zentinel is fully managed. Enterprise customers get dedicated isolated scan infrastructure on our cloud for compliance requirements, but you never manage any infrastructure yourself." },
-    { q: "What compliance frameworks are covered?", a: "Growth includes SOC2 and ISO27001. Scale adds HIPAA and PCI DSS. Enterprise supports custom frameworks. All reports are audit-ready PDFs." },
-    { q: "Do I need to verify domain ownership before scanning?", a: "Yes, always. DNS TXT record, file upload, or meta tag — your choice. This protects you and prevents unauthorized scanning of domains you don't own." },
-];
-
 // ─────────────────────────────────────────────
 // ANIMATED PRICE COMPONENT
 // ─────────────────────────────────────────────
@@ -41,60 +31,24 @@ export function AnimatedPrice({ was, now, annual, prefix = "$", suffix = "/mo" }
     }, [annual]);
 
     return (
-        <div ref={ref} style={{ position: "relative" }}>
+        <div ref={ref} className="relative">
             {/* WAS price — strikethrough, fades out */}
-            <div style={{
-                fontSize: 14,
-                fontFamily: "'DM Mono', monospace",
-                color: "#3a3a3a",
-                marginBottom: 4,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                opacity: annual ? 1 : 0,
-                transform: annual ? "translateY(0)" : "translateY(-4px)",
-                transition: "all 0.35s cubic-bezier(.4,0,.2,1)",
-                height: annual ? 20 : 0,
-                overflow: "hidden",
-            }}>
-                <span style={{ position: "relative", display: "inline-block" }}>
-                    <span style={{ color: "#2a2a2a" }}>{prefix}{was}</span>
-                    {/* red strikethrough line */}
-                    <span style={{
-                        position: "absolute",
-                        left: 0, right: 0,
-                        top: "50%",
-                        height: 1.5,
-                        background: "#ef4444",
-                        transform: "translateY(-50%) scaleX(1)",
-                        transformOrigin: "left",
-                    }} />
+            <div className={`text-sm font-mono text-[#3a3a3a] mb-1 flex items-center gap-1.5 transition-all duration-300 ${annual ? "opacity-100 translate-y-0 h-5" : "opacity-0 -translate-y-1 h-0 overflow-hidden"}`}>
+                <span className="relative">
+                    <span className="text-[#2a2a2a]">{prefix}{was}</span>
+                    <span className="absolute left-0 right-0 top-1/2 h-px bg-[#ef4444] -translate-y-1/2" />
                 </span>
-                <span style={{
-                    background: "#00FF880d",
-                    border: "1px solid #00FF8820",
-                    color: "#00FF88",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "1px 7px",
-                    borderRadius: 100,
-                    letterSpacing: ".06em",
-                }}>20% OFF</span>
+                <span className="bg-[#00FF88]/10 border border-[#00FF88]/20 text-[#00FF88] text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide">
+                    20% OFF
+                </span>
             </div>
 
             {/* NOW price — big number */}
-            <div style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: 0,
-                opacity: visible ? 1 : 0,
-                transform: visible ? "translateY(0)" : "translateY(6px)",
-                transition: "opacity 0.3s ease, transform 0.3s ease",
-            }}>
-                <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1 }}>
+            <div className={`flex items-baseline gap-1 transition-all duration-300 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1.5"}`}>
+                <span className="text-4xl font-bold tracking-tight text-white">
                     {prefix}{now}
                 </span>
-                <span style={{ fontSize: 13, color: "#2e2e2e", fontFamily: "'DM Mono', monospace", paddingBottom: 6, paddingLeft: 4 }}>
+                <span className="text-xs text-[#555] font-mono">
                     {suffix}
                 </span>
             </div>
@@ -102,266 +56,122 @@ export function AnimatedPrice({ was, now, annual, prefix = "$", suffix = "/mo" }
     );
 }
 
-// ─────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────
 export default function PricingPage() {
     const [annual, setAnnual] = useState(false);
 
     return (
-        <div style={{ background: "#000", minHeight: "100vh", color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif", overflowX: "hidden" }}>
+        <div className="min-h-screen bg-[#000000] text-[#ffffff] antialiased selection:bg-[#00E5FF]/30 font-display">
             <Navbar />
-            <style>{`
-        *{box-sizing:border-box;margin:0;padding:0}
 
-        .plan-card{
-          background:#070707;border:1px solid #161616;border-radius:16px;
-          padding:28px;display:flex;flex-direction:column;position:relative;
-          transition:border-color 0.2s,transform 0.2s;
-        }
-        .plan-card:hover{border-color:#2a2a2a;transform:translateY(-3px)}
-        .plan-card.hl{border-color:#00E5FF2a;background:#030b0d}
-        .plan-card.hl:hover{border-color:#00E5FF55;transform:translateY(-3px)}
-
-        .plan-badge{
-          position:absolute;top:-11px;left:50%;transform:translateX(-50%);
-          background:#00E5FF;color:#000;font-size:10px;font-weight:700;
-          letter-spacing:.1em;text-transform:uppercase;
-          padding:3px 14px;border-radius:100px;white-space:nowrap;
-        }
-
-        .stat-chip{
-          background:#0c0c0c;border:1px solid #161616;border-radius:8px;
-          padding:8px 10px;font-size:11px;font-family:'DM Mono',monospace;color:#888;
-        }
-        .stat-chip .lbl{font-size:10px;color:#333;display:block;margin-bottom:2px}
-
-        .feat{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#bbb;line-height:1.45}
-        .feat .ck{color:#00FF88;font-size:11px;margin-top:2px;flex-shrink:0;font-weight:700}
-        .feat .lk{color:#222;font-size:11px;margin-top:2px;flex-shrink:0}
-        .feat.dim{color:#252525}
-
-        .btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.15s;margin-top:auto}
-        .btn:disabled{opacity:0.6;cursor:not-allowed}
-        .btn-cyan{background:#00E5FF;color:#000;border:none}
-        .btn-cyan:hover{background:#2eeeff}
-        .btn-ghost{background:transparent;color:#666;border:1px solid #1e1e1e}
-        .btn-ghost:hover{border-color:#333;color:#fff}
-
-        .scan-card{background:#070707;border:1px solid #161616;border-radius:12px;padding:22px;position:relative;transition:all 0.2s;display:flex;flex-direction:column}
-        .scan-card:hover{border-color:#2a2a2a;transform:translateY(-3px)}
-        .scan-card.pop{border-color:#00FF8826}
-        .scan-pop{position:absolute;top:-10px;left:16px;background:#00FF88;color:#000;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:100px}
-
-        .comp-row{display:grid;grid-template-columns:1.3fr 90px 120px 1fr;gap:12px;align-items:center;padding:14px 18px;font-size:13px;border-bottom:1px solid #0d0d0d}
-        .comp-row.us{background:#030b0d;border:1px solid #00E5FF18;border-radius:10px;margin:3px 0}
-        .comp-row.us{border-bottom:1px solid #00E5FF18}
-
-        .faq-row{padding:20px 0;border-bottom:1px solid #0d0d0d}
-
-        .toggle-pill{display:inline-flex;background:#0d0d0d;border:1px solid #191919;border-radius:100px;padding:3px;gap:2px}
-        .tgl{padding:7px 18px;border-radius:100px;border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all 0.15s}
-        .tgl.on{background:#fff;color:#000}
-        .tgl.off{background:transparent;color:#555}
-        .tgl.off:hover{color:#888}
-
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        .fade-up{animation:fadeUp 0.5s ease forwards}
-
-        @media(max-width:960px){.plans-grid{grid-template-columns:1fr 1fr!important}}
-        @media(max-width:640px){.plans-grid,.scans-grid{grid-template-columns:1fr!important}.comp-row{grid-template-columns:1fr 1fr!important;font-size:12px}}
-      `}</style>
-
-            <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 32px" }}>
-
-                {/* ── HERO ── */}
-                <div style={{ textAlign: "center", padding: "72px 0 64px" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#00E5FF0c", border: "1px solid #00E5FF18", borderRadius: 100, padding: "5px 14px", fontSize: 11, color: "#00E5FF", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 24 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E5FF", display: "inline-block" }} />
-                        Transparent pricing
-                    </div>
-                    <h1 style={{ fontSize: "clamp(34px,5vw,58px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.06, marginBottom: 16 }}>
-                        Security scanning at<br />
-                        <span style={{ color: "#00E5FF" }}>half the competition's price</span>
-                    </h1>
-                    <p style={{ fontSize: 17, color: "#444", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.65 }}>
-                        Continuous security with validated PoCs, zero false positives, and auto-fix PRs. Choose the plan that works for you.
-                    </p>
-
-                    {/* Toggle */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-                        <div className="toggle-pill">
-                            <button className={`tgl ${!annual ? "on" : "off"}`} onClick={() => setAnnual(false)}>Monthly</button>
-                            <button className={`tgl ${annual ? "on" : "off"}`} onClick={() => setAnnual(true)}>Annual</button>
+            <main className="pt-[72px] pb-24">
+                <div className="max-w-6xl mx-auto px-6">
+                    {/* ── HERO ── */}
+                    <section className="text-center pt-24 pb-16">
+                        <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-[#00E5FF]/20 bg-[#00E5FF]/5 text-[#00E5FF] text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF]" />
+                            Transparent Pricing
                         </div>
-                        <div style={{ overflow: "hidden", maxWidth: annual ? 160 : 0, opacity: annual ? 1 : 0, transition: "max-width 0.35s ease,opacity 0.3s ease", whiteSpace: "nowrap" }}>
-                            <span style={{ background: "#00FF880d", border: "1px solid #00FF8820", color: "#00FF88", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 100, letterSpacing: ".06em", display: "inline-block" }}>
-                                🎉 SAVE 20% ANNUALLY
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── PLAN CARDS ── */}
-                <div className="plans-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 96 }}>
-                    {plans.map((p, i) => (
-                        <div
-                            key={p.key}
-                            className={`plan-card ${p.highlight ? "hl" : ""} fade-up`}
-                            style={{ animationDelay: `${i * 0.07}s`, animationFillMode: "both" }}
-                        >
-                            {p.badge && <div className="plan-badge">{p.badge}</div>}
-
-                            {/* Plan name */}
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: p.highlight ? "#00E5FF" : "#333", marginBottom: 12 }}>
-                                {p.name}
-                            </div>
-
-                            {/* Price with animation */}
-                            {p.monthly ? (
-                                <AnimatedPrice
-                                    was={annual ? p.wasAnnual : p.wasMonthly}
-                                    now={annual ? p.annual : p.monthly}
-                                    annual={annual}
-                                />
-                            ) : (
-                                <div>
-                                    <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1, paddingTop: 4 }}>Custom</div>
-                                    <div style={{ fontSize: 12, color: "#2c2c2c", fontFamily: "'DM Mono',monospace", margin: "4px 0 4px" }}>$2,000–$5,000 / month</div>
-                                    <div style={{ fontSize: 11, color: "#00FF8844", fontFamily: "'DM Mono',monospace", marginBottom: 0 }}>negotiated annually</div>
-                                </div>
-                            )}
-
-                            {/* Annual save callout */}
-                            {p.annual && annual && (
-                                <div style={{ fontSize: 11, color: "#00FF8866", fontFamily: "'DM Mono',monospace", margin: "6px 0 0", opacity: annual ? 1 : 0, transition: "opacity 0.3s ease" }}>
-                                    saves ${p.annualSave}/yr
-                                </div>
-                            )}
-
-                            <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5, margin: "14px 0 18px", paddingBottom: 18, borderBottom: "1px solid #111" }}>
-                                {p.tagline}
-                            </div>
-
-                            {/* Stats */}
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 14 }}>
-                                {[["Scans", p.scans], ["Overage", p.overage], ["Domains", p.domains], ["Repos", p.repos]].map(([lbl, val]) => (
-                                    <div key={lbl} className="stat-chip">
-                                        <span className="lbl">{lbl}</span>{val}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Users */}
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#0c0c0c", border: "1px solid #161616", borderRadius: 8, padding: "6px 10px", fontSize: 12, color: "#555", fontFamily: "'DM Mono',monospace", marginBottom: 20 }}>
-                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4" r="2.5" stroke="#555" strokeWidth="1.2" /><path d="M1.5 10.5C1.5 8.567 3.567 7 6 7s4.5 1.567 4.5 3.5" stroke="#555" strokeWidth="1.2" strokeLinecap="round" /></svg>
-                                {p.users}
-                            </div>
-
-                            {/* Features */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 24, flex: 1 }}>
-                                {p.features.map(f => (
-                                    <div key={f} className="feat"><span className="ck">✓</span>{f}</div>
-                                ))}
-                                {p.locked && p.locked.map(f => (
-                                    <div key={f} className="feat dim"><span className="lk">—</span>{f}</div>
-                                ))}
-                            </div>
-
-                            <button
-                                className={`btn ${p.solid ? "btn-cyan" : "btn-ghost"}`}
-                                onClick={async (e) => {
-                                    if (p.key === 'enterprise') return; // Handled differently typically (mailto: or form)
-                                    const btn = e.currentTarget;
-                                    btn.disabled = true;
-                                    btn.textContent = "Loading...";
-
-                                    const { data: { session } } = await supabase.auth.getSession();
-
-                                    const res = await fetch("/api/billing/create-checkout", {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json",
-                                            "Authorization": `Bearer ${session?.access_token}`
-                                        },
-                                        body: JSON.stringify({ productId: annual && p.annual ? p.annualProductId : p.monthlyProductId })
-                                    });
-                                    if (res.ok) {
-                                        const { url } = await res.json();
-                                        window.location.href = url;
-                                    } else {
-                                        btn.disabled = false;
-                                        btn.textContent = p.cta;
-                                        alert("Please sign in or create an organization first");
-                                    }
-                                }}
-                            >
-                                {p.cta}
-                            </button>
-                            {p.monthly && (
-                                <a
-                                    href="/demo"
-                                    style={{ display: "block", textAlign: "center", fontSize: 11, color: "#888", marginTop: 10, textDecoration: "none" }}
-                                    onMouseOver={(e) => e.currentTarget.style.color = "#fff"}
-                                    onMouseOut={(e) => e.currentTarget.style.color = "#888"}
-                                >
-                                    View sample report →
-                                </a>
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                {/* ── ONE-TIME SCANS ── */}
-                <div style={{ marginBottom: 96 }}>
-                    <div style={{ textAlign: "center", marginBottom: 48 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: 10 }}>Pay-as-you-go</div>
-                        <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 10 }}>One-time scans</h2>
-                        <p style={{ color: "#3d3d3d", fontSize: 14, maxWidth: 420, margin: "0 auto" }}>
-                            Not ready for a subscription? One scan, full report, no commitment.
+                        <h1 className="text-5xl sm:text-6xl font-black text-white tracking-tight leading-[1.1] mb-8">
+                            Security that scales<br />
+                            <span className="text-[#888888]">with your growth.</span>
+                        </h1>
+                        <p className="text-lg text-[#888888] max-w-xl mx-auto mb-12 leading-relaxed font-body">
+                            Continuous security with validated PoCs, zero false positives, and AI AutoFix. Choose the plan that works for you.
                         </p>
-                    </div>
 
-                    <div className="scans-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-                        {oneTimeScans.map(s => (
-                            <div key={s.key} className={`scan-card ${s.popular ? "pop" : ""}`}>
-                                {s.popular && <div className="scan-pop">Most popular</div>}
-                                <div style={{ fontSize: 26, marginBottom: 12 }}>{s.icon}</div>
-                                <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8, letterSpacing: "-0.02em" }}>{s.name}</div>
+                        {/* Toggle */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                            <div className="inline-flex bg-[#0c0c0c] border border-white/5 rounded-full p-1 gap-1">
+                                <button
+                                    onClick={() => setAnnual(false)}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${!annual ? "bg-white text-black" : "text-[#555] hover:text-[#888]"}`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setAnnual(true)}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${annual ? "bg-white text-black" : "text-[#555] hover:text-[#888]"}`}
+                                >
+                                    Annual
+                                </button>
+                            </div>
+                            <div className={`transition-all duration-300 ${annual ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none"}`}>
+                                <span className="bg-[#00FF88]/10 border border-[#00FF88]/20 text-[#00FF88] text-[11px] font-mono font-bold px-4 py-2 rounded-full tracking-wider">
+                                    🎉 SAVE 20% ANNUALLY
+                                </span>
+                            </div>
+                        </div>
+                    </section>
 
-                                {/* Anchor price + actual price */}
-                                <div style={{ marginBottom: 12 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                                        <span style={{ fontSize: 12, fontFamily: "'DM Mono',monospace", color: "#2a2a2a", position: "relative", display: "inline-block" }}>
-                                            vs ${s.anchor.toLocaleString()} traditional
-                                            <span style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "#ef444477", transform: "translateY(-50%)" }} />
-                                        </span>
+                    {/* ── PLAN CARDS ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-32">
+                        {plans.map((p) => (
+                            <div
+                                key={p.key}
+                                className={`relative group flex flex-col bg-[#0c0c0c] border rounded-3xl p-8 transition-all hover:-translate-y-1 ${p.highlight ? "border-[#00E5FF]/30 bg-[#030b0d]" : "border-white/5 hover:border-white/10"}`}
+                            >
+                                {p.badge && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00E5FF] text-black text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow-[0_0_20px_rgba(0,229,255,0.3)]">
+                                        {p.badge}
                                     </div>
-                                    <div style={{ display: "flex", alignItems: "flex-end", gap: 3 }}>
-                                        <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", color: s.popular ? "#00FF88" : "#fff" }}>${s.price}</span>
-                                        <span style={{ fontSize: 12, color: "#333", fontFamily: "'DM Mono',monospace", paddingBottom: 5 }}> one-time</span>
+                                )}
+
+                                <div className={`text-[11px] font-mono font-bold uppercase tracking-widest mb-4 ${p.highlight ? "text-[#00E5FF]" : "text-[#444]"}`}>
+                                    {p.name}
+                                </div>
+
+                                <div className="mb-6 h-[72px]">
+                                    {p.monthly ? (
+                                        <AnimatedPrice
+                                            was={annual ? p.wasAnnual : p.wasMonthly}
+                                            now={annual ? p.annual : p.monthly}
+                                            annual={annual}
+                                        />
+                                    ) : (
+                                        <div>
+                                            <div className="text-4xl font-bold tracking-tight text-white">Custom</div>
+                                            <div className="text-xs text-[#444] font-mono mt-1">Negotiated annually</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="text-sm text-[#888] mb-8 leading-relaxed font-body border-b border-white/5 pb-8">
+                                    {p.tagline}
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-2 mb-8">
+                                    <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col">
+                                        <span className="text-[10px] font-mono text-[#333] uppercase">Scans</span>
+                                        <span className="text-xs font-bold text-white uppercase">{p.scans}</span>
                                     </div>
-                                    <div style={{ fontSize: 10, color: s.popular ? "#00FF8855" : "#252525", fontFamily: "'DM Mono',monospace" }}>
-                                        {Math.round((1 - s.price / s.anchor) * 100)}% less than manual pentest
+                                    <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col">
+                                        <span className="text-[10px] font-mono text-[#333] uppercase">Domains</span>
+                                        <span className="text-xs font-bold text-white uppercase">{p.domains}</span>
                                     </div>
                                 </div>
 
-                                <div style={{ fontSize: 12, color: "#3a3a3a", lineHeight: 1.55, marginBottom: 12 }}>{s.desc}</div>
-                                <div style={{ fontSize: 11, color: "#2a2a2a", fontFamily: "'DM Mono',monospace", marginBottom: 16 }}>⏱ {s.time}</div>
-
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20, flex: 1 }}>
-                                    {s.includes.map(inc => (
-                                        <div key={inc} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: "#555" }}>
-                                            <span style={{ color: s.popular ? "#00FF88" : "#333", fontSize: 10, fontWeight: 700 }}>✓</span>{inc}
+                                <div className="flex flex-col gap-4 mb-12 flex-1">
+                                    {p.features.map(f => (
+                                        <div key={f} className="flex gap-3 text-xs text-[#888] font-body leading-relaxed">
+                                            <span className="text-[#00FF88] font-bold">✓</span>
+                                            {f}
+                                        </div>
+                                    ))}
+                                    {p.locked && p.locked.map(f => (
+                                        <div key={f} className="flex gap-3 text-xs text-[#222] font-body line-through">
+                                            <span className="opacity-40">—</span>
+                                            {f}
                                         </div>
                                     ))}
                                 </div>
 
                                 <button
-                                    style={{ width: "100%", padding: "12px", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", background: s.popular ? "#00FF88" : "transparent", color: s.popular ? "#000" : "#555", border: s.popular ? "none" : "1px solid #1e1e1e", transition: "all 0.15s", marginTop: "auto" }}
+                                    className={`w-full py-4 rounded-xl text-sm font-black transition-all ${p.solid ? "bg-[#00E5FF] hover:bg-[#2eeeff] text-black" : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20"}`}
                                     onClick={async (e) => {
+                                        if (p.key === 'enterprise') return;
                                         const btn = e.currentTarget;
                                         btn.disabled = true;
+                                        const originalText = btn.textContent;
                                         btn.textContent = "Loading...";
 
                                         const { data: { session } } = await supabase.auth.getSession();
@@ -372,58 +182,122 @@ export default function PricingPage() {
                                                 "Content-Type": "application/json",
                                                 "Authorization": `Bearer ${session?.access_token}`
                                             },
-                                            body: JSON.stringify({ productId: s.productId })
+                                            body: JSON.stringify({ productId: annual && p.annual ? p.annualProductId : p.monthlyProductId })
                                         });
                                         if (res.ok) {
                                             const { url } = await res.json();
                                             window.location.href = url;
                                         } else {
                                             btn.disabled = false;
-                                            btn.textContent = "Buy now →";
+                                            btn.textContent = originalText;
                                             alert("Please sign in or create an organization first");
                                         }
                                     }}
                                 >
-                                    Buy now →
+                                    {p.cta}
                                 </button>
                             </div>
                         ))}
                     </div>
-                </div>
 
-                {/* ── COMPETITOR TABLE ── */}
-                <div style={{ marginBottom: 96 }}>
-                    <div style={{ textAlign: "center", marginBottom: 48 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: 10 }}>Market comparison</div>
-                        <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 10 }}>
-                            The market charges more, delivers less
-                        </h2>
-                        <p style={{ color: "#3d3d3d", fontSize: 14 }}>
-                            Our Growth Plan gives you more value and better coverage than alternative solutions.
-                        </p>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1.3fr 90px 120px 1fr", gap: 12, padding: "0 18px 12px", fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#252525" }}>
-                        <span>Vendor</span><span>Price</span><span>Billing</span><span>Reality check</span>
-                    </div>
-                    {competitors.map(c => (
-                        <div key={c.name} className={`comp-row ${c.us ? "us" : ""}`}>
-                            <div style={{ fontWeight: c.us ? 700 : 500, color: c.us ? "#00E5FF" : "#666", display: "flex", alignItems: "center", gap: 8 }}>
-                                {c.name}
-                                {c.us && <span style={{ background: "#00E5FF", color: "#000", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, letterSpacing: ".08em" }}>YOU</span>}
-                            </div>
-                            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: c.us ? "#00FF88" : "#444", fontWeight: c.us ? 700 : 400 }}>{c.price}</div>
-                            <div style={{ fontSize: 12, color: "#333" }}>{c.per}</div>
-                            <div style={{ fontSize: 12, color: c.us ? "#00FF8877" : "#2e2e2e" }}>{c.note}</div>
+                    {/* ── ONE-TIME SCANS ── */}
+                    <section className="mb-32">
+                        <div className="text-center mb-16">
+                            <p className="text-xs font-mono text-[#888] uppercase tracking-[0.2em] mb-4">Pay-as-you-go</p>
+                            <h2 className="text-4xl font-black text-white tracking-tight">One-time scans</h2>
                         </div>
-                    ))}
-                </div>
 
-                <div className="mt-20">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {oneTimeScans.map(s => (
+                                <div key={s.key} className={`flex flex-col bg-[#0c0c0c] border rounded-3xl p-8 transition-all hover:border-white/10 ${s.popular ? "border-[#00FF88]/20" : "border-white/5"}`}>
+                                    <div className="text-3xl mb-6">{s.icon}</div>
+                                    <h3 className="text-xl font-bold text-white mb-4">{s.name}</h3>
+
+                                    <div className="mb-8">
+                                        <div className="text-[10px] font-mono text-[#ef4444]/60 line-through mb-1">
+                                            Vs ${s.anchor.toLocaleString()} traditional
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className={`text-3xl font-bold ${s.popular ? "text-[#00FF88]" : "text-white"}`}>${s.price}</span>
+                                            <span className="text-[10px] font-mono text-[#555]">one-time</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 mb-10 flex-1">
+                                        {s.includes.map(inc => (
+                                            <div key={inc} className="flex items-center gap-3 text-xs text-[#555] font-body">
+                                                <span className={`${s.popular ? "text-[#00FF88]" : "text-[#333]"} font-bold`}>✓</span>
+                                                {inc}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        className={`w-full py-4 rounded-xl text-xs font-bold transition-all ${s.popular ? "bg-[#00FF88] text-black hover:bg-[#34ff9d]" : "bg-white/5 border border-white/10 text-white hover:bg-white/10"}`}
+                                        onClick={async (e) => {
+                                            const btn = e.currentTarget;
+                                            btn.disabled = true;
+                                            btn.textContent = "Loading...";
+
+                                            const { data: { session } } = await supabase.auth.getSession();
+
+                                            const res = await fetch("/api/billing/create-checkout", {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Authorization": `Bearer ${session?.access_token}`
+                                                },
+                                                body: JSON.stringify({ productId: s.productId })
+                                            });
+                                            if (res.ok) {
+                                                const { url } = await res.json();
+                                                window.location.href = url;
+                                            } else {
+                                                btn.disabled = false;
+                                                btn.textContent = "Buy now →";
+                                                alert("Please sign in or create an organization first");
+                                            }
+                                        }}
+                                    >
+                                        Buy now →
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* ── COMPETITOR TABLE ── */}
+                    <section className="mb-32">
+                        <div className="text-center mb-16">
+                            <p className="text-xs font-mono text-[#888] uppercase tracking-[0.2em] mb-4">Market comparison</p>
+                            <h2 className="text-4xl font-black text-white tracking-tight">Built for value</h2>
+                        </div>
+
+                        <div className="bg-[#0c0c0c] border border-white/5 rounded-3xl overflow-hidden">
+                            <div className="hidden md:grid grid-cols-4 gap-4 px-8 py-4 border-b border-white/5 text-[10px] font-mono font-bold text-[#333] uppercase">
+                                <span>Vendor</span>
+                                <span className="text-center">Price</span>
+                                <span>Billing</span>
+                                <span>Reality check</span>
+                            </div>
+                            {competitors.map(c => (
+                                <div key={c.name} className={`grid grid-cols-1 md:grid-cols-4 gap-4 px-8 py-6 items-center border-b border-white/5 last:border-0 ${c.us ? "bg-[#00E5FF]/5" : ""}`}>
+                                    <div className={`font-bold text-sm ${c.us ? "text-[#00E5FF]" : "text-[#888]"}`}>
+                                        {c.name}
+                                        {c.us && <span className="ml-2 text-[9px] bg-[#00E5FF] text-black px-2 py-0.5 rounded-full uppercase">You</span>}
+                                    </div>
+                                    <div className={`font-mono text-sm text-center ${c.us ? "text-[#00FF88]" : "text-[#444]"}`}>{c.price}</div>
+                                    <div className="text-xs text-[#333]">{c.per}</div>
+                                    <div className={`text-xs ${c.us ? "text-[#00FF88]/60 italic" : "text-[#2e2e2e]"}`}>{c.note}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
                     <FAQAccordion items={pricingFaqs} title="Pricing & Pentest FAQs" />
                 </div>
+            </main>
 
-            </div>
             <Footer />
         </div>
     );
