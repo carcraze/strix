@@ -13,6 +13,8 @@ import {
     GitBranch,
     Settings,
     LogOut,
+    Sun,
+    Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WorkspaceSwitcher } from "@/components/layout/WorkspaceSwitcher";
@@ -40,6 +42,19 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
     const [user, setUser] = useState<{ name: string; email: string; initials: string } | null>(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const [isLight, setIsLight] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem("zentinel-theme");
+        if (saved === "light") { document.documentElement.classList.add("light"); setIsLight(true); }
+    }, []);
+
+    const toggleTheme = () => {
+        const next = !isLight;
+        setIsLight(next);
+        if (next) { document.documentElement.classList.add("light"); localStorage.setItem("zentinel-theme", "light"); }
+        else       { document.documentElement.classList.remove("light"); localStorage.setItem("zentinel-theme", "dark"); }
+    };
 
     // Fetch real user
     useEffect(() => {
@@ -212,8 +227,22 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                 )}
             </nav>
 
+            {/* Theme toggle */}
+            <div className="px-3 mb-2">
+                <button
+                    onClick={toggleTheme}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[var(--color-textSecondary)] hover:text-white hover:bg-white/5 transition-colors group"
+                >
+                    {isLight
+                        ? <Moon className="h-4 w-4 shrink-0 text-[var(--color-textMuted)] group-hover:text-white" />
+                        : <Sun  className="h-4 w-4 shrink-0 text-[var(--color-textMuted)] group-hover:text-white" />
+                    }
+                    <span>{isLight ? "Dark mode" : "Light mode"}</span>
+                </button>
+            </div>
+
             {/* User Footer */}
-            <div className="px-3 mt-4 relative" ref={userMenuRef}>
+            <div className="px-3 mt-1 relative" ref={userMenuRef}>
                 {/* Logout popup */}
                 {showUserMenu && (
                     <div className="absolute bottom-full left-0 right-0 mb-2 mx-0 bg-[#111] border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 z-50">

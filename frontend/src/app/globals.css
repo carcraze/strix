@@ -122,6 +122,50 @@
   --sidebar-ring: #00E5FF;
 }
 
+/* ── Light mode overrides ─────────────────────────────────────────────────── */
+.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --surface: #f8fafc;
+  --surface-container-low: #f1f5f9;
+  --surface-container: #ffffff;
+  --surface-container-highest: #e2e8f0;
+
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+  --outline-variant: #e2e8f0;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0284c7;
+  --border: #e2e8f0;
+  --input: #ffffff;
+
+  --sidebar: #f1f5f9;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0284c7;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+
+  /* Adjust semantic colours for legibility on white */
+  --color-cyan:   #0284c7;
+  --color-amber:  #b45309;
+  --color-green:  #16a34a;
+  --color-red:    #dc2626;
+  --color-purple: #7c3aed;
+  --color-textSecondary: #475569;
+  --color-textMuted:     #94a3b8;
+  --color-bgCard:        #ffffff;
+  --color-border:        #e2e8f0;
+}
+
 @layer utilities {
   .animate-marquee {
     animation: marquee 20s linear infinite;

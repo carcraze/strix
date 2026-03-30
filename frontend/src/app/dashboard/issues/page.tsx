@@ -161,7 +161,7 @@ export default function IssuesPage() {
     const { activeWorkspace } = useWorkspace();
 
     // Filters state
-    const [activeTab, setActiveTab] = useState("all");
+    const [activeTab, setActiveTab] = useState("open");
     const [searchQuery, setSearchQuery] = useState("");
     const [severityFilter, setSeverityFilter] = useState("all");
     const [repoFilter, setRepoFilter] = useState("all");
@@ -213,7 +213,7 @@ export default function IssuesPage() {
     }, [issues]);
 
     // Map all repos and domains to options
-    const repoOptions = allRepos.map(r => ({ value: r.id, label: r.name }));
+    const repoOptions = allRepos.map(r => ({ value: r.id, label: r.full_name || r.name || r.id }));
     const domainOptions = allDomains.map(d => ({ value: d.id, label: d.domain }));
 
     // ─── Filtering ───

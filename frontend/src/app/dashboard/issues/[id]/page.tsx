@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ShieldAlert, TerminalSquare, CheckCircle2, AlertTriangle, EyeOff, RefreshCw, Activity, Code2 } from "lucide-react";
+import { ArrowLeft, ShieldAlert, TerminalSquare, CheckCircle2, AlertTriangle, EyeOff, RefreshCw, Code2 } from "lucide-react";
 import { Card } from "@/components/ui/zentinel-card";
 import { getIssueDetails, updateIssueStatus } from "@/lib/queries";
 
@@ -117,9 +117,6 @@ export default function IssueDetailPage() {
                         </span>
                         <span className={`text-xs font-mono px-2.5 py-1 rounded bg-white/5 border border-white/10 ${statusConf.color}`}>
                             {statusConf.label}
-                        </span>
-                        <span className="text-sm text-[var(--color-textMuted)] flex items-center gap-1.5">
-                            <Activity className="h-3.5 w-3.5" /> Discovered by Strix Engine
                         </span>
                     </div>
 
