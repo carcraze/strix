@@ -95,7 +95,7 @@ export async function getIssues(orgId: string) {
         .select(`
             *,
             pentests(id, name),
-            repositories(id, full_name, name, provider),
+            repositories(id, full_name, provider),
             domains(id, domain)
         `)
         .eq('organization_id', orgId)
@@ -111,7 +111,7 @@ export async function getIssueDetails(issueId: string) {
         .select(`
             *,
             pentests(id, name),
-            repositories(id, full_name, name, provider),
+            repositories(id, full_name, provider),
             domains(id, domain)
         `)
         .eq('id', issueId)

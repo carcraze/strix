@@ -91,7 +91,6 @@ export default function IssueDetailPage() {
 
     // Target name — repo takes priority, then domain, then pentest
     const targetName = issue.repositories?.full_name
-        || issue.repositories?.name
         || issue.domains?.domain
         || issue.pentests?.name
         || "Unknown Target";

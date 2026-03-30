@@ -377,7 +377,7 @@ export default function IssuesPage() {
                                         // Target display logic — repositories use full_name or name
                                         let targetName = 'Unknown Target';
                                         if (issue.repository_id && issue.repositories) {
-                                            targetName = issue.repositories.full_name || issue.repositories.name || 'Repo';
+                                            targetName = issue.repositories.full_name || 'Repo';
                                         } else if (issue.domain_id && issue.domains?.domain) {
                                             targetName = issue.domains.domain;
                                         } else if (issue.pentests?.name) {
