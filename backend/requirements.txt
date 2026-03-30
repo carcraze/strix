@@ -5,6 +5,7 @@ celery
 litellm
 tenacity
 google-cloud-aiplatform
+google-genai
 pydantic-settings
 supabase
 pyjwt

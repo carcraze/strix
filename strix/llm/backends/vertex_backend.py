@@ -1,65 +1,64 @@
 # strix/llm/backends/vertex_backend.py
 #
-# Native Google Cloud Vertex AI SDK backend for Strix.
+# Native Google AI (Vertex) backend for Strix — uses the new `google-genai` SDK.
 #
 # WHY THIS EXISTS
 # ───────────────
 # LiteLLM maintains an internal model registry. When you pass a model string it doesn't
 # recognise (e.g. "vertex_ai/gemini-3.1-pro-preview"), it throws NotFoundError or
-# BadRequestError before making a single network call. New Vertex models (Gemini 3.1,
-# future releases) are often not in LiteLLM's registry until weeks after GA.
+# BadRequestError before making a single network call. New Vertex models are often not
+# in LiteLLM's registry until weeks after GA.
 #
-# This backend calls the Vertex AI SDK directly, so any model available in Vertex Model
+# This backend calls the Google AI SDK directly, so any model available in Vertex Model
 # Garden works immediately — no waiting for a LiteLLM release.
+#
+# SDK MIGRATION NOTE
+# ──────────────────
+# The old `vertexai.generative_models` SDK is deprecated as of June 24, 2025 and will
+# be removed on June 24, 2026. This backend uses the new `google-genai` SDK instead:
+#   pip install google-genai
+#
+# Old (deprecated): from vertexai.generative_models import GenerativeModel
+# New (this file):  from google import genai; client.aio.models.generate_content_stream()
 #
 # WHAT IT PRESERVES (nothing breaks)
 # ────────────────────────────────────
-# • SSE streaming to the frontend  — we yield LLMResponse objects with incrementally
-#   growing `content` strings, identical to the LiteLLM backend. base_agent.py:373
-#   calls tracer.update_streaming_content() on each yield, which drives SSE. Untouched.
+# • SSE streaming to the frontend  — yields LLMResponse with incrementally growing
+#   `content` strings. base_agent.py:373 calls tracer.update_streaming_content() on
+#   each yield, driving the SSE pipeline. Untouched.
 #
 # • XML tool-call parsing  — Strix uses a custom XML format (<function=X>…</function>)
-#   that is parsed by strix/llm/utils.py AFTER the full response is assembled. This
-#   backend accumulates text and calls the same parse_tool_invocations() at the end.
+#   parsed by strix/llm/utils.py AFTER the full response is assembled.
 #   LiteLLM's native tool_calls feature is NEVER used by Strix. Untouched.
 #
-# • Docker sandbox  — sandbox lifecycle is managed entirely in strix/runtime/ and
-#   base_agent._initialize_sandbox_and_state(). It has zero coupling to LLM calls.
-#   Untouched.
+# • Docker sandbox  — managed entirely in strix/runtime/. Zero coupling to LLM calls.
 #
-# • Agent loop / state machine  — base_agent.agent_loop() calls self.llm.generate()
-#   which calls _stream() which now routes here. The interface is identical. Untouched.
+# • Agent loop / state machine  — base_agent.agent_loop() interface is identical.
 #
 # ACTIVE VERTEX AI MODELS (March 2026)
 # ──────────────────────────────────────
-# Set STRIX_LLM to one of these values:
+# Set STRIX_LLM to one of these:
 #
-#   vertex_ai/gemini-3.1-pro-preview   ← RECOMMENDED: latest reasoning model, 1M context,
-#                                         optimised for complex agentic / coding workflows
-#   vertex_ai/gemini-2.5-pro           ← GA, high capability, 1M context, stable
+#   vertex_ai/gemini-2.5-pro           ← GA, high capability, 1M context  ✅ CONFIRMED WORKING
 #   vertex_ai/gemini-2.5-flash         ← GA, fast + balanced, lower cost
-#   vertex_ai/gemini-2.0-flash         ← legacy stable, retiring June 2026
+#   vertex_ai/gemini-3.1-pro-preview   ← Preview (requires allowlist access)
+#   vertex_ai/gemini-2.0-flash         ← Legacy, retiring June 2026
 #
 # REQUIRED ENVIRONMENT VARIABLES
 # ────────────────────────────────
 #   VERTEXAI_PROJECT   — GCP project ID  (e.g. "moyopal-453021")
-#   VERTEXAI_LOCATION  — GCP region      (e.g. "us-central1" for Gemini,
-#                                               "us-east5" for Claude on Vertex)
+#   VERTEXAI_LOCATION  — GCP region      (e.g. "us-central1")
 #
 # AUTHENTICATION
 # ──────────────
-# On GCE VMs, Application Default Credentials (ADC) are used automatically via the
-# VM's attached service account. The service account needs roles/aiplatform.user.
-# Verify with: gcloud auth application-default print-access-token
-#
-# For local dev or non-GCE environments, set:
-#   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+# On GCE VMs, Application Default Credentials (ADC) via the VM's service account.
+# The service account needs roles/aiplatform.user.
+# Verify: gcloud auth application-default print-access-token
 #
 # FALLBACK
 # ─────────
-# This backend is ONLY invoked when STRIX_LLM starts with "vertex_ai/".
-# All other prefixes (anthropic/, openai/, gemini/, ollama/, strix/) continue to use
-# the original LiteLLM path in llm.py. No existing functionality is affected.
+# Only invoked when STRIX_LLM starts with "vertex_ai/".
+# All other prefixes use the original LiteLLM path in llm.py unchanged.
 
 from __future__ import annotations
 
@@ -74,19 +73,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Vertex AI SDK initialisation  (lazy, runs once per process)
+# Client — lazy initialised once per process
 # ──────────────────────────────────────────────────────────────────────────────
 
-_vertex_initialized = False
+_client: Any = None
 
 
-def _ensure_vertex_init() -> None:
-    """Initialise the Vertex AI SDK on first call. Thread-safe via GIL for the flag."""
-    global _vertex_initialized  # noqa: PLW0603
-    if _vertex_initialized:
-        return
+def _get_client() -> Any:
+    """Return a cached google-genai Vertex AI client, creating it on first call."""
+    global _client  # noqa: PLW0603
+    if _client is not None:
+        return _client
 
-    import vertexai  # type: ignore[import]
+    from google import genai  # type: ignore[import]
 
     project = os.environ.get("VERTEXAI_PROJECT") or os.environ.get("GOOGLE_CLOUD_PROJECT")
     location = os.environ.get("VERTEXAI_LOCATION", "us-central1")
@@ -97,13 +96,15 @@ def _ensure_vertex_init() -> None:
             "Set it to your GCP project ID (e.g. export VERTEXAI_PROJECT=moyopal-453021)"
         )
 
-    vertexai.init(project=project, location=location)
-    logger.info(f"[VERTEX] SDK initialised | project={project} location={location}")
-    _vertex_initialized = True
+    # vertexai=True routes all calls through Vertex AI instead of Google AI Studio.
+    # Auth uses Application Default Credentials (ADC) — works automatically on GCE VMs.
+    _client = genai.Client(vertexai=True, project=project, location=location)
+    logger.info(f"[VERTEX] google-genai client initialised | project={project} location={location}")
+    return _client
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Message format conversion  (OpenAI → Vertex SDK Content objects)
+# Message format conversion  (OpenAI → google-genai Content objects)
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _extract_text(content: str | list[Any]) -> str:
@@ -112,9 +113,9 @@ def _extract_text(content: str | list[Any]) -> str:
 
     Strix messages use two formats:
       - str: plain text (most messages)
-      - list: multi-part content, e.g. [{"type": "text", "text": "...", "cache_control": {...}}]
-        This format is added by LLM._add_cache_control() for Anthropic prompt caching.
-        Vertex AI doesn't use cache_control, so we just extract the text parts.
+      - list: multi-part, e.g. [{"type": "text", "text": "...", "cache_control": {...}}]
+        Added by LLM._add_cache_control() for Anthropic prompt caching.
+        Vertex AI doesn't use cache_control — we just extract the text.
     """
     if isinstance(content, str):
         return content
@@ -125,78 +126,66 @@ def _extract_text(content: str | list[Any]) -> str:
             if part.get("type") == "text":
                 parts.append(part.get("text", ""))
             elif "text" in part:
-                # Fallback: any dict with a "text" key
                 parts.append(str(part["text"]))
     return "\n".join(parts)
 
 
-def _convert_messages(
-    messages: list[dict[str, Any]],
-) -> tuple[str, list[Any]]:
+def _convert_messages(messages: list[dict[str, Any]]) -> tuple[str, list[Any]]:
     """
-    Convert OpenAI-format conversation history into Vertex SDK Content objects.
+    Convert OpenAI-format conversation history to google-genai Content objects.
 
     Returns:
-        system_instruction  — extracted from the first system message (if any)
-        vertex_messages     — list of vertexai.generative_models.Content objects
+        system_instruction — extracted from the first system message
+        genai_contents     — list of google.genai.types.Content objects
 
-    OpenAI roles → Vertex roles:
-        system    → extracted as system_instruction (not a Content object)
+    Role mapping:
+        system    → system_instruction param (not a Content object)
         user      → Content(role="user", ...)
-        assistant → Content(role="model", ...)   ← Vertex uses "model" not "assistant"
+        assistant → Content(role="model", ...)  ← genai uses "model" not "assistant"
     """
-    from vertexai.generative_models import Content, Part  # type: ignore[import]
+    from google.genai import types  # type: ignore[import]
 
     system_instruction = ""
-    vertex_messages: list[Any] = []
+    genai_contents: list[Any] = []
 
     for msg in messages:
         role: str = msg.get("role", "user")
-        content = msg.get("content", "")
-        text = _extract_text(content)
+        text = _extract_text(msg.get("content", ""))
 
         if not text:
-            # Skip empty messages — Vertex rejects them
-            continue
+            continue  # Skip empty messages — Vertex rejects them
 
         if role == "system":
-            # Vertex AI handles system prompt via GenerativeModel(system_instruction=...)
-            # Only the FIRST system message is used (Strix always has exactly one)
             if not system_instruction:
                 system_instruction = text
             continue
 
-        # Map OpenAI assistant → Vertex "model"
-        vertex_role = "model" if role == "assistant" else "user"
-        vertex_messages.append(Content(role=vertex_role, parts=[Part.from_text(text)]))
+        genai_role = "model" if role == "assistant" else "user"
+        genai_contents.append(
+            types.Content(role=genai_role, parts=[types.Part.from_text(text=text)])
+        )
 
-    return system_instruction, vertex_messages
+    return system_instruction, genai_contents
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Thinking / reasoning config
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Models that support extended thinking on Vertex AI.
-# Gemini 3.1 Pro and 2.5 Pro are reasoning-first models — enabling ThinkingConfig
-# significantly improves quality for complex security analysis tasks.
-_THINKING_MODELS = (
-    "gemini-3.1",
-    "gemini-2.5-pro",
-)
+# Models that support extended thinking (chain-of-thought reasoning before output).
+# Gemini 2.5 Pro and 3.1 Pro are reasoning-first models — ThinkingConfig significantly
+# improves quality for complex multi-step security analysis.
+_THINKING_MODELS = ("gemini-3.1", "gemini-2.5-pro")
 
 
 def _is_thinking_model(model_id: str) -> bool:
-    """Return True if this Vertex model supports/benefits from ThinkingConfig."""
     return any(m in model_id for m in _THINKING_MODELS)
 
 
 def _get_thinking_budget(reasoning_effort: str) -> int:
     """
-    Map Strix reasoning_effort string to Vertex ThinkingConfig thinking_budget tokens.
-
-    Budget controls how many tokens the model spends reasoning before answering.
-    Higher = better quality, higher cost, slower.
+    Map Strix reasoning_effort to ThinkingConfig.thinking_budget (token count).
+    Higher budget = deeper reasoning, higher cost, slower response.
     """
     return {"low": 2048, "medium": 8192, "high": 24576}.get(reasoning_effort, 8192)
 
@@ -212,29 +201,24 @@ async def vertex_stream(
     reasoning_effort: str = "high",
 ) -> AsyncIterator[LLMResponse]:
     """
-    Native Vertex AI SDK streaming generator.
+    Native google-genai Vertex AI streaming generator.
 
-    This is the drop-in replacement for LiteLLM's acompletion() call.
-    It produces the exact same LLMResponse stream that base_agent._process_iteration()
+    Drop-in replacement for LiteLLM's acompletion() call in strix/llm/llm.py.
+    Produces the exact same LLMResponse stream that base_agent._process_iteration()
     consumes. No changes needed anywhere else in the call stack.
 
     Args:
-        model_id:          Vertex model name with "vertex_ai/" prefix already stripped.
-                           e.g. "gemini-3.1-pro-preview", "gemini-2.5-pro"
+        model_id:          Vertex model name with "vertex_ai/" prefix stripped.
+                           e.g. "gemini-2.5-pro", "gemini-3.1-pro-preview"
         messages:          OpenAI-format conversation history from LLM._prepare_messages()
         timeout:           Request timeout in seconds
-        reasoning_effort:  "low" | "medium" | "high" — controls thinking budget for
-                           reasoning models. Maps to ThinkingConfig.thinking_budget.
+        reasoning_effort:  "low" | "medium" | "high" — maps to ThinkingConfig budget
 
     Yields:
-        LLMResponse(content=accumulated_text)   — on each streaming chunk (drives SSE)
-        LLMResponse(content=..., tool_invocations=..., thinking_blocks=...)  — final
+        LLMResponse(content=accumulated_text)               — each chunk (drives SSE)
+        LLMResponse(content=..., tool_invocations=..., ...) — final with parsed tools
     """
-    # Import here to avoid making vertexai a hard import at module load time.
-    # If SDK is not installed, error surfaces only when a vertex_ai/ model is used.
-    from vertexai.generative_models import GenerationConfig, GenerativeModel  # type: ignore[import]
-
-    # Import Strix types / utils — these are always available (same package)
+    from google.genai import types  # type: ignore[import]
     from strix.llm.llm import LLMResponse
     from strix.llm.utils import (
         _truncate_to_first_function,
@@ -243,73 +227,58 @@ async def vertex_stream(
         parse_tool_invocations,
     )
 
-    _ensure_vertex_init()
+    client = _get_client()
+    system_instruction, genai_contents = _convert_messages(messages)
 
-    system_instruction, vertex_messages = _convert_messages(messages)
-
-    if not vertex_messages:
-        logger.warning("[VERTEX] No messages to send after conversion — yielding empty response")
+    if not genai_contents:
+        logger.warning("[VERTEX] No messages after conversion — yielding empty response")
         yield LLMResponse(content="", tool_invocations=None, thinking_blocks=None)
         return
 
-    # ── Build GenerationConfig ────────────────────────────────────────────────
-    gen_config_kwargs: dict[str, Any] = {
+    # ── Build GenerateContentConfig ───────────────────────────────────────────
+    config_kwargs: dict[str, Any] = {
+        "temperature": 0.1,
         "max_output_tokens": 8192,
-        "temperature": 0.1,  # Low temp for deterministic security analysis
     }
 
-    # Enable ThinkingConfig for reasoning models (Gemini 3.1 Pro, 2.5 Pro)
-    # This enables chain-of-thought reasoning before the model produces output.
-    # The thinking content is captured separately and does NOT appear in the
-    # accumulated response text that gets parsed for tool calls.
+    if system_instruction:
+        config_kwargs["system_instruction"] = system_instruction
+
+    # Enable ThinkingConfig for reasoning models (Gemini 2.5 Pro, 3.1 Pro).
+    # thinking_budget controls how many tokens the model spends reasoning internally
+    # before producing output. The thinking text is captured separately and does NOT
+    # appear in the accumulated response parsed for XML tool calls.
     if _is_thinking_model(model_id):
-        try:
-            from vertexai.generative_models import ThinkingConfig  # type: ignore[import]
-            budget = _get_thinking_budget(reasoning_effort)
-            gen_config_kwargs["thinking_config"] = ThinkingConfig(thinking_budget=budget)
-            logger.debug(f"[VERTEX] ThinkingConfig enabled | budget={budget} tokens")
-        except ImportError:
-            # Older SDK version — ThinkingConfig not yet available. Continue without it.
-            logger.warning(
-                "[VERTEX] ThinkingConfig not available in installed SDK version. "
-                "pip install --upgrade google-cloud-aiplatform to enable thinking."
-            )
+        budget = _get_thinking_budget(reasoning_effort)
+        config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=budget)
+        logger.debug(f"[VERTEX] ThinkingConfig enabled | budget={budget} tokens")
 
-    generation_config = GenerationConfig(**gen_config_kwargs)
+    config = types.GenerateContentConfig(**config_kwargs)
 
-    # ── Build model ───────────────────────────────────────────────────────────
-    model = GenerativeModel(
-        model_name=model_id,
-        system_instruction=system_instruction or None,
-    )
-
-    logger.info(f"[VERTEX] Starting stream | model={model_id} messages={len(vertex_messages)}")
+    logger.info(f"[VERTEX] Starting stream | model={model_id} messages={len(genai_contents)}")
 
     # ── Stream response ───────────────────────────────────────────────────────
     accumulated = ""       # Output text (tool-call XML lives here)
-    thinking_text = ""     # Thinking/reasoning content (separate from output)
+    thinking_text = ""     # Reasoning content (separate from output)
     done_streaming = False
 
     try:
-        response_stream = await model.generate_content_async(
-            contents=vertex_messages,
-            generation_config=generation_config,
-            stream=True,
-        )
-
-        async for chunk in response_stream:
-            # chunk.text returns ONLY the non-thinking output text.
-            # For thinking models, the reasoning content is in parts with thought=True.
-            # This mirrors how the LiteLLM backend handles thinking blocks for Anthropic.
+        # client.aio is the async interface of the google-genai SDK.
+        # generate_content_stream returns an async generator of GenerateContentResponse chunks.
+        async for chunk in await client.aio.models.generate_content_stream(
+            model=model_id,
+            contents=genai_contents,
+            config=config,
+        ):
+            # chunk.text returns only the non-thinking output text.
+            # For thinking models the reasoning is in thought=True parts — captured below.
             try:
                 delta: str = chunk.text or ""
             except Exception:
-                # Some chunks (usage metadata chunks) may not have .text
                 delta = ""
 
-            # Collect thinking content for the final LLMResponse.thinking_blocks field.
-            # This is optional — Strix doesn't act on thinking_blocks, but it's logged
-            # by the tracer for debugging / audit purposes.
+            # Collect thinking content for thinking_blocks in the final LLMResponse.
+            # Strix doesn't act on thinking_blocks but the tracer logs them for debugging.
             try:
                 for part in chunk.candidates[0].content.parts:
                     if getattr(part, "thought", False) and part.text:
@@ -323,11 +292,8 @@ async def vertex_stream(
             accumulated += delta
 
             # ── Tool-call detection (identical logic to LiteLLM backend) ─────
-            # Strix's XML tool-call format: <function=X>…</function>
-            # Once we see the closing tag, stop accumulating — the model is done
-            # with this tool call. Everything after would be a second call that
-            # Strix doesn't support in a single response (truncated by
-            # _truncate_to_first_function at the end anyway).
+            # Strix XML format: <function=X><parameter=Y>value</parameter></function>
+            # Stop accumulating after first complete call — model is done with this turn.
             if "</function>" in accumulated or "</invoke>" in accumulated:
                 end_tag = "</function>" if "</function>" in accumulated else "</invoke>"
                 pos = accumulated.find(end_tag)
@@ -336,8 +302,8 @@ async def vertex_stream(
                 done_streaming = True
                 continue
 
-            # Yield incrementally — each yield triggers tracer.update_streaming_content()
-            # in base_agent._process_iteration():373, which pushes to the SSE stream.
+            # Each yield triggers tracer.update_streaming_content() in
+            # base_agent._process_iteration():373, which pushes content to the SSE stream.
             yield LLMResponse(content=accumulated)
 
     except Exception as e:
@@ -345,17 +311,11 @@ async def vertex_stream(
         raise
 
     # ── Final yield with parsed tool invocations ──────────────────────────────
-    # Mirrors the final yield in LLM._stream() (llm.py:200-206).
-    # normalize_tool_format handles alternative XML formats the model might output.
-    # parse_tool_invocations extracts <function=X><parameter=Y> into structured dicts
-    # that base_agent._execute_actions() dispatches to actual tool handlers.
     accumulated = normalize_tool_format(accumulated)
     accumulated = fix_incomplete_tool_call(_truncate_to_first_function(accumulated))
 
     thinking_blocks = None
     if thinking_text:
-        # Match the format Anthropic/Claude uses for thinking blocks so the tracer
-        # can display them uniformly regardless of which backend produced them.
         thinking_blocks = [{"type": "thinking", "thinking": thinking_text}]
 
     logger.debug(

@@ -61,7 +61,10 @@ opentelemetry-exporter-otlp-proto-http = "^1.40.0"
 scrubadub = "^2.0.1"
 
 # Vertex AI native backend — required for vertex_ai/ model routing (bypasses LiteLLM)
+# google-cloud-aiplatform: underlying GCP SDK (auth, project config)
+# google-genai: new unified Google AI SDK (replaces deprecated vertexai.generative_models)
 google-cloud-aiplatform = ">=1.38"
+google-genai = ">=1.0.0"
 
 # Sandbox-only dependencies (only needed inside Docker container)
 fastapi = { version = "*", optional = true }
