@@ -119,3 +119,5 @@ worker_setup.sh
 nul
 *.sh
 frontend/build_logs.txt
+zentinelvertex.json
+zentinelvertex.json

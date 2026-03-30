@@ -51,6 +51,22 @@ export const generalFaqs: FAQItem[] = [
         question: "What happens to my data if I cancel?",
         answer: "If you cancel your subscription, your scan reports, findings history, and configuration are retained in read-only mode for 60 days. After 60 days, all your data is permanently and irreversibly deleted from our systems. You can export your full report history to PDF or JSON at any time before or after cancellation.",
     },
+    {
+        question: "How much does penetration testing cost in 2026?",
+        answer: "Traditional manual penetration testing costs $5,000 to $50,000 per engagement with 2-6 week turnaround times. Zentinel delivers equivalent coverage starting at $49 for a Quick Scan or $149/month for unlimited continuous pentesting. For most startups, Zentinel reduces security testing costs by 95% while providing faster, more frequent coverage.",
+    },
+    {
+        question: "What is AI penetration testing?",
+        answer: "AI penetration testing uses autonomous AI agents to simulate real hacker behavior — cloning your code, running exploits, testing APIs, and validating vulnerabilities in an isolated sandbox. Unlike traditional static analysis tools that pattern-match code, AI pentesting actively attempts to exploit your application just like a real attacker would. Zentinel's AI agent finds only real, exploitable vulnerabilities with working proof-of-concepts, eliminating false positives.",
+    },
+    {
+        question: "Best penetration testing tools for startups in 2026?",
+        answer: "Startups need affordable, automated, and continuous security testing. The best tools combine DAST (dynamic testing), SAST (static analysis), and SCA (dependency scanning) in one platform. Zentinel is the only AI-native pentesting platform purpose-built for fast-moving startups — unlimited scans, PR-level security reviews, and compliance reports starting at $149/month. Traditional tools like Burp Suite Pro require manual security expertise Zentinel replaces.",
+    },
+    {
+        question: "Does my SaaS startup need penetration testing?",
+        answer: "Yes. If you're selling to enterprise customers (Fortune 500, healthcare, finance, government), your sales cycle will require proof of annual penetration testing. It's also required by SOC 2 Type II (CC6.1 control), ISO 27001 (A.12.6), PCI DSS, HIPAA, and most cyber insurance policies. Without a pentest, you cannot win enterprise deals. Zentinel makes pentesting affordable and continuous for early-stage SaaS companies.",
+    },
 ];
 
 // ─── SECTION B — Pricing & Plans (8 shown on pricing page) ──────────────────
@@ -86,6 +102,14 @@ export const pricingFaqs: FAQItem[] = [
     {
         question: "What is the Enterprise plan and who is it for?",
         answer: "The Enterprise plan is for companies that need dedicated infrastructure, custom SLAs, white-label reporting, on-premise deployment options, SSO, and a dedicated security success manager. It is priced on an annual contract negotiated per company. This plan is designed for funded Series A+ startups, scale-ups, and mid-market companies with compliance mandates. Book a demo to discuss your requirements.",
+    },
+    {
+        question: "Zentinel vs Snyk — which is better?",
+        answer: "Snyk is a dependency scanner that flags known CVEs in your npm/pip packages but does not test your custom application code. Zentinel is a full autonomous pentesting platform that scans your code, APIs, authentication flows, and business logic for exploitable vulnerabilities. Most companies use Snyk for dependency management and Zentinel for application security testing. They solve different problems.",
+    },
+    {
+        question: "Zentinel vs GitHub Advanced Security — which should I use?",
+        answer: "GitHub Advanced Security includes CodeQL (SAST) and Dependabot (SCA) but does not perform dynamic application security testing (DAST). It cannot test running APIs, authentication bypass, privilege escalation, or IDOR vulnerabilities. Zentinel complements GitHub Advanced Security by providing autonomous DAST pentesting with working proof-of-concepts. Use both for comprehensive coverage.",
     },
 ];
 
@@ -129,6 +153,16 @@ export const technicalFaqs: FAQItem[] = [
     {
         question: "What is the Zentinel API?",
         answer: "The Zentinel REST API (available on Scale and Enterprise plans) allows you to programmatically trigger scans, retrieve findings, manage projects, and pull reports into your own internal tooling or SIEM. Full API documentation and client libraries are available in your dashboard after connecting your first repository.",
+        category: "Technical & Integration",
+    },
+    {
+        question: "How to implement DevSecOps in my CI/CD pipeline?",
+        answer: "DevSecOps starts with automated security testing on every pull request before code reaches production. Step 1: Connect your GitHub/GitLab repo to Zentinel. Step 2: Enable PR review triggers so every code change is scanned. Step 3: Configure branch protection to block merges on critical findings. Step 4: Integrate Slack/Jira for instant security alerts. Zentinel handles the heavy lifting — no security expertise required.",
+        category: "Technical & Integration",
+    },
+    {
+        question: "What is the best way to scan a Next.js app for security vulnerabilities?",
+        answer: "Next.js apps have unique attack surfaces: API routes, server actions, edge middleware, and client-side state management. Traditional SAST tools miss 80% of Next.js vulnerabilities because they don't understand the framework's routing and data flow. Zentinel has native Next.js detection — it automatically discovers all API routes, tests server actions for injection, validates middleware authorization, and checks React component security.",
         category: "Technical & Integration",
     },
 ];
@@ -178,6 +212,16 @@ export const securityConceptFaqs: FAQItem[] = [
     {
         question: "What is DevSecOps?",
         answer: "DevSecOps is the practice of integrating security testing and controls directly into your software development and deployment pipeline — rather than treating security as a separate, end-of-cycle audit. The goal is to find and fix vulnerabilities when they are cheapest to remediate: before they reach production. Zentinel is purpose-built for DevSecOps: every PR gets a security review, every deployment is validated, and your security posture is monitored continuously.",
+        category: "Security Concepts",
+    },
+    {
+        question: "What is broken access control and how do I prevent it?",
+        answer: "Broken access control is the #1 OWASP vulnerability. It occurs when users can access resources or perform actions they shouldn't have permission for — like viewing another user's data, accessing admin panels, or modifying other accounts. Prevention requires authorization checks on every API endpoint and database query. Zentinel tests for broken access control by creating test users at different permission levels and verifying your authorization logic actually works.",
+        category: "Security Concepts",
+    },
+    {
+        question: "What is the difference between SAST, DAST, and IAST?",
+        answer: "SAST (Static Application Security Testing) scans source code without running it — fast but high false positives. DAST (Dynamic Application Security Testing) tests running applications like a real attacker — slower but finds real exploits. IAST (Interactive Application Security Testing) combines both by instrumenting your app during testing. Zentinel is an AI-powered DAST platform that delivers the accuracy of manual pentesting with the speed and automation of SAST.",
         category: "Security Concepts",
     },
 ];

@@ -1,0 +1,16 @@
+# Zentinel Robots.txt
+# Updated: March 30, 2026
+
+User-agent: *
+Allow: /
+
+# Block app subdomain (internal dashboard - no SEO value, security risk)
+User-agent: *
+Disallow: https://app.zentinel.dev
+
+# Block CRM subdomain (internal sales tool - no SEO value, security risk)
+User-agent: *
+Disallow: https://crm.zentinel.dev
+
+# Sitemap
+Sitemap: https://zentinel.dev/sitemap.xml
