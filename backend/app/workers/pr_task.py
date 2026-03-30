@@ -629,16 +629,21 @@ def run_pr_review_task(
             save_findings = parsed_findings if parsed_findings else findings
             log.info(f"[ZENTINEL] Saving {len(save_findings)} findings to issues table | repo_id={repo_id}")
             for idx, fw in enumerate(save_findings):
+                # Column mapping matches actual `issues` table schema:
+                #   file_path/endpoint     → not a column; stored in poc_request as context
+                #   remediation_steps      → fix_description
+                #   poc_script_code        → poc_response
+                #   poc_description        → poc_request
                 issue_data = {
+                    "organization_id": org_id,
                     "repository_id": repo_id,
                     "title": fw.get("title", f"Vulnerability {idx+1}")[:255],
                     "severity": fw.get("severity", "medium").lower(),
                     "status": "open",
-                    "file_path": fw.get("file_path", fw.get("endpoint", "")),
-                    "description": fw.get("title", fw.get("description", "")),
-                    "remediation_steps": fw.get("remediation_steps", ""),
-                    "poc_script_code": fw.get("poc_script_code", ""),
-                    "poc_description": fw.get("poc_description", ""),
+                    "description": fw.get("description", fw.get("title", "")),
+                    "fix_description": fw.get("remediation_steps", ""),
+                    "poc_request": fw.get("poc_description", fw.get("file_path", "")),
+                    "poc_response": fw.get("poc_script_code", ""),
                 }
                 supabase_admin.table("issues").insert(issue_data).execute()
 
