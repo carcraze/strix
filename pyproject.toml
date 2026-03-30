@@ -60,8 +60,8 @@ traceloop-sdk = "^0.53.0"
 opentelemetry-exporter-otlp-proto-http = "^1.40.0"
 scrubadub = "^2.0.1"
 
-# Optional LLM provider dependencies
-google-cloud-aiplatform = { version = ">=1.38", optional = true }
+# Vertex AI native backend — required for vertex_ai/ model routing (bypasses LiteLLM)
+google-cloud-aiplatform = ">=1.38"
 
 # Sandbox-only dependencies (only needed inside Docker container)
 fastapi = { version = "*", optional = true }
@@ -76,7 +76,6 @@ numpydoc = { version = "^1.8.0", optional = true }
 defusedxml = "^0.7.1"
 
 [tool.poetry.extras]
-vertex = ["google-cloud-aiplatform"]
 sandbox = ["fastapi", "uvicorn", "ipython", "openhands-aci", "playwright", "gql", "pyte", "libtmux", "numpydoc"]
 
 [tool.poetry.group.dev.dependencies]

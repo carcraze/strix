@@ -168,6 +168,26 @@ class LLM:
                 await asyncio.sleep(wait)
 
     async def _stream(self, messages: list[dict[str, Any]]) -> AsyncIterator[LLMResponse]:
+        # ── Backend routing ───────────────────────────────────────────────────
+        # vertex_ai/ models bypass LiteLLM entirely and use the native Vertex AI SDK.
+        # LiteLLM throws NotFoundError/BadRequestError for new Vertex models that are
+        # not yet in its internal registry (e.g. gemini-3.1-pro-preview).
+        # All other prefixes (anthropic/, openai/, gemini/, ollama/, strix/) continue
+        # through the original LiteLLM path below — zero change to their behaviour.
+        if self.config.litellm_model.startswith("vertex_ai/"):
+            model_id = self.config.litellm_model[len("vertex_ai/"):]
+            self._total_stats.requests += 1
+            from strix.llm.backends.vertex_backend import vertex_stream
+            async for response in vertex_stream(
+                model_id=model_id,
+                messages=messages,
+                timeout=self.config.timeout,
+                reasoning_effort=self._reasoning_effort,
+            ):
+                yield response
+            return
+        # ── LiteLLM path (unchanged) ──────────────────────────────────────────
+
         accumulated = ""
         chunks: list[Any] = []
         done_streaming = 0
