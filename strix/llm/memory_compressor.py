@@ -9,38 +9,50 @@ from strix.config.config import Config, resolve_llm_config
 logger = logging.getLogger(__name__)
 
 
-MAX_TOTAL_TOKENS = 100_000
-MIN_RECENT_MESSAGES = 15
+# Token budget — Gemini 2.5 Pro has 1M context. We use 200k to stay cost-effective
+# while giving the security agent ample room for deep multi-phase scans.
+# Increase to 500_000 for subscription (deep) scans if needed.
+MAX_TOTAL_TOKENS = 200_000
+MIN_RECENT_MESSAGES = 20  # Security agents need more recent turns to avoid re-testing
 
-SUMMARY_PROMPT_TEMPLATE = """You are an agent performing context
-condensation for a security agent. Your job is to compress scan data while preserving
-ALL operationally critical information for continuing the security assessment.
+SUMMARY_PROMPT_TEMPLATE = """You are the Zentinel Engine memory compression module.
+Your job is to compress conversation history from an autonomous security assessment
+while preserving ALL operationally critical information so the agent can continue
+without losing any ground.
 
-CRITICAL ELEMENTS TO PRESERVE:
-- Discovered vulnerabilities and potential attack vectors
-- Scan results and tool outputs (compressed but maintaining key findings)
-- Access credentials, tokens, or authentication details found
-- System architecture insights and potential weak points
-- Progress made in the assessment
-- Failed attempts and dead ends (to avoid duplication)
-- Any decisions made about the testing approach
+SECURITY-CRITICAL — MUST PRESERVE (verbatim where possible):
+- Every confirmed vulnerability: exact endpoint, parameter, payload, HTTP method, response
+- CVSS scores and severity ratings already determined
+- Proof-of-Concept payloads that have been validated
+- Credentials, tokens, API keys, and secrets discovered during the scan
+- Exact file paths, line numbers, and code snippets with vulnerabilities
+- CVE IDs and affected dependency versions
+- Infrastructure details: IPs, ports, services, technologies, version numbers
+- Authentication bypass techniques that worked
+- Endpoints already tested AND their results (to avoid duplicate testing)
+- Failed attack attempts and dead ends (critical — saves wasted iterations)
+- Decisions made about testing approach and next steps planned
 
 COMPRESSION GUIDELINES:
-- Preserve exact technical details (URLs, paths, parameters, payloads)
-- Summarize verbose tool outputs while keeping critical findings
-- Maintain version numbers, specific technologies identified
-- Keep exact error messages that might indicate vulnerabilities
-- Compress repetitive or similar findings into consolidated form
+- Verbose tool stdout/stderr → keep only findings and anomalies, discard clean output
+- Repetitive scan output → consolidate into "X endpoints tested, N findings"
+- Keep exact technical artifacts: URLs, hashes, tokens, paths, parameter names
+- Preserve error messages verbatim — they often contain vulnerability indicators
+- Compress repeated identical tool calls into a summary with results
+- Never discard a FINDING_N block — always preserve in full
 
-Remember: Another security agent will use this summary to continue the assessment.
-They must be able to pick up exactly where you left off without losing any
-operational advantage or context needed to find vulnerabilities.
+OUTPUT FORMAT:
+<context_summary message_count='{count}'>
+SCAN PROGRESS: [what phases are complete]
+CONFIRMED FINDINGS: [list each with severity + endpoint + proof]
+TESTED & CLEAN: [endpoints/components verified safe]
+DISCOVERED ASSETS: [subdomains, endpoints, technologies, credentials]
+NEXT PLANNED: [what the agent intended to do next]
+RAW DETAILS: [any verbatim technical data not captured above]
+</context_summary>
 
-CONVERSATION SEGMENT TO SUMMARIZE:
-{conversation}
-
-Provide a technically precise summary that preserves all operational security context while
-keeping the summary concise and to the point."""
+CONVERSATION SEGMENT TO COMPRESS:
+{conversation}"""
 
 
 def _count_tokens(text: str, model: str) -> int:
@@ -121,10 +133,13 @@ def _summarize_messages(
         summary = response.choices[0].message.content or ""
         if not summary.strip():
             return messages[0]
-        summary_msg = "<context_summary message_count='{count}'>{text}</context_summary>"
+        # Summary already contains the <context_summary> wrapper from the prompt template
+        # If not, wrap it for consistency
+        if "<context_summary" not in summary:
+            summary = f"<context_summary message_count='{len(messages)}'>\n{summary}\n</context_summary>"
         return {
             "role": "user",
-            "content": summary_msg.format(count=len(messages), text=summary),
+            "content": summary,
         }
     except Exception:
         logger.exception("Failed to summarize messages")
@@ -157,7 +172,14 @@ class MemoryCompressor:
         timeout: int | None = None,
     ):
         self.max_images = max_images
-        self.model_name = model_name or Config.get("strix_llm")
+        # Use a dedicated fast/cheap compressor model if configured (STRIX_COMPRESSOR_LLM).
+        # Falls back to the main scan model. For cost efficiency, point this at a fast model
+        # (e.g. vertex_ai/gemini-2.5-flash) while the main scan uses gemini-2.5-pro.
+        self.model_name = (
+            model_name
+            or Config.get("strix_compressor_llm")
+            or Config.get("strix_llm")
+        )
         self.timeout = timeout or int(Config.get("strix_memory_compressor_timeout") or "120")
 
         if not self.model_name:
