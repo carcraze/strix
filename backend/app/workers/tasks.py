@@ -147,12 +147,22 @@ def run_pentest_task(
         if repos:
             target_summary += f" | {len(repos)} repo(s)"
 
+        _tier_personas = {
+            "quick":      ["Web App Penetration Tester", "Security Report Writer"],
+            "web_api":    ["Web App Penetration Tester", "Auth Bypass Specialist", "API Security Auditor", "Report Writer"],
+            "full_stack": ["Web App Pen Tester", "Auth Bypass", "API Auditor", "SAST Reviewer", "Dependency Auditor", "CVE Assessor", "Report Writer"],
+            "compliance": ["Web App Pen Tester", "Auth Bypass", "API Auditor", "SAST Reviewer", "Dependency Auditor", "CVE Assessor", "Threat Model Builder", "Report Writer"],
+            "deep":       ["All Specialists", "Attack Path Analyst", "Crypto Analyst", "Supply Chain Auditor"],
+        }
+        personas_loaded = " | ".join(_tier_personas.get(scan_type, ["Web App Pen Tester"]))
+
         boot_lines = [
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            f"  STRIX ENGINE ONLINE",
+            f"  STRIX ENGINE V2.6 ONLINE",
             f"  Tier     : {tier_label}",
             f"  Target(s): {target_summary}",
             f"  Mode     : {scan_mode.upper()} | Context: {'Full' if context or strix_instruction else 'Minimal — running autonomous OSINT'}",
+            f"  Personas : {personas_loaded}",
             f"  Starting : {first_phase}",
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         ]
