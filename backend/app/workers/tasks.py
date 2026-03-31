@@ -289,6 +289,8 @@ Do not call finish_scan until all sub-agents have reported back.
             "tooling/sqlmap",       # SQL injection automation (Feature #2)
             "tooling/trufflehog",   # Secrets detection — 800+ detectors, git history (Feature #9)
             "tooling/osv_scanner",  # SCA — CVEs with CVSS + reachability (Feature #3)
+            "tooling/trivy",        # Container security + IaC + filesystem CVEs (Features #4, #5)
+            "tooling/checkov",      # IaC misconfigs — Terraform/K8s/CloudFormation (Feature #5)
         ]
         _vuln_skills = [
             "vulnerabilities/sql_injection",
