@@ -59,9 +59,10 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Dark mode (explicit .dark class) */
 :root, .dark {
   --radius: 0.5rem;
-  
+
   /* Zentinel Design System (Terminal Black) */
   --background: #000000;
   --foreground: #ffffff;

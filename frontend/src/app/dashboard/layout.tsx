@@ -1,53 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import SecurityCheck from "@/components/SecurityCheck";
-
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { Menu } from "lucide-react";
 
-export default function DashboardLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    // Sync collapsed state for layout offset
+    useEffect(() => {
+        const check = () => {
+            const saved = localStorage.getItem("zentinel-sidebar");
+            setSidebarCollapsed(saved === "collapsed");
+        };
+        check();
+        window.addEventListener("storage", check);
+        // Also poll — sidebar toggles localStorage directly
+        const interval = setInterval(check, 300);
+        return () => { window.removeEventListener("storage", check); clearInterval(interval); };
+    }, []);
+
+    // Default to light mode on first load
+    useEffect(() => {
+        const saved = localStorage.getItem("zentinel-theme");
+        if (!saved) {
+            document.documentElement.classList.add("light");
+            localStorage.setItem("zentinel-theme", "light");
+        }
+    }, []);
 
     return (
         <SecurityCheck>
             <WorkspaceProvider>
-                <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row">
-                    {/* Mobile Header */}
-                    <div className="lg:hidden flex items-center justify-between p-4 border-b border-[var(--color-border)] bg-[var(--background)] sticky top-0 z-30">
+                <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex">
+
+                    {/* Mobile header */}
+                    <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 h-14 bg-[#1e1f2e] border-b border-white/8">
                         <div className="flex items-center gap-2">
-                           <img src="/logo.png" alt="Zentinel" className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(0,229,255,0.4)]" />
-                           <span className="text-sm font-black tracking-[0.2em] text-white uppercase">Zentinel</span>
+                            <div className="h-7 w-7 rounded-lg bg-[#00E5FF] flex items-center justify-center">
+                                <span className="text-black font-black text-sm">Z</span>
+                            </div>
+                            <span className="text-white font-black text-base tracking-tight">Zentinel</span>
                         </div>
-                        <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 -mr-2 text-zinc-400 hover:text-white transition-colors">
+                        <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">
                             <Menu className="h-5 w-5" />
                         </button>
                     </div>
 
+                    {/* Sidebar */}
                     <div className="print:hidden">
                         <Sidebar isOpen={isMobileSidebarOpen} setIsOpen={setIsMobileSidebarOpen} />
                     </div>
-                    
-                    {/* Main content area */}
-                    <div className="flex-1 w-full lg:pl-[240px] print:pl-0 flex flex-col min-w-0">
-                        {children}
-                    </div>
 
-                    {/* Mobile Overlay */}
-                    {isMobileSidebarOpen && (
-                        <div 
-                            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-                            onClick={() => setIsMobileSidebarOpen(false)}
-                        />
-                    )}
+                    {/* Main content — offset by sidebar width */}
+                    <main className={cn(
+                        "flex-1 min-w-0 transition-all duration-300 pt-14 lg:pt-0",
+                        sidebarCollapsed ? "lg:pl-[60px]" : "lg:pl-[240px]",
+                        "print:pl-0"
+                    )}>
+                        {children}
+                    </main>
                 </div>
             </WorkspaceProvider>
         </SecurityCheck>
     );
 }
 
+function cn(...classes: (string | boolean | undefined)[]) {
+    return classes.filter(Boolean).join(" ");
+}
