@@ -2,242 +2,327 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Calendar, GitPullRequest, ArrowRight, Activity, Code, Lock } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-import { Card } from "@/components/ui/zentinel-card";
+import { useRouter } from "next/navigation";
+import {
+    Search, GitPullRequest, ArrowRight, Plus,
+    CheckCircle2, Eye, Clock, ChevronRight,
+    ShieldAlert, RefreshCw, Loader2
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
+// ── Severity config ───────────────────────────────────────────────────────────
+const SEV = {
+    critical: { label: "Critical", dot: "bg-red-500",    text: "text-red-500",    pill: "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20" },
+    high:     { label: "High",     dot: "bg-orange-400", text: "text-orange-500", pill: "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20" },
+    medium:   { label: "Medium",   dot: "bg-yellow-400", text: "text-yellow-600", pill: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20" },
+    low:      { label: "Low",      dot: "bg-green-400",  text: "text-green-600",  pill: "bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" },
+} as const;
 
-export default function DashboardPage() {
-    const [loading, setLoading] = useState(true);
-    const [pentests, setPentests] = useState<any[]>([]);
-    const [issues, setIssues] = useState({ critical: 0, high: 0, medium: 0 });
-    const [reviews, setReviews] = useState<any[]>([]);
+type SevKey = keyof typeof SEV;
+
+// ── Type icon ─────────────────────────────────────────────────────────────────
+function TypeBadge({ source }: { source: string }) {
+    const isPR = source === "pr";
+    return (
+        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold font-mono
+            ${isPR ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
+            {isPR ? "PR" : "PT"}
+        </div>
+    );
+}
+
+// ── Severity bar ──────────────────────────────────────────────────────────────
+function SeverityBar({ critical, high, medium, low }: { critical: number; high: number; medium: number; low: number }) {
+    const total = critical + high + medium + low;
+    if (total === 0) return null;
+    const pct = (n: number) => `${Math.round((n / total) * 100)}%`;
+    return (
+        <div className="flex h-2 w-full rounded-full overflow-hidden gap-px bg-[var(--color-border)]">
+            {critical > 0 && <div className="bg-red-500 h-full" style={{ width: pct(critical) }} />}
+            {high     > 0 && <div className="bg-orange-400 h-full" style={{ width: pct(high) }} />}
+            {medium   > 0 && <div className="bg-yellow-400 h-full" style={{ width: pct(medium) }} />}
+            {low      > 0 && <div className="bg-green-400 h-full" style={{ width: pct(low) }} />}
+        </div>
+    );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function FeedPage() {
+    const router = useRouter();
     const { activeWorkspace } = useWorkspace();
 
+    const [loading, setLoading]   = useState(true);
+    const [userName, setUserName] = useState("there");
+    const [issues, setIssues]     = useState<any[]>([]);
+    const [newCount, setNewCount] = useState(0);
+    const [fixedCount, setFixedCount] = useState(0);
+    const [ignoredCount, setIgnoredCount] = useState(0);
+
     useEffect(() => {
-        const fetchData = async () => {
-            if (!activeWorkspace) return;
+        supabase.auth.getUser().then(({ data }) => {
+            const meta = data?.user?.user_metadata || {};
+            const name = meta.full_name || meta.name || data?.user?.email?.split("@")[0] || "there";
+            setUserName(name.split(" ")[0]);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!activeWorkspace) return;
+        const load = async () => {
             setLoading(true);
-            try {
-                // Fetch recent pentests for this organization
-                const { data: pItems } = await supabase
-                    .from('pentests')
-                    .select('*')
-                    .eq('organization_id', activeWorkspace.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-                setPentests(pItems || []);
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-                // Fetch issue counts for this organization
-                const { data: iData } = await supabase
-                    .from('issues')
-                    .select('severity')
-                    .eq('organization_id', activeWorkspace.id);
+            const [{ data: allIssues }, { data: newIssues }, { data: fixedIssues }] = await Promise.all([
+                supabase.from("issues")
+                    .select("id, title, severity, status, found_at, repository_id, pentest_id, repositories(full_name), pentests(name)")
+                    .eq("organization_id", activeWorkspace.id)
+                    .in("status", ["open", "in_progress"])
+                    .order("found_at", { ascending: false })
+                    .limit(50),
+                supabase.from("issues")
+                    .select("id")
+                    .eq("organization_id", activeWorkspace.id)
+                    .gte("found_at", weekAgo),
+                supabase.from("issues")
+                    .select("id")
+                    .eq("organization_id", activeWorkspace.id)
+                    .eq("status", "fixed")
+                    .gte("found_at", weekAgo),
+            ]);
 
-                if (iData) {
-                    setIssues({
-                        critical: iData.filter(i => i.severity === 'critical').length,
-                        high: iData.filter(i => i.severity === 'high').length,
-                        medium: iData.filter(i => i.severity === 'medium').length,
-                    });
-                } else {
-                    setIssues({ critical: 0, high: 0, medium: 0 });
-                }
-
-                /* 
-                 * Fetch PR reviews 
-                 * In a real implementation we'd join via repositories
-                 */
-                const { data: prData } = await supabase
-                    .from('pr_reviews')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(3);
-                setReviews(prData || []);
-
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
+            setIssues(allIssues || []);
+            setNewCount(newIssues?.length || 0);
+            setFixedCount(fixedIssues?.length || 0);
+            setIgnoredCount(0); // can wire ignored count later
+            setLoading(false);
         };
-
-        fetchData();
+        load();
     }, [activeWorkspace]);
 
-    if (loading) {
-        return <div className="animate-pulse flex items-center justify-center min-h-[60vh] text-[var(--color-textMuted)]">Initializing Dashboard UI...</div>;
-    }
+    const open     = issues;
+    const critical = open.filter(i => i.severity === "critical").length;
+    const high     = open.filter(i => i.severity === "high").length;
+    const medium   = open.filter(i => i.severity === "medium").length;
+    const low      = open.filter(i => i.severity === "low").length;
 
-    const hasData = pentests.length > 0 || reviews.length > 0 || issues.critical > 0;
+    const [search, setSearch] = useState("");
+    const [sevFilter, setSevFilter] = useState<string>("all");
 
-    if (!hasData) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] text-center px-4 animate-in fade-in duration-500">
-                <div className="h-16 w-16 bg-[var(--color-cyan)] rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,212,255,0.2)]">
-                    <Activity className="h-8 w-8 text-black" />
-                </div>
-                <h1 className="text-4xl font-syne font-bold text-white mb-4">Get started with Zentinel</h1>
-                <p className="text-lg text-[var(--color-textSecondary)] max-w-2xl mb-12">
-                    Run security tests against your apps and APIs to uncover and fix vulnerabilities.
-                </p>
+    const filtered = open.filter(i => {
+        if (sevFilter !== "all" && i.severity !== sevFilter) return false;
+        if (search) {
+            const q = search.toLowerCase();
+            if (!i.title?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full text-left">
-                    <Card className="p-6 flex flex-col hover:border-[var(--color-cyan)]/50 transition-colors group">
-                        <div className="h-10 w-10 rounded-lg bg-[var(--color-cyan)]/10 text-[var(--color-cyan)] flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-                            <Search className="h-5 w-5" />
-                        </div>
-                        <h3 className="text-xl font-syne font-bold text-white mb-2">Run your first pentest</h3>
-                        <p className="text-[var(--color-textSecondary)] flex-1 mb-6 text-sm">
-                            Find vulnerabilities in your apps and APIs with a security test.
-                        </p>
-                        <Link href="/dashboard/pentests/new" className="inline-flex items-center justify-center bg-[var(--color-cyan)] text-black font-bold py-2.5 px-4 rounded-lg hover:bg-[var(--color-cyan)]/90 transition-all shadow-[0_0_15px_rgba(0,212,255,0.2)] hover:shadow-[0_0_20px_rgba(0,212,255,0.4)]">
-                            Start Pentest
-                        </Link>
-                    </Card>
-
-                    <Card className="p-6 flex flex-col hover:border-white/20 transition-colors group relative overflow-hidden">
-                        <div className="h-10 w-10 rounded-lg bg-white/5 text-white flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-                            <Calendar className="h-5 w-5" />
-                        </div>
-                        <h3 className="text-xl font-syne font-bold text-white mb-2">Schedule pentests</h3>
-                        <p className="text-[var(--color-textSecondary)] flex-1 mb-6 text-sm">
-                            Automate recurring security tests on your own schedule.
-                        </p>
-                        <Link href="/dashboard/settings/billing" className="inline-flex items-center justify-center bg-white/5 text-white font-medium py-2.5 px-4 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/10 transition-colors">
-                            <Lock className="h-4 w-4 mr-2 text-[var(--color-textMuted)]" /> Upgrade to Growth
-                        </Link>
-                    </Card>
-
-                    <Card className="p-6 flex flex-col hover:border-[var(--color-purple)]/30 transition-colors group">
-                        <div className="h-10 w-10 rounded-lg bg-[#A855F7]/10 text-[#A855F7] flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-                            <GitPullRequest className="h-5 w-5" />
-                        </div>
-                        <h3 className="text-xl font-syne font-bold text-white mb-2">Enable PR reviews</h3>
-                        <p className="text-[var(--color-textSecondary)] flex-1 mb-6 text-sm">
-                            Catch vulnerabilities in every PR with checks that block risky merges.
-                        </p>
-                        <Link href="/dashboard/integrations" className="inline-flex items-center justify-center bg-transparent border border-[var(--color-border)] text-white font-medium py-2.5 px-4 rounded-lg hover:bg-white/5 transition-colors">
-                            Enable Reviews
-                        </Link>
-                    </Card>
-                </div>
-            </div>
-        );
-    }
+    const isEmpty = !loading && open.length === 0;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-            <div>
-                <h1 className="text-3xl font-syne font-bold text-white tracking-tight">Dashboard</h1>
-                <p className="text-[var(--color-textSecondary)] mt-1">Status overview of your active scopes and security posture.</p>
-            </div>
+        <div className="min-h-screen bg-[var(--background)]">
+            <div className="max-w-5xl mx-auto px-6 py-8">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column (Pentests & PRs) */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Recent Pentests */}
-                    <Card className="p-0 overflow-hidden shadow-xl">
-                        <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-black/40">
-                            <h3 className="font-syne font-bold text-lg text-white">Recent Pentests</h3>
-                            <Link href="/dashboard/pentests" className="text-sm text-[var(--color-textMuted)] hover:text-white transition-colors flex items-center">
-                                View all <ArrowRight className="h-4 w-4 ml-1" />
-                            </Link>
-                        </div>
-                        <div className="divide-y divide-[var(--color-border)]">
-                            {pentests.length > 0 ? pentests.map((p, i) => (
-                                <div key={i} className="p-4 hover:bg-white/5 transition-colors flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <span className="font-medium text-white">{p.name}</span>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[10px] uppercase tracking-wider font-mono text-[var(--color-cyan)] border border-[var(--color-cyan)]/20 px-1.5 rounded">{p.type}</span>
-                                            <span className="text-xs text-[var(--color-textMuted)]">{new Date(p.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-white/5 font-mono text-[var(--color-textSecondary)]">{p.status}</span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="p-8 text-center text-sm text-[var(--color-textMuted)] flex flex-col items-center">
-                                    <Activity className="h-8 w-8 mb-2 opacity-50" />
-                                    No pentests have been run yet.
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-
-                    {/* Recent PR Reviews */}
-                    <Card className="p-0 overflow-hidden shadow-xl">
-                        <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-black/40">
-                            <h3 className="font-syne font-bold text-lg text-white">Recent PR Reviews</h3>
-                            <Link href="/dashboard/pr-reviews" className="text-sm text-[var(--color-textMuted)] hover:text-white transition-colors flex items-center">
-                                View all <ArrowRight className="h-4 w-4 ml-1" />
-                            </Link>
-                        </div>
-                        <div className="divide-y divide-[var(--color-border)]">
-                            {reviews.length > 0 ? reviews.map((r, i) => (
-                                <div key={i} className="p-4 hover:bg-white/5 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex flex-col">
-                                        <span className="font-medium text-white">{r.pr_title}</span>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <GitPullRequest className="h-3.5 w-3.5 text-[var(--color-textSecondary)]" />
-                                            <span className="text-xs text-[var(--color-textSecondary)]">PR #{r.pr_number}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 min-w-[max-content]">
-                                        <span className={`text-xs px-2 py-1 rounded ${r.status === 'passed' ? 'bg-[var(--color-green)]/10 text-[var(--color-green)] border border-[var(--color-green)]/20' : 'bg-[var(--color-red)]/10 text-[var(--color-red)] border border-[var(--color-red)]/20'}`}>
-                                            {r.status === 'passed' ? 'Passed' : 'Issues Found'}
-                                        </span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="p-8 text-center text-sm text-[var(--color-textMuted)] flex flex-col items-center">
-                                    <GitPullRequest className="h-8 w-8 mb-2 opacity-50" />
-                                    No PR reviews triggered.
-                                </div>
-                            )}
-                        </div>
-                    </Card>
+                {/* Greeting */}
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-2xl font-bold text-[var(--foreground)]">
+                        Hello, <span className="text-[var(--color-cyan)]">{userName}</span>!
+                    </h1>
+                    <Link href="/dashboard/pentests/new"
+                        className="flex items-center gap-2 bg-[var(--color-cyan)] text-black font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+                        <Plus className="h-4 w-4" /> New Pentest
+                    </Link>
                 </div>
 
-                {/* Right Column (Open Issues Summary) */}
-                <div className="space-y-6">
-                    <Card className="p-6 sticky top-8 shadow-xl">
-                        <h3 className="font-syne font-bold text-lg text-white mb-6">Open Issues Summary</h3>
-                        <div className="space-y-4 mb-6">
-                            <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-red)]/20 bg-gradient-to-r from-[var(--color-red)]/10 to-transparent">
-                                <span className="text-[var(--color-red)] font-medium text-sm flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[var(--color-red)] shadow-[0_0_8px_var(--color-red)]" />
-                                    Critical
-                                </span>
-                                <span className="font-mono text-xl text-white font-bold">{issues.critical}</span>
+                {loading ? (
+                    <div className="flex items-center justify-center py-32">
+                        <Loader2 className="h-6 w-6 animate-spin text-[var(--color-textMuted)]" />
+                    </div>
+                ) : isEmpty ? (
+                    /* ── Empty state ── */
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <div className="h-14 w-14 rounded-2xl bg-[var(--color-cyan)]/10 flex items-center justify-center mb-5">
+                            <ShieldAlert className="h-7 w-7 text-[var(--color-cyan)]" />
+                        </div>
+                        <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">No open issues</h2>
+                        <p className="text-[var(--color-textSecondary)] max-w-sm mb-8">
+                            Run a pentest or connect a repository to start finding vulnerabilities.
+                        </p>
+                        <div className="flex gap-3">
+                            <Link href="/dashboard/pentests/new"
+                                className="flex items-center gap-2 bg-[var(--color-cyan)] text-black font-bold px-5 py-2.5 rounded-lg text-sm">
+                                <Search className="h-4 w-4" /> Run Pentest
+                            </Link>
+                            <Link href="/dashboard/integrations"
+                                className="flex items-center gap-2 border border-[var(--color-border)] text-[var(--foreground)] px-5 py-2.5 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                                <GitPullRequest className="h-4 w-4" /> Connect Repo
+                            </Link>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* ── KPI row ── */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            {/* Open issues card with severity bar */}
+                            <div className="col-span-2 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
+                                <div className="mb-3">
+                                    <SeverityBar critical={critical} high={high} medium={medium} low={low} />
+                                </div>
+                                <div className="flex items-baseline gap-2 mb-2">
+                                    <span className="text-2xl font-bold text-[var(--foreground)]">{open.length}</span>
+                                    <span className="text-[var(--color-textSecondary)] text-sm">Open Issues</span>
+                                </div>
+                                <div className="flex gap-3 text-xs font-mono">
+                                    {critical > 0 && <span className="text-red-500">● {critical}</span>}
+                                    {high     > 0 && <span className="text-orange-400">● {high}</span>}
+                                    {medium   > 0 && <span className="text-yellow-400">● {medium}</span>}
+                                    {low      > 0 && <span className="text-green-400">● {low}</span>}
+                                </div>
                             </div>
-                            <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-amber)]/20 bg-gradient-to-r from-[var(--color-amber)]/10 to-transparent">
-                                <span className="text-[var(--color-amber)] font-medium text-sm flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[var(--color-amber)] shadow-[0_0_8px_var(--color-amber)]" />
-                                    High
-                                </span>
-                                <span className="font-mono text-xl text-white font-bold">{issues.high}</span>
+
+                            {/* New this week */}
+                            <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                        <Plus className="h-4 w-4 text-blue-400" />
+                                    </div>
+                                    <span className="text-xs text-[var(--color-textSecondary)] font-medium">New</span>
+                                </div>
+                                <div className="text-2xl font-bold text-[var(--foreground)]">{newCount}</div>
+                                <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
                             </div>
-                            <div className="flex items-center justify-between p-3.5 rounded-xl border border-[#A855F7]/20 bg-gradient-to-r from-[#A855F7]/10 to-transparent">
-                                <span className="text-[#A855F7] font-medium text-sm flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[#A855F7] shadow-[0_0_8px_#A855F7]" />
-                                    Medium
-                                </span>
-                                <span className="font-mono text-xl text-white font-bold">{issues.medium}</span>
+
+                            {/* Fixed this week */}
+                            <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-7 w-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+                                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                                    </div>
+                                    <span className="text-xs text-[var(--color-textSecondary)] font-medium">Fixed</span>
+                                </div>
+                                <div className="text-2xl font-bold text-[var(--foreground)]">{fixedCount}</div>
+                                <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
                             </div>
                         </div>
-                        <Link href="/dashboard/issues" className="flex items-center justify-center w-full py-3 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:text-white hover:bg-white/5 transition-colors font-medium text-sm group">
-                            View all issues <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </Card>
-                </div>
+
+                        {/* ── Filters ── */}
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
+                            <div className="relative flex-1 min-w-[180px]">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-textMuted)]" />
+                                <input
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    placeholder="Search issues..."
+                                    className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--surface-container)] border border-[var(--color-border)] rounded-lg text-[var(--foreground)] placeholder:text-[var(--color-textMuted)] focus:outline-none focus:border-[var(--color-cyan)] transition-colors"
+                                />
+                            </div>
+                            <div className="flex gap-1.5">
+                                {["all", "critical", "high", "medium", "low"].map(s => (
+                                    <button key={s} onClick={() => setSevFilter(s)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize
+                                            ${sevFilter === s
+                                                ? "bg-[var(--color-cyan)] text-black"
+                                                : "bg-[var(--surface-container)] border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:text-[var(--foreground)]"
+                                            }`}>
+                                        {s === "all" ? "All findings" : s}
+                                    </button>
+                                ))}
+                            </div>
+                            <Link href="/dashboard/issues" className="text-xs text-[var(--color-textMuted)] hover:text-[var(--foreground)] flex items-center gap-1 transition-colors ml-auto">
+                                View all <ArrowRight className="h-3 w-3" />
+                            </Link>
+                        </div>
+
+                        {/* ── Issue list ── */}
+                        <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+                            {/* Table header */}
+                            <div className="grid grid-cols-[32px_1fr_120px_140px_100px] gap-4 px-4 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-textMuted)] uppercase tracking-wider">
+                                <div />
+                                <div>Name</div>
+                                <div>Severity</div>
+                                <div>Source</div>
+                                <div className="text-right">Action</div>
+                            </div>
+
+                            {filtered.length === 0 ? (
+                                <div className="py-16 text-center text-[var(--color-textMuted)] text-sm">
+                                    No issues match your filter.
+                                </div>
+                            ) : (
+                                filtered.map(issue => {
+                                    const sev = SEV[issue.severity as SevKey] || SEV.low;
+                                    const source = issue.pentest_id ? "pentest" : "pr";
+                                    const sourceName = (issue.repositories as any)?.full_name
+                                        || (issue.pentests as any)?.name
+                                        || "—";
+
+                                    return (
+                                        <div key={issue.id}
+                                            onClick={() => router.push(`/dashboard/issues/${issue.id}`)}
+                                            className="grid grid-cols-[32px_1fr_120px_140px_100px] gap-4 px-4 py-3.5 border-b border-[var(--color-border)] last:border-0 hover:bg-white/3 transition-colors cursor-pointer group items-center">
+
+                                            {/* Type icon */}
+                                            <TypeBadge source={source} />
+
+                                            {/* Name */}
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-[var(--foreground)] truncate group-hover:text-[var(--color-cyan)] transition-colors">
+                                                    {issue.title}
+                                                </p>
+                                                <p className="text-xs text-[var(--color-textMuted)] truncate mt-0.5">{sourceName}</p>
+                                            </div>
+
+                                            {/* Severity */}
+                                            <div>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${sev.pill}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${sev.dot}`} />
+                                                    {sev.label}
+                                                </span>
+                                            </div>
+
+                                            {/* Source */}
+                                            <div className="text-xs text-[var(--color-textSecondary)] truncate">
+                                                {source === "pr"
+                                                    ? <span className="flex items-center gap-1"><GitPullRequest className="h-3 w-3 shrink-0" />{sourceName}</span>
+                                                    : <span className="flex items-center gap-1"><Search className="h-3 w-3 shrink-0" />{sourceName}</span>
+                                                }
+                                            </div>
+
+                                            {/* Action */}
+                                            <div className="flex justify-end">
+                                                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-cyan)] border border-[var(--color-cyan)]/30 rounded-lg px-2.5 py-1 group-hover:bg-[var(--color-cyan)]/10 transition-colors">
+                                                    View Fix <ChevronRight className="h-3 w-3" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Quick links */}
+                        <div className="grid grid-cols-3 gap-3 mt-6">
+                            {[
+                                { href: "/dashboard/pentests/new", icon: Search,          label: "New Pentest",      sub: "Scan a domain or repo" },
+                                { href: "/dashboard/pr-reviews",   icon: GitPullRequest,   label: "PR Reviews",       sub: "See all code reviews" },
+                                { href: "/dashboard/issues",       icon: ShieldAlert,      label: "All Issues",       sub: "Full issue management" },
+                            ].map(({ href, icon: Icon, label, sub }) => (
+                                <Link key={href} href={href}
+                                    className="flex items-center gap-3 p-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-cyan)]/40 hover:bg-[var(--color-cyan)]/5 transition-colors group">
+                                    <div className="h-8 w-8 rounded-lg bg-[var(--color-cyan)]/10 flex items-center justify-center shrink-0">
+                                        <Icon className="h-4 w-4 text-[var(--color-cyan)]" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-[var(--foreground)] group-hover:text-[var(--color-cyan)] transition-colors">{label}</p>
+                                        <p className="text-xs text-[var(--color-textMuted)] truncate">{sub}</p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+
+                    </>
+                )}
             </div>
         </div>
     );
