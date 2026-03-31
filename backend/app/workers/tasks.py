@@ -132,6 +132,38 @@ def run_pentest_task(
         if not instruction.strip():
             instruction = _build_minimal_instruction(scan_type, domains, repos)
 
+        # ── STRIX INITIALIZATION BROADCAST ───────────────────────────────────
+        # Emit the boot message to the live scan log stream (visible on the UI).
+        # This confirms the tier, targets, and first phase to the user watching live.
+        _tier_labels = {
+            "quick":       ("Quick Scan ($49)",       "Phase 1 — OSINT Reconnaissance"),
+            "web_api":     ("Web & API Scan ($99)",   "Phase 1 — OSINT Reconnaissance & Auth Surface Mapping"),
+            "full_stack":  ("Full Stack Scan ($199)", "Phase 1 — Source Code Analysis (SAST)"),
+            "compliance":  ("Compliance Scan ($299)", "Phase 1 — Full Stack Assessment with Compliance Mapping"),
+            "deep":        ("Deep Scan (Subscription)","Phase 1 — Maximum Coverage Assessment"),
+        }
+        tier_label, first_phase = _tier_labels.get(scan_type, ("Security Scan", "Phase 1 — Reconnaissance"))
+        target_summary = ", ".join(domains[:3]) + (f" +{len(domains)-3} more" if len(domains) > 3 else "")
+        if repos:
+            target_summary += f" | {len(repos)} repo(s)"
+
+        boot_lines = [
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            f"  STRIX ENGINE ONLINE",
+            f"  Tier     : {tier_label}",
+            f"  Target(s): {target_summary}",
+            f"  Mode     : {scan_mode.upper()} | Context: {'Full' if context or strix_instruction else 'Minimal — running autonomous OSINT'}",
+            f"  Starting : {first_phase}",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        ]
+        for line in boot_lines:
+            publish_event(redis_channel, "log", {
+                "scan_id": pentest_id,
+                "message": line,
+                "type": "info",
+                "timestamp": __import__("time").time(),
+            })
+
         # 2. Build target info list in the exact format StrixAgent expects
         targets_info = []
         for d in domains:
