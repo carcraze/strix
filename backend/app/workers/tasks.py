@@ -285,8 +285,10 @@ Do not call finish_scan until all sub-agents have reported back.
             "tooling/nmap",        # Service/port scanning
         ]
         _sast_tools = [
-            "tooling/semgrep",     # AST-based SAST — all languages (Feature #1)
-            "tooling/sqlmap",      # SQL injection automation (Feature #2)
+            "tooling/semgrep",      # AST-based SAST — all languages (Feature #1)
+            "tooling/sqlmap",       # SQL injection automation (Feature #2)
+            "tooling/trufflehog",   # Secrets detection — 800+ detectors, git history (Feature #9)
+            "tooling/osv_scanner",  # SCA — CVEs with CVSS + reachability (Feature #3)
         ]
         _vuln_skills = [
             "vulnerabilities/sql_injection",

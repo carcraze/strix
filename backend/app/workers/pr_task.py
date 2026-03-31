@@ -49,6 +49,19 @@ class StrixLogHandler(logging.Handler):
 STRIX_PR_INSTRUCTION = """
 You are an elite security engineer reviewing a pull request. You have access to the full repository, a live Docker sandbox, and a browser. Do not just read the diff — actively attack it.
 
+PHASE 0 — SECRETS SCAN (run FIRST, before reading the diff)
+Run TruffleHog on the repository immediately:
+  trufflehog git file:///workspace --json --no-update 2>/dev/null
+  trufflehog filesystem /workspace --json --no-update 2>/dev/null
+Any secrets found are CRITICAL findings — report them immediately before proceeding.
+Also run: grep -rE "(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{48}|ghp_[a-zA-Z0-9]{36})" /workspace 2>/dev/null
+
+PHASE 0.5 — SCA (run on new dependencies in the diff)
+If package.json, requirements.txt, go.mod, or any manifest was modified:
+  cd /workspace && npm audit --json 2>/dev/null
+  osv-scanner --recursive /workspace --json 2>/dev/null
+Report any HIGH/CRITICAL CVEs in new or updated dependencies with CVSS scores.
+
 PHASE 1 — STATIC ANALYSIS (read the diff)
 - New dependencies: check each against OSV, NVD, and Snyk databases
 - Secrets and credentials in added lines (API keys, tokens, private keys, connection strings)
@@ -97,6 +110,27 @@ If the PR is completely clean and secure, state: PASSED, with a 1-sentence expla
 
 STRIX_FULL_REPO_INSTRUCTION = """
 You are an elite security engineer performing a comprehensive security review of a repository codebase. You have access to the full repository, a live Docker sandbox, and a browser. Do not just read the code — actively attack it.
+
+PHASE 0 — SECRETS + SCA (run IMMEDIATELY before anything else)
+
+Secrets Detection (TruffleHog — 800+ credential detectors):
+  trufflehog git file:///workspace --json --no-update 2>/dev/null
+  trufflehog filesystem /workspace --json --no-update 2>/dev/null
+  # Fallback if TruffleHog not available:
+  grep -rE "(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{48}|ghp_[a-zA-Z0-9]{36}|xoxb-[0-9]+-[a-zA-Z0-9]+|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)" /workspace 2>/dev/null
+Any secrets found = CRITICAL finding. Report immediately with file path, line number, secret type.
+
+Software Composition Analysis (OSV-Scanner + npm audit):
+  osv-scanner --recursive /workspace --json 2>/dev/null
+  cd /workspace && npm audit --json 2>/dev/null
+  pip-audit -r /workspace/requirements.txt --format json 2>/dev/null
+Report all HIGH/CRITICAL CVEs with CVSS scores, affected versions, and fixed versions.
+
+SAST (Semgrep — AST-based, all languages):
+  semgrep scan /workspace --config=auto --metrics=off --json 2>/dev/null
+Report all HIGH/ERROR findings with file path and line number.
+
+Only after Phase 0 is complete, proceed to dynamic testing:
 
 PHASE 1 — STATIC ANALYSIS
 - Scan the entire codebase for security anti-patterns, OWASP Top 10 vulnerabilities, and misconfigurations.
@@ -493,7 +527,21 @@ def run_pr_review_task(
         log.info(f'[ZENTINEL] targets_info: {targets_info}')
 
         # 7. Call Strix
-        agent_config = {"llm_config": LLMConfig(scan_mode="deep"), "max_iterations": 200, "non_interactive": True}
+        # Load tool skills for PR reviews — secrets + SCA run on every PR
+        # This makes PR reviews catch leaked credentials and vulnerable deps instantly
+        pr_skills = [
+            "tooling/trufflehog",   # Secrets in new code + git history (CRITICAL for PRs)
+            "tooling/semgrep",      # SAST on changed files
+            "tooling/osv_scanner",  # New dependencies introduced in this PR
+            "tooling/httpx",        # Test new API endpoints added in the diff
+            "tooling/nuclei",       # CVE checks on new endpoints
+            "vulnerabilities/authentication_jwt",
+            "vulnerabilities/idor",
+            "vulnerabilities/sql_injection",
+            "vulnerabilities/xss",
+            "vulnerabilities/mass_assignment",
+        ]
+        agent_config = {"llm_config": LLMConfig(scan_mode="deep", skills=pr_skills), "max_iterations": 200, "non_interactive": True}
         scan_config = {
             'scan_id': f'pr_{pr_review_id}',
             'targets': targets_info,
