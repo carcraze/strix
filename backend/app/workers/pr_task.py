@@ -745,6 +745,18 @@ def run_pr_review_task(
         }).eq("id", pr_review_id).execute()
 
         log.info(f"[ZENTINEL] Task finished | pr_review_id={pr_review_id} status=completed findings={len(findings)}")
+
+        # Email notification
+        import os as _os, httpx as _httpx
+        _notify_secret = _os.environ.get("NOTIFY_SECRET", "")
+        _notify_url = _os.environ.get("FRONTEND_URL", "https://app.zentinel.dev")
+        if _notify_secret:
+            try:
+                _httpx.post(f"{_notify_url}/api/notify/pr-complete",
+                    json={"pr_review_id": pr_review_id},
+                    headers={"x-notify-secret": _notify_secret}, timeout=10)
+            except Exception:
+                pass
         publish_event(redis_channel, "status", {
             "status": "completed",
             "message": f"Scan complete — {len(findings)} finding{'s' if len(findings) != 1 else ''} discovered.",

@@ -450,6 +450,22 @@ Do not call finish_scan until all sub-agents have reported back.
         "report_url": report_url,
     })
 
+    # ── Email notification ────────────────────────────────────────────────────
+    # Notify org members based on their notification_preferences settings
+    _notify_url = __import__("os").environ.get("FRONTEND_URL", "https://app.zentinel.dev")
+    _notify_secret = __import__("os").environ.get("NOTIFY_SECRET", "")
+    if _notify_secret:
+        try:
+            import httpx as _httpx
+            _httpx.post(
+                f"{_notify_url}/api/notify/scan-complete",
+                json={"pentest_id": pentest_id},
+                headers={"x-notify-secret": _notify_secret},
+                timeout=10,
+            )
+        except Exception as _e:
+            pass  # Non-fatal — scan still succeeded
+
 
 def _build_minimal_instruction(scan_type: str, domains: list[str], repos: list[str]) -> str:
     """
