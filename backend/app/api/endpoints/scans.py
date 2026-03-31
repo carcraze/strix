@@ -130,7 +130,7 @@ async def launch_scan(request: Request, payload: ScanRequest, user=Depends(get_c
         current_month = datetime.now().strftime("%Y-%m")
         supabase_admin.rpc("increment_scan_usage", {
             "org_id": org_id,
-            "month": current_month,
+            "p_month": current_month,
         }).execute()
 
     # ── CREATE PENTEST RECORD ────────────────────────────────────
