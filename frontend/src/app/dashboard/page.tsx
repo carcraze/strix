@@ -116,8 +116,8 @@ export default function FeedPage() {
 
             // Build 14-day trend (issues found per day)
             const trend: number[] = Array(14).fill(0);
-            for (const issue of newIssues || []) {
-                const daysAgo = Math.floor((Date.now() - new Date(issue.created_at || issue.found_at || Date.now()).getTime()) / 86400000);
+            for (const issue of (newIssues as any[]) || []) {
+                const daysAgo = Math.floor((Date.now() - new Date(issue.found_at || issue.created_at || Date.now()).getTime()) / 86400000);
                 if (daysAgo < 14) trend[13 - daysAgo]++;
             }
 

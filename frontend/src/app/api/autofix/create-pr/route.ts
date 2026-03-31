@@ -192,7 +192,8 @@ export async function POST(req: NextRequest) {
         }
 
         // ── Open the PR ───────────────────────────────────────────────────────
-        const sevEmoji  = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' }[issue.severity] || '🔵';
+        const sevMap: Record<string, string> = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' };
+        const sevEmoji  = sevMap[issue.severity as string] || '🔵';
         const prTitle   = `${sevEmoji} [Zentinel AutoFix] ${issue.title}`;
         const prBody    = [
             `## ${sevEmoji} Security Fix — ${issue.severity?.toUpperCase()}`,
