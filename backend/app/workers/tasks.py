@@ -74,6 +74,9 @@ def run_pentest_task(
     scan_mode: str,
     strix_instruction: str | None = None,  # rich pre-built instruction from frontend
 ):
+    import time as _time
+    _scan_start = _time.time()
+
     redis_channel = f"pentest:{pentest_id}:logs"
     config = SCAN_CONFIGS[ScanType(scan_type)]
 
@@ -312,12 +315,31 @@ def run_pentest_task(
         except Exception as e:
             publish_event(redis_channel, "log", {"type": "error", "message": f"Report generation failed: {e}"})
 
+    # ── Read final report from disk ──────────────────────────────
+    import os as _os
+    run_dir = f"/home/alvin/zentinel/strix_runs/{pentest_id}"
+    report_path = f"{run_dir}/penetration_test_report.md"
+    final_report_text = None
+    if _os.path.exists(report_path):
+        try:
+            with open(report_path, "r") as _f:
+                final_report_text = _f.read()
+        except Exception:
+            pass
+
     # ── COMPLETE ─────────────────────────────────────────────────
-    supabase_admin.table("pentests").update({
+    duration_secs = int(_time.time() - _scan_start)
+    update_payload: dict = {
         "status": "completed",
         "completed_at": "now()",
         "report_url": report_url,
-    }).eq("id", pentest_id).execute()
+        "issues_found": len(findings),
+        "duration_seconds": duration_secs,
+    }
+    if final_report_text:
+        update_payload["final_report"] = final_report_text[:100000]  # cap at 100k chars
+
+    supabase_admin.table("pentests").update(update_payload).eq("id", pentest_id).execute()
 
     publish_event(redis_channel, "status", {
         "status": "completed",
