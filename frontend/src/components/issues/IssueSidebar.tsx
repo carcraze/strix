@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
     X, ExternalLink, CheckCircle2, EyeOff,
     RefreshCw, Terminal, Wrench, ChevronRight,
-    ArrowLeft, ArrowRight as ArrowRightIcon
+    ArrowLeft, ArrowRight as ArrowRightIcon,
+    GitPullRequest, Loader2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { updateIssueStatus } from "@/lib/queries";
@@ -77,14 +78,41 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
     const [loading, setLoading] = useState(false);
     const [tab, setTab] = useState<"overview" | "poc" | "fix">("overview");
     const [updating, setUpdating] = useState(false);
+    const [creatingPr, setCreatingPr] = useState(false);
+    const [prUrl, setPrUrl] = useState<string | null>(null);
+    const [prError, setPrError] = useState<string | null>(null);
 
     const currentIdx = allIds.indexOf(issueId || "");
     const prevId = currentIdx > 0 ? allIds[currentIdx - 1] : null;
     const nextId = currentIdx < allIds.length - 1 ? allIds[currentIdx + 1] : null;
 
+    const handleCreatePr = async () => {
+        if (!issue || creatingPr) return;
+        setCreatingPr(true);
+        setPrError(null);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/autofix/create-pr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+                body: JSON.stringify({ issue_id: issue.id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            setPrUrl(data.pr_url);
+            setIssue({ ...issue, external_issue_url: data.pr_url });
+        } catch (e: any) {
+            setPrError(e.message);
+        } finally {
+            setCreatingPr(false);
+        }
+    };
+
     useEffect(() => {
         if (!issueId) { setIssue(null); return; }
         setLoading(true);
+        setPrUrl(null);
+        setPrError(null);
         setTab("overview");
         supabase
             .from("issues")
@@ -158,25 +186,33 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                     {/* Actions */}
                     {issue && (
                         <div className="flex items-center gap-2">
+                            {/* AutoFix PR button */}
+                            {issue.repository_id && (
+                                issue.external_issue_url || prUrl ? (
+                                    <a href={issue.external_issue_url || prUrl!} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold hover:bg-purple-500/20 transition-colors">
+                                        <GitPullRequest className="h-3.5 w-3.5" />
+                                        View PR
+                                    </a>
+                                ) : (
+                                    <button onClick={handleCreatePr} disabled={creatingPr}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500 text-white text-xs font-bold hover:bg-purple-600 transition-colors disabled:opacity-60">
+                                        {creatingPr ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitPullRequest className="h-3.5 w-3.5" />}
+                                        {creatingPr ? "Creating PR…" : "Create Fix PR"}
+                                    </button>
+                                )
+                            )}
                             {issue.status !== "fixed" && (
                                 <button onClick={() => handleStatus("fixed")} disabled={updating}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-cyan)] text-black text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50">
                                     <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Mark Fixed
+                                    Fixed
                                 </button>
                             )}
                             {issue.status !== "ignored" && (
                                 <button onClick={() => handleStatus("ignored")} disabled={updating}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] text-xs font-medium hover:bg-white/5 transition-colors disabled:opacity-50">
+                                    className="p-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 transition-colors disabled:opacity-50">
                                     <EyeOff className="h-3.5 w-3.5" />
-                                    Ignore
-                                </button>
-                            )}
-                            {issue.status === "fixed" && (
-                                <button onClick={() => handleStatus("open")} disabled={updating}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] text-xs font-medium hover:bg-white/5 transition-colors disabled:opacity-50">
-                                    <RefreshCw className="h-3.5 w-3.5" />
-                                    Reopen
                                 </button>
                             )}
                         </div>
@@ -341,6 +377,13 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                                         </div>
                                     )}
                                 </>
+                            )}
+
+                            {/* PR error */}
+                            {prError && (
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-xs text-red-400">
+                                    ⚠ {prError}
+                                </div>
                             )}
 
                             {/* Full detail link */}
