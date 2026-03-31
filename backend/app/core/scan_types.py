@@ -6,6 +6,7 @@ class ScanType(str, Enum):
     WEB_API    = "web_api"      # $99 one-time / all subscription plans
     FULL_STACK = "full_stack"   # $199 one-time / Growth+ subscription
     COMPLIANCE = "compliance"   # $299 one-time / Scale+ subscription
+    DEEP       = "deep"         # subscription plans — max coverage, all specialists
 
 @dataclass
 class ScanTypeConfig:
@@ -20,6 +21,17 @@ class ScanTypeConfig:
     subscription_plans: list[str]  # plans that can run this via subscription
 
 SCAN_CONFIGS: dict[ScanType, ScanTypeConfig] = {
+    ScanType.DEEP: ScanTypeConfig(
+        label="Deep Scan",
+        scan_mode="deep",
+        allow_repos=True,
+        max_domains=9999,
+        max_repos=9999,
+        generate_pdf=True,
+        compliance_report=True,
+        context_fields=["app_description", "tech_stack", "auth_details", "api_endpoints", "sensitive_data", "testing_focus"],
+        subscription_plans=["growth", "scale", "enterprise"],
+    ),
     ScanType.QUICK: ScanTypeConfig(
         label="Quick Scan",
         scan_mode="quick",
@@ -87,21 +99,21 @@ PLAN_SCAN_PERMISSIONS: dict[str, dict] = {
         "max_repos_per_scan": 1,
     },
     "growth": {
-        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK],
+        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK, ScanType.DEEP],
         "scan_mode": "deep",
         "monthly_limit": None,       # unlimited
         "max_domains_per_scan": 5,
         "max_repos_per_scan": 15,
     },
     "scale": {
-        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK, ScanType.COMPLIANCE],
+        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK, ScanType.COMPLIANCE, ScanType.DEEP],
         "scan_mode": "deep",
         "monthly_limit": None,
         "max_domains_per_scan": 15,
         "max_repos_per_scan": 50,
     },
     "enterprise": {
-        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK, ScanType.COMPLIANCE],
+        "allowed_types": [ScanType.QUICK, ScanType.WEB_API, ScanType.FULL_STACK, ScanType.COMPLIANCE, ScanType.DEEP],
         "scan_mode": "deep",
         "monthly_limit": None,
         "max_domains_per_scan": 9999,
