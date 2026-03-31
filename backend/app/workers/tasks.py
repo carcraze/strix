@@ -146,6 +146,26 @@ def run_pentest_task(
         if not instruction.strip():
             instruction = _build_minimal_instruction(scan_type, domains, repos)
 
+        # For deep/full_stack scans: prepend multi-agent orchestration directive.
+        # The root agent has sub-agent delegation capability — use it to run phases in parallel.
+        if scan_type in ("full_stack", "deep", "compliance"):
+            orchestration_prefix = """You are the ROOT SECURITY ORCHESTRATOR for this engagement.
+You MUST delegate specialized work to sub-agents. Do not do everything yourself sequentially.
+
+DELEGATION STRATEGY:
+1. Spawn a RECON sub-agent first: enumerate subdomains, map attack surface, identify all endpoints and technologies.
+2. Spawn a SAST sub-agent (if repo provided): clone repo, analyze source code for CWE vulnerabilities, secrets, injection sinks.
+3. Spawn an AUTH sub-agent: use provided credentials/headers to authenticate and test session management, JWT, privilege escalation.
+4. Spawn an API FUZZER sub-agent: test every discovered/listed API endpoint for IDOR, SQLi, mass assignment, auth bypass.
+5. Spawn a DEPENDENCY sub-agent (if repo provided): scan all package manifests for CVEs with reachability analysis.
+6. Collect all sub-agent reports and compile the final finding list.
+
+Each sub-agent should focus ONLY on its domain. This parallel approach covers more ground and produces higher-quality findings.
+Do not call finish_scan until all sub-agents have reported back.
+
+"""
+            instruction = orchestration_prefix + instruction
+
         # ── STRIX INITIALIZATION BROADCAST ───────────────────────────────────
         # Emit the boot message to the live scan log stream (visible on the UI).
         # This confirms the tier, targets, and first phase to the user watching live.
