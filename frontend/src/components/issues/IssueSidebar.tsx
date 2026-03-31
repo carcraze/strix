@@ -6,7 +6,8 @@ import {
     X, ExternalLink, CheckCircle2, EyeOff,
     RefreshCw, Terminal, Wrench, ChevronRight,
     ArrowLeft, ArrowRight as ArrowRightIcon,
-    GitPullRequest, Loader2, Clock, BellOff
+    GitPullRequest, Loader2, Clock, BellOff,
+    Sparkles, FileCode2, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { updateIssueStatus, snoozeIssue } from "@/lib/queries";
@@ -96,6 +97,9 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
     const [prError, setPrError] = useState<string | null>(null);
     const [snoozeOpen, setSnoozeOpen] = useState(false);
     const [snoozing, setSnoozing] = useState(false);
+    const [assessing, setAssessing] = useState(false);
+    const [subissues, setSubissues] = useState<{ file: string; line?: string }[]>([]);
+    const [aiReason, setAiReason] = useState<string | null>(null);
 
     const currentIdx = allIds.indexOf(issueId || "");
     const prevId = currentIdx > 0 ? allIds[currentIdx - 1] : null;
@@ -137,12 +141,39 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
         }
     };
 
+    const handleAssess = async () => {
+        if (!issue || assessing) return;
+        setAssessing(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/ai/assess-issue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                body: JSON.stringify({ issue_id: issue.id }),
+            });
+            const data = await res.json();
+            if (data.subissues?.length) setSubissues(data.subissues);
+            if (data.auto_ignore_reason) {
+                setAiReason(data.auto_ignore_reason);
+                setIssue({ ...issue, status: 'ignored', is_false_positive: true, auto_ignore_reason: data.auto_ignore_reason });
+                onStatusChange?.(issue.id, 'ignored');
+            } else {
+                setAiReason('');
+                if (data.subissues?.length) setSubissues(data.subissues);
+            }
+        } finally {
+            setAssessing(false);
+        }
+    };
+
     useEffect(() => {
         if (!issueId) { setIssue(null); return; }
         setLoading(true);
         setPrUrl(null);
         setPrError(null);
         setSnoozeOpen(false);
+        setSubissues([]);
+        setAiReason(null);
         setTab("overview");
         supabase
             .from("issues")
@@ -339,6 +370,21 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                             {/* Overview */}
                             {tab === "overview" && (
                                 <>
+                                    {/* AI auto-ignore result */}
+                                    {(issue.auto_ignore_reason || aiReason !== null) && (
+                                        <div className={`rounded-lg px-4 py-3 text-xs flex items-start gap-2 border
+                                            ${issue.is_false_positive || aiReason
+                                                ? 'bg-amber-500/8 border-amber-500/20 text-amber-300'
+                                                : 'bg-green-500/8 border-green-500/20 text-green-300'}`}>
+                                            <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                            <span>
+                                                {issue.auto_ignore_reason || aiReason
+                                                    ? <><strong>AI assessed as false positive</strong> — {issue.auto_ignore_reason || aiReason}</>
+                                                    : <><strong>AI assessed as real finding</strong> — No false positive patterns detected.</>}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {issue.description ? (
                                         <div>
                                             <p className="text-xs font-semibold text-[var(--color-textMuted)] uppercase tracking-wider mb-2">TL;DR</p>
@@ -356,6 +402,34 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                                                 {issue.repositories?.full_name || issue.pentests?.name}
                                             </p>
                                         </div>
+                                    )}
+
+                                    {/* Code subissues */}
+                                    {subissues.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-[var(--color-textMuted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <FileCode2 className="h-3.5 w-3.5" /> Subissues ({subissues.length})
+                                            </p>
+                                            <div className="space-y-1.5">
+                                                {subissues.map((s, i) => (
+                                                    <div key={i} className="flex items-center gap-2 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-lg px-3 py-2">
+                                                        <FileCode2 className="h-3.5 w-3.5 text-[var(--color-textMuted)] shrink-0" />
+                                                        <span className="text-xs font-mono text-[var(--foreground)] truncate">{s.file}</span>
+                                                        {s.line && <span className="text-xs font-mono text-[var(--color-cyan)] shrink-0">:{s.line}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* AI Assess button */}
+                                    {!issue.auto_ignore_reason && aiReason === null && (
+                                        <button onClick={handleAssess} disabled={assessing}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-textSecondary)] hover:text-[var(--foreground)] hover:border-purple-500/40 hover:bg-purple-500/5 transition-colors disabled:opacity-50">
+                                            {assessing
+                                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Assessing…</>
+                                                : <><Sparkles className="h-4 w-4 text-purple-400" /> Assess with AI</>}
+                                        </button>
                                     )}
 
                                     {/* Status picker */}

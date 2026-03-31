@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
     Search, GitPullRequest, ArrowRight, Plus,
     CheckCircle2, ChevronRight,
-    ShieldAlert, Loader2, Clock
+    ShieldAlert, Loader2, Clock, Sparkles
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -79,6 +79,7 @@ export default function FeedPage() {
     const [newCount, setNewCount] = useState(0);
     const [fixedCount, setFixedCount] = useState(0);
     const [ignoredCount, setIgnoredCount] = useState(0);
+    const [hoursSaved, setHoursSaved] = useState(0);
     const [trendData, setTrendData] = useState<number[]>([]);
 
     useEffect(() => {
@@ -120,10 +121,19 @@ export default function FeedPage() {
                 if (daysAgo < 14) trend[13 - daysAgo]++;
             }
 
+            // Hours saved from auto-ignored false positives
+            const { data: savedData } = await supabase
+                .from('issues')
+                .select('hours_saved')
+                .eq('organization_id', activeWorkspace.id)
+                .eq('is_false_positive', true);
+            const totalHours = (savedData || []).reduce((sum, r) => sum + (r.hours_saved || 0), 0);
+
             setIssues(allIssues || []);
             setNewCount(newIssues?.length || 0);
             setFixedCount(fixedIssues?.length || 0);
-            setIgnoredCount(0);
+            setIgnoredCount((savedData || []).length);
+            setHoursSaved(Math.round(totalHours * 10) / 10);
             setTrendData(trend);
             setLoading(false);
         };
@@ -243,6 +253,21 @@ export default function FeedPage() {
                                 <div className="text-2xl font-bold text-[var(--foreground)]">{fixedCount}</div>
                                 <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
                             </div>
+
+                        {/* Hours saved by AI auto-ignore */}
+                        {hoursSaved > 0 && (
+                            <div className="col-span-2 md:col-span-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                                    <Sparkles className="h-5 w-5 text-purple-400" />
+                                </div>
+                                <div>
+                                    <p className="text-lg font-bold text-[var(--foreground)]">{hoursSaved} hours saved</p>
+                                    <p className="text-xs text-[var(--color-textSecondary)]">
+                                        AI auto-ignored {ignoredCount} false positive{ignoredCount !== 1 ? 's' : ''} — most common reason: false positive pattern detected
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Trend sparkline — full width row */}
                         {trendData.some(v => v > 0) && (
