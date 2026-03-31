@@ -263,19 +263,52 @@ Do not call finish_scan until all sub-agents have reported back.
                 targets_info.append(repo_target)
 
         # 3. Formulate configs
-        # BUG FIX: Enforce minimum scan depth by scan type.
-        # A quick scan can stop at 150 iterations. A full/deep scan MUST go deeper.
-        # Previously all scans had the same limit — full scans stopped early like quick scans.
         _depth_limits = {
-            "quick":      150,   # ~10-15 min
-            "web_api":    250,   # ~20-25 min
-            "full_stack": 400,   # ~35-40 min (includes SAST + DAST + SCA)
-            "compliance": 450,   # ~40-45 min (includes compliance mapping)
-            "deep":       500,   # ~45-60 min (maximum coverage)
+            "quick":      150,
+            "web_api":    250,
+            "full_stack": 400,
+            "compliance": 450,
+            "deep":       500,
         }
         max_iters = _depth_limits.get(scan_type, 300)
 
-        llm_config = LLMConfig(scan_mode=scan_mode)
+        # Load tool skills based on scan type.
+        # The sandbox already has these tools installed — skills tell the agent HOW to use them.
+        # Previously zero tool skills were loaded — agent did everything manually with a browser.
+        _base_tools = [
+            "tooling/subfinder",   # Subdomain enumeration
+            "tooling/naabu",       # Port discovery
+            "tooling/httpx",       # HTTP probing + tech fingerprinting
+            "tooling/katana",      # Web crawling + endpoint discovery
+            "tooling/nuclei",      # CVE/vulnerability templates (DAST #2)
+            "tooling/ffuf",        # API fuzzing + directory brute-force
+            "tooling/nmap",        # Service/port scanning
+        ]
+        _sast_tools = [
+            "tooling/semgrep",     # AST-based SAST — all languages (Feature #1)
+            "tooling/sqlmap",      # SQL injection automation (Feature #2)
+        ]
+        _vuln_skills = [
+            "vulnerabilities/sql_injection",
+            "vulnerabilities/xss",
+            "vulnerabilities/ssrf",
+            "vulnerabilities/idor",
+            "vulnerabilities/authentication_jwt",
+            "vulnerabilities/mass_assignment",
+            "vulnerabilities/business_logic",
+            "vulnerabilities/race_conditions",
+        ]
+
+        if scan_type == "quick":
+            skill_list = _base_tools[:4]  # lighter toolset for quick
+        elif scan_type == "web_api":
+            skill_list = _base_tools + _vuln_skills
+        elif scan_type in ("full_stack", "compliance", "deep"):
+            skill_list = _base_tools + _sast_tools + _vuln_skills
+        else:
+            skill_list = _base_tools
+
+        llm_config = LLMConfig(scan_mode=scan_mode, skills=skill_list)
         agent_config = {
             "llm_config": llm_config,
             "max_iterations": max_iters,
