@@ -51,7 +51,7 @@ class StrixAgent(BaseAgent):
 
         return {
             "scope_source": "system_scan_config",
-            "authorization_source": "strix_platform_verified_targets",
+            "authorization_source": "zentinel_platform_verified_targets",
             "authorized_targets": authorized_targets,
             "user_instructions_do_not_expand_scope": True,
         }

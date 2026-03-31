@@ -521,7 +521,7 @@ def run_pr_review_task(
         log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
 
         if isinstance(result, dict) and not result.get("success", True):
-            error_msg = result.get("error", "Unknown Strix LLM execution error")
+            error_msg = result.get("error", "Unknown Zentinel engine error")
             err_lower = error_msg.lower()
             
             if "429" in err_lower or "quota" in err_lower or "resource" in err_lower and "exhausted" in err_lower or "too many requests" in err_lower:
@@ -581,7 +581,7 @@ def run_pr_review_task(
         else:
             log.warning(f"[ZENTINEL] Report file NOT found at {report_path} — using tracer data")
 
-        log.info(f"[ZENTINEL] Strix scan complete | findings_from_tracer={len(findings)} duration={scan_duration_s}s")
+        log.info(f"[ZENTINEL] Scan complete | findings_from_tracer={len(findings)} duration={scan_duration_s}s")
 
         if not findings:
             log.warning(f"[ZENTINEL] Zero findings from tracer | final_report_length={len(final_report or '')}")
