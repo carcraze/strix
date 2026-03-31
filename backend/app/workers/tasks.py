@@ -14,6 +14,17 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
 )
 
+# Explicitly enforce JSON serialization for all tasks.
+# This ensures the large strix_instruction strings (with Unicode, newlines, special chars)
+# are safely serialized to/from the Redis broker without corruption or pickle security risks.
+celery_app.conf.update(
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    task_always_eager=False,
+    worker_prefetch_multiplier=1,  # one task at a time per worker — prevents memory spikes on large instructions
+)
+
 
 class StrixLogHandler(logging.Handler):
     """Intercepts strix internal logs and pipes them to Redis for live streaming"""
