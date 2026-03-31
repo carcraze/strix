@@ -121,6 +121,17 @@ export async function getIssueDetails(issueId: string) {
     return data;
 }
 
+export async function snoozeIssue(issueId: string, until: Date) {
+    const { data, error } = await supabase
+        .from('issues')
+        .update({ snoozed_until: until.toISOString(), status: 'open' })
+        .eq('id', issueId)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
 export async function updateIssueStatus(issueId: string, status: 'open' | 'in_progress' | 'fixed' | 'ignored') {
     const { data, error } = await supabase
         .from('issues')

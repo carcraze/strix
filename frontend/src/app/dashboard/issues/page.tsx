@@ -6,7 +6,7 @@ import { Search, ChevronDown, ChevronLeft, ChevronRight, Check, Activity, List }
 import { Card } from "@/components/ui/zentinel-card";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getIssues, getDomains, getRepositories } from "@/lib/queries";
-import { IssueSidebar } from "@/components/issues/IssueSidebar";
+import { IssueSidebar, fixTime } from "@/components/issues/IssueSidebar";
 
 // ─────────────── Configuration ───────────────
 const SEVERITY_CONFIG: Record<string, { color: string, bg: string, label: string }> = {
@@ -18,11 +18,12 @@ const SEVERITY_CONFIG: Record<string, { color: string, bg: string, label: string
 };
 
 const STATUS_TABS = [
-    { id: "all", label: "All" },
-    { id: "open", label: "Open" },
+    { id: "all",         label: "All" },
+    { id: "open",        label: "Open" },
     { id: "in_progress", label: "In Progress" },
-    { id: "fixed", label: "Fixed" },
-    { id: "ignored", label: "Ignored" }
+    { id: "fixed",       label: "Fixed" },
+    { id: "ignored",     label: "Ignored" },
+    { id: "snoozed",     label: "Snoozed" },
 ];
 
 // ─────────────── Pagination ───────────────
@@ -210,6 +211,7 @@ export default function IssuesPage() {
                 in_progress: issues.filter(i => i.status === 'in_progress').length,
                 fixed: issues.filter(i => i.status === 'fixed' || i.status === 'resolved').length,
                 ignored: issues.filter(i => i.status === 'ignored').length,
+                snoozed: issues.filter(i => i.snoozed_until && new Date(i.snoozed_until) > new Date()).length,
             }
         };
     }, [issues]);
@@ -226,6 +228,10 @@ export default function IssuesPage() {
         if (activeTab === 'in_progress' && stat !== 'in_progress') return false;
         if (activeTab === 'fixed' && stat !== 'fixed' && stat !== 'resolved') return false;
         if (activeTab === 'ignored' && stat !== 'ignored') return false;
+        if (activeTab === 'snoozed') {
+            const snoozedUntil = i.snoozed_until ? new Date(i.snoozed_until) : null;
+            if (!snoozedUntil || snoozedUntil <= new Date()) return false;
+        }
 
         // Dropdown filtering
         if (severityFilter !== 'all' && i.severity !== severityFilter) return false;
@@ -377,6 +383,7 @@ export default function IssuesPage() {
                                         <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs w-28">Severity</th>
                                         <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Vulnerability Name</th>
                                         <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Target</th>
+                                        <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Fix Time</th>
                                         <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Date Found</th>
                                     </tr>
                                 </thead>
@@ -411,6 +418,9 @@ export default function IssuesPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-[var(--color-textSecondary)] text-sm">
                                                     {targetName}
+                                                </td>
+                                                <td className="px-6 py-4 text-[var(--color-textMuted)] text-xs font-mono whitespace-nowrap">
+                                                    {fixTime(issue.severity)}
                                                 </td>
                                                 <td className="px-6 py-4 text-[var(--color-textSecondary)] text-xs whitespace-nowrap">
                                                     {new Date(issue.found_at || issue.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

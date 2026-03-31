@@ -5,11 +5,33 @@ import Link from "next/link";
 import {
     Search, GitPullRequest, ArrowRight, Plus,
     CheckCircle2, ChevronRight,
-    ShieldAlert, Loader2
+    ShieldAlert, Loader2, Clock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { IssueSidebar } from "@/components/issues/IssueSidebar";
+import { IssueSidebar, fixTime } from "@/components/issues/IssueSidebar";
+
+// ── Trend sparkline (14-day issue count) ─────────────────────────────────────
+function TrendSparkline({ data }: { data: number[] }) {
+    if (!data.length) return null;
+    const max = Math.max(...data, 1);
+    const W = 120, H = 36, pad = 2;
+    const pts = data.map((v, i) => {
+        const x = pad + (i / (data.length - 1)) * (W - pad * 2);
+        const y = H - pad - ((v / max) * (H - pad * 2));
+        return `${x},${y}`;
+    }).join(" ");
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="opacity-70">
+            <polyline points={pts} fill="none" stroke="var(--color-cyan)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+            {data.map((v, i) => {
+                const x = pad + (i / (data.length - 1)) * (W - pad * 2);
+                const y = H - pad - ((v / max) * (H - pad * 2));
+                return v > 0 ? <circle key={i} cx={x} cy={y} r="2" fill="var(--color-cyan)" /> : null;
+            })}
+        </svg>
+    );
+}
 
 // ── Severity config ───────────────────────────────────────────────────────────
 const SEV = {
@@ -57,6 +79,7 @@ export default function FeedPage() {
     const [newCount, setNewCount] = useState(0);
     const [fixedCount, setFixedCount] = useState(0);
     const [ignoredCount, setIgnoredCount] = useState(0);
+    const [trendData, setTrendData] = useState<number[]>([]);
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => {
@@ -90,10 +113,18 @@ export default function FeedPage() {
                     .gte("found_at", weekAgo),
             ]);
 
+            // Build 14-day trend (issues found per day)
+            const trend: number[] = Array(14).fill(0);
+            for (const issue of newIssues || []) {
+                const daysAgo = Math.floor((Date.now() - new Date(issue.created_at || issue.found_at || Date.now()).getTime()) / 86400000);
+                if (daysAgo < 14) trend[13 - daysAgo]++;
+            }
+
             setIssues(allIssues || []);
             setNewCount(newIssues?.length || 0);
             setFixedCount(fixedIssues?.length || 0);
-            setIgnoredCount(0); // can wire ignored count later
+            setIgnoredCount(0);
+            setTrendData(trend);
             setLoading(false);
         };
         load();
@@ -212,6 +243,17 @@ export default function FeedPage() {
                                 <div className="text-2xl font-bold text-[var(--foreground)]">{fixedCount}</div>
                                 <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
                             </div>
+
+                        {/* Trend sparkline — full width row */}
+                        {trendData.some(v => v > 0) && (
+                            <div className="col-span-2 md:col-span-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-xs text-[var(--color-textSecondary)] font-medium mb-0.5">New issues · last 14 days</p>
+                                    <p className="text-lg font-bold text-[var(--foreground)]">{newCount} total</p>
+                                </div>
+                                <TrendSparkline data={trendData} />
+                            </div>
+                        )}
                         </div>
 
                         {/* ── Filters ── */}
@@ -245,11 +287,12 @@ export default function FeedPage() {
                         {/* ── Issue list ── */}
                         <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl overflow-hidden">
                             {/* Table header */}
-                            <div className="grid grid-cols-[32px_1fr_120px_140px_100px] gap-4 px-4 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-textMuted)] uppercase tracking-wider">
+                            <div className="grid grid-cols-[32px_1fr_110px_110px_90px_90px] gap-3 px-4 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-textMuted)] uppercase tracking-wider">
                                 <div />
                                 <div>Name</div>
                                 <div>Severity</div>
                                 <div>Source</div>
+                                <div className="flex items-center gap-1"><Clock className="h-3 w-3" />Fix Time</div>
                                 <div className="text-right">Action</div>
                             </div>
 
@@ -268,7 +311,7 @@ export default function FeedPage() {
                                     return (
                                         <div key={issue.id}
                                             onClick={() => setSidebarId(issue.id)}
-                                            className="grid grid-cols-[32px_1fr_120px_140px_100px] gap-4 px-4 py-3.5 border-b border-[var(--color-border)] last:border-0 hover:bg-white/3 transition-colors cursor-pointer group items-center">
+                                            className="grid grid-cols-[32px_1fr_110px_110px_90px_90px] gap-3 px-4 py-3.5 border-b border-[var(--color-border)] last:border-0 hover:bg-white/3 transition-colors cursor-pointer group items-center">
 
                                             {/* Type icon */}
                                             <TypeBadge source={source} />
@@ -295,6 +338,12 @@ export default function FeedPage() {
                                                     ? <span className="flex items-center gap-1"><GitPullRequest className="h-3 w-3 shrink-0" />{sourceName}</span>
                                                     : <span className="flex items-center gap-1"><Search className="h-3 w-3 shrink-0" />{sourceName}</span>
                                                 }
+                                            </div>
+
+                                            {/* Fix time */}
+                                            <div className="flex items-center gap-1 text-xs text-[var(--color-textMuted)]">
+                                                <Clock className="h-3 w-3 shrink-0" />
+                                                {fixTime(issue.severity)}
                                             </div>
 
                                             {/* Action */}

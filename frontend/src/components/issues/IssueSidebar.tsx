@@ -6,10 +6,23 @@ import {
     X, ExternalLink, CheckCircle2, EyeOff,
     RefreshCw, Terminal, Wrench, ChevronRight,
     ArrowLeft, ArrowRight as ArrowRightIcon,
-    GitPullRequest, Loader2
+    GitPullRequest, Loader2, Clock, BellOff
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { updateIssueStatus } from "@/lib/queries";
+import { updateIssueStatus, snoozeIssue } from "@/lib/queries";
+
+// ── Fix time estimate ─────────────────────────────────────────────────────────
+export function fixTime(severity: string): string {
+    return { critical: "4–8 hr", high: "2–4 hr", medium: "1–2 hr", low: "30 min" }[severity] ?? "1–2 hr";
+}
+
+// ── Snooze options ────────────────────────────────────────────────────────────
+const SNOOZE_OPTIONS = [
+    { label: "1 day",   days: 1 },
+    { label: "3 days",  days: 3 },
+    { label: "1 week",  days: 7 },
+    { label: "1 month", days: 30 },
+];
 
 // ── CVSS-style dial ──────────────────────────────────────────────────────────
 
@@ -81,6 +94,8 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
     const [creatingPr, setCreatingPr] = useState(false);
     const [prUrl, setPrUrl] = useState<string | null>(null);
     const [prError, setPrError] = useState<string | null>(null);
+    const [snoozeOpen, setSnoozeOpen] = useState(false);
+    const [snoozing, setSnoozing] = useState(false);
 
     const currentIdx = allIds.indexOf(issueId || "");
     const prevId = currentIdx > 0 ? allIds[currentIdx - 1] : null;
@@ -108,11 +123,26 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
         }
     };
 
+    const handleSnooze = async (days: number) => {
+        if (!issue || snoozing) return;
+        setSnoozing(true);
+        const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        try {
+            await snoozeIssue(issue.id, until);
+            setIssue({ ...issue, snoozed_until: until.toISOString() });
+            onStatusChange?.(issue.id, 'snoozed');
+        } finally {
+            setSnoozing(false);
+            setSnoozeOpen(false);
+        }
+    };
+
     useEffect(() => {
         if (!issueId) { setIssue(null); return; }
         setLoading(true);
         setPrUrl(null);
         setPrError(null);
+        setSnoozeOpen(false);
         setTab("overview");
         supabase
             .from("issues")
@@ -209,9 +239,29 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                                     Fixed
                                 </button>
                             )}
+                            {/* Snooze dropdown */}
+                            <div className="relative">
+                                <button onClick={() => setSnoozeOpen(o => !o)} disabled={snoozing}
+                                    className="p-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 hover:text-amber-400 transition-colors disabled:opacity-50"
+                                    title="Snooze">
+                                    <BellOff className="h-3.5 w-3.5" />
+                                </button>
+                                {snoozeOpen && (
+                                    <div className="absolute right-0 top-8 z-50 bg-[var(--background)] border border-[var(--color-border)] rounded-xl shadow-2xl py-1 w-36 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        {SNOOZE_OPTIONS.map(opt => (
+                                            <button key={opt.days} onClick={() => handleSnooze(opt.days)}
+                                                className="w-full text-left px-3 py-2 text-sm text-[var(--color-textSecondary)] hover:bg-white/5 hover:text-[var(--foreground)] transition-colors flex items-center gap-2">
+                                                <Clock className="h-3.5 w-3.5 text-amber-400" />
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             {issue.status !== "ignored" && (
                                 <button onClick={() => handleStatus("ignored")} disabled={updating}
-                                    className="p-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 transition-colors disabled:opacity-50">
+                                    className="p-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 transition-colors disabled:opacity-50"
+                                    title="Ignore">
                                     <EyeOff className="h-3.5 w-3.5" />
                                 </button>
                             )}
@@ -246,6 +296,16 @@ export function IssueSidebar({ issueId, onClose, onStatusChange, allIds = [] }: 
                                         <span className="text-xs px-2 py-0.5 rounded border bg-white/5 border-white/10 text-[var(--color-textSecondary)] font-mono uppercase">
                                             {issue.repository_id ? "SAST" : "DAST"}
                                         </span>
+                                        <span className="inline-flex items-center gap-1 text-xs text-[var(--color-textMuted)] bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                                            <Clock className="h-3 w-3" />
+                                            Fix: {fixTime(issue.severity)}
+                                        </span>
+                                        {issue.snoozed_until && new Date(issue.snoozed_until) > new Date() && (
+                                            <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                                <BellOff className="h-3 w-3" />
+                                                Snoozed until {new Date(issue.snoozed_until).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                            </span>
+                                        )}
                                         {issue.found_at && (
                                             <span className="text-xs text-[var(--color-textMuted)]">
                                                 {new Date(issue.found_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
