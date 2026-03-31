@@ -158,7 +158,7 @@ def run_pentest_task(
 
         boot_lines = [
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            f"  STRIX ENGINE V2.6 ONLINE",
+            f"  ZENTINEL ENGINE 2.0 ONLINE",
             f"  Tier     : {tier_label}",
             f"  Target(s): {target_summary}",
             f"  Mode     : {scan_mode.upper()} | Context: {'Full' if context or strix_instruction else 'Minimal — running autonomous OSINT'}",
