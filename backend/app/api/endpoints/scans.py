@@ -18,14 +18,16 @@ class ScanRequest(BaseModel):
     scan_type: ScanType
     domains: list[str]
     repos: list[dict]                       # [{"full_name": "org/repo", "branch": "main"}]
+    # Pre-built instruction from the frontend (includes all context, tier-specific prompts)
+    strix_instruction: Optional[str] = None
     # Context (all optional — shown in wizard Step 3)
     app_description: Optional[str] = None
     tech_stack: Optional[str] = None
     auth_details: Optional[str] = None
     sensitive_data: Optional[str] = None
     testing_focus: Optional[str] = None
-    compliance_framework: Optional[str] = None  # 'soc2' | 'iso27001'
     api_endpoints: Optional[str] = None
+    compliance_framework: Optional[str] = None  # 'soc2' | 'iso27001'
     # Access (optional — wizard Step 4)
     credentials: Optional[list[dict]] = None    # [{"username": "x", "password": "y"}]
     custom_headers: Optional[list[dict]] = None # [{"name": "Authorization", "value": "Bearer ..."}]
@@ -179,6 +181,7 @@ async def launch_scan(request: Request, payload: ScanRequest, user=Depends(get_c
         domains=payload.domains[:config.max_domains],
         repos=[r["full_name"] for r in payload.repos[:config.max_repos]] if config.allow_repos else [],
         context=_build_context_string(payload),
+        strix_instruction=payload.strix_instruction,  # rich pre-built instruction from frontend
         credentials=payload.credentials or [],
         custom_headers=payload.custom_headers or [],
         credit_source=credit_source,

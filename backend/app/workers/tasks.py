@@ -61,6 +61,7 @@ def run_pentest_task(
     compliance_framework: str | None,
     generate_pdf: bool,
     scan_mode: str,
+    strix_instruction: str | None = None,  # rich pre-built instruction from frontend
 ):
     redis_channel = f"pentest:{pentest_id}:logs"
     config = SCAN_CONFIGS[ScanType(scan_type)]
@@ -88,18 +89,48 @@ def run_pentest_task(
         from strix.llm.config import LLMConfig  # type: ignore
         from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
 
-        # 1. Build instruction string from all context
-        instruction_parts = []
-        if context:
-            instruction_parts.append(context)
-        if credentials:
-            cred_str = ", ".join(f"{c['username']}:{c['password']}" for c in credentials)
-            instruction_parts.append(f"Test authenticated flows using: {cred_str}")
-        if custom_headers:
-            header_str = "; ".join(f"{h['name']}: {h['value']}" for h in custom_headers)
-            instruction_parts.append(f"Include these headers: {header_str}")
+        # 1. Build the final instruction for Strix.
+        #
+        # Priority order:
+        #   a) strix_instruction — rich, tier-specific prompt built by the frontend API
+        #      (includes scan methodology, all user context, compliance framework etc.)
+        #   b) Fallback — built here from the raw context fields when strix_instruction
+        #      is absent (e.g. called directly via the backend API without the frontend)
+        #
+        # Even with ZERO user-provided context (just a domain), the agent runs a full
+        # OSINT + blackbox security assessment using publicly available information.
+        # The instruction below ensures productive output regardless of input richness.
 
-        instruction = ". ".join(instruction_parts)
+        if strix_instruction:
+            # Use the pre-built rich instruction from the frontend — includes all context,
+            # tier-appropriate methodology, and compliance mapping
+            instruction = strix_instruction
+        else:
+            # Fallback: build from raw context fields
+            # This path is taken when called directly via backend API (no frontend)
+            parts = []
+            if context:
+                parts.append(context)
+            if compliance_framework:
+                parts.append(f"Map all findings to {compliance_framework.upper()} controls.")
+            if credentials:
+                cred_str = " | ".join(
+                    f"{c.get('username','user')}:{c.get('password','')} ({c.get('notes','')})"
+                    for c in credentials
+                )
+                parts.append(f"Test authenticated flows using these credentials: {cred_str}")
+            if custom_headers:
+                header_str = "; ".join(
+                    f"{h.get('name', h.get('key',''))}: {h.get('value','')}"
+                    for h in custom_headers
+                )
+                parts.append(f"Include these headers in all requests: {header_str}")
+            instruction = ". ".join(parts) if parts else ""
+
+        # Ensure there's ALWAYS a base instruction even with zero user context.
+        # A domain alone is enough — Strix will run OSINT + DAST from public surface.
+        if not instruction.strip():
+            instruction = _build_minimal_instruction(scan_type, domains, repos)
 
         # 2. Build target info list in the exact format StrixAgent expects
         targets_info = []
@@ -241,6 +272,76 @@ def run_pentest_task(
         "findings_count": len(findings),
         "report_url": report_url,
     })
+
+
+def _build_minimal_instruction(scan_type: str, domains: list[str], repos: list[str]) -> str:
+    """
+    Generates a comprehensive, productive scan instruction when the user provides
+    no context at all — just a domain. The agent can still conduct a full OSINT +
+    blackbox assessment from publicly available information.
+
+    This ensures every scan delivers value regardless of how much context was provided.
+    """
+    targets = ", ".join(domains) if domains else "the target"
+    has_repo = bool(repos)
+
+    base = f"""You are an elite autonomous security engineer conducting a professional penetration test against: {targets}.
+
+PHASE 1 — RECONNAISSANCE & OSINT
+- Enumerate all subdomains, open ports, and exposed services using passive and active techniques.
+- Identify the technology stack (frameworks, CDN, WAF, server, CMS) from HTTP headers, error pages, robots.txt, and sitemap.xml.
+- Discover all exposed API endpoints, admin panels, login pages, and documentation (Swagger, OpenAPI, GraphQL introspection).
+- Check for exposed .git directories, .env files, backup files (.bak, .sql, .zip), and debug endpoints.
+- Search for exposed credentials, API keys, and secrets in public sources (GitHub, Shodan, Wayback Machine).
+
+PHASE 2 — VULNERABILITY ASSESSMENT (DAST)
+- Test every discovered endpoint for OWASP Top 10 vulnerabilities:
+  A01: Broken Access Control — test IDOR, horizontal/vertical privilege escalation, forced browsing
+  A02: Cryptographic Failures — weak TLS, sensitive data in transit/at rest, insecure cookies
+  A03: Injection — SQL, NoSQL, LDAP, OS command, SSTI injection in all input fields
+  A04: Insecure Design — business logic flaws, race conditions, workflow bypasses
+  A05: Security Misconfiguration — default credentials, verbose errors, directory listing, CORS
+  A06: Vulnerable Components — check all detected libraries/dependencies against CVE databases
+  A07: Authentication Failures — brute force, credential stuffing, session fixation, JWT attacks
+  A08: Software & Data Integrity — check for deserialization, supply chain issues
+  A09: Logging Failures — test if attacks are logged and alerted on
+  A10: SSRF — test all URL parameters and file upload endpoints
+- Actively exploit confirmed vulnerabilities to generate proof-of-concept payloads.
+- Test for API-specific attacks: mass assignment, object-level authorization, rate limiting bypass.
+
+PHASE 3 — DEPENDENCY & SCA ANALYSIS"""
+
+    if has_repo:
+        base += """
+- Scan all package manifests (package.json, requirements.txt, go.mod, pom.xml, Gemfile) for vulnerable dependencies.
+- Run reachability analysis — only flag CVEs in code paths that are actually called.
+- Check for hardcoded secrets, API keys, and credentials in source code.
+- Identify injection sinks, unsafe deserialisation, and dangerous function calls (eval, exec, system).
+- Review authentication and authorisation logic for logic flaws.
+- Check Infrastructure-as-Code files (Terraform, CloudFormation, Kubernetes YAML) for misconfigurations."""
+    else:
+        base += """
+- Identify all client-side JavaScript files and extract API endpoints, tokens, and secrets.
+- Check for exposed source maps (.map files) that reveal original source code.
+- Test for client-side vulnerabilities: XSS, DOM clobbering, prototype pollution."""
+
+    base += """
+
+PHASE 4 — REPORTING
+For each vulnerability found, provide:
+- FINDING_N with Severity: CRITICAL | HIGH | MEDIUM | LOW
+- CVSS Score (calculate accurately)
+- OWASP Category mapping
+- File or endpoint location
+- Precise Proof of Concept (working curl command, script, or payload)
+- Exact remediation code or configuration fix
+- Compliance impact (SOC 2 CC, ISO 27001 controls)
+
+Report ONLY real, exploitable, verified vulnerabilities with working PoCs.
+Zero tolerance for false positives — if you cannot prove it with a PoC, do not report it.
+If the target is fully secure, state: PASSED — with a one-sentence explanation."""
+
+    return base
 
 
 def _normalize_severity(raw: str) -> str:
