@@ -196,9 +196,42 @@ def run_pentest_task(
                 "type": "web_application",
                 "details": {"target_url": url},
             })
+
+        # BUG FIX: Private repos require an OAuth token to clone.
+        # Look up the GitHub/GitLab integration token for this org so the agent can clone private repos.
+        # Without this, private repo clones fail silently and the agent skips source code analysis.
+        _repo_token_cache: dict = {}
+        def _get_repo_token(provider: str) -> str:
+            if provider not in _repo_token_cache:
+                try:
+                    integ = supabase_admin.table("integrations") \
+                        .select("access_token") \
+                        .eq("organization_id", org_id) \
+                        .eq("provider", provider) \
+                        .execute().data
+                    _repo_token_cache[provider] = integ[0]["access_token"] if integ else ""
+                except Exception:
+                    _repo_token_cache[provider] = ""
+            return _repo_token_cache[provider]
+
         if config.allow_repos:
             for r in repos:
-                repo_url = f"https://github.com/{r}" if not r.startswith("http") else r
+                # Detect provider and inject OAuth token for private repo access
+                if "gitlab.com" in (r or ""):
+                    provider = "gitlab"
+                    token = _get_repo_token(provider)
+                    repo_url = f"https://oauth2:{token}@gitlab.com/{r.replace('https://gitlab.com/', '')}" if token else r
+                elif "bitbucket.org" in (r or ""):
+                    provider = "bitbucket"
+                    token = _get_repo_token(provider)
+                    repo_url = f"https://x-token-auth:{token}@bitbucket.org/{r.replace('https://bitbucket.org/', '')}" if token else r
+                else:
+                    # Default: GitHub
+                    provider = "github"
+                    token = _get_repo_token(provider)
+                    base = r if r.startswith("http") else f"https://github.com/{r}"
+                    repo_url = base.replace("https://", f"https://oauth2:{token}@") if token else base
+
                 repo_target: dict = {  # type: ignore[annotation]
                     "type": "repository",
                     "details": {
@@ -210,10 +243,22 @@ def run_pentest_task(
                 targets_info.append(repo_target)
 
         # 3. Formulate configs
+        # BUG FIX: Enforce minimum scan depth by scan type.
+        # A quick scan can stop at 150 iterations. A full/deep scan MUST go deeper.
+        # Previously all scans had the same limit — full scans stopped early like quick scans.
+        _depth_limits = {
+            "quick":      150,   # ~10-15 min
+            "web_api":    250,   # ~20-25 min
+            "full_stack": 400,   # ~35-40 min (includes SAST + DAST + SCA)
+            "compliance": 450,   # ~40-45 min (includes compliance mapping)
+            "deep":       500,   # ~45-60 min (maximum coverage)
+        }
+        max_iters = _depth_limits.get(scan_type, 300)
+
         llm_config = LLMConfig(scan_mode=scan_mode)
         agent_config = {
             "llm_config": llm_config,
-            "max_iterations": 300,
+            "max_iterations": max_iters,
             "non_interactive": True,
         }
         scan_config = {
