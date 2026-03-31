@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
     Search, GitPullRequest, ArrowRight, Plus,
-    CheckCircle2, Eye, Clock, ChevronRight,
-    ShieldAlert, RefreshCw, Loader2
+    CheckCircle2, ChevronRight,
+    ShieldAlert, Loader2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { IssueSidebar } from "@/components/issues/IssueSidebar";
 
 // ── Severity config ───────────────────────────────────────────────────────────
 const SEV = {
@@ -49,7 +49,6 @@ function SeverityBar({ critical, high, medium, low }: { critical: number; high: 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function FeedPage() {
-    const router = useRouter();
     const { activeWorkspace } = useWorkspace();
 
     const [loading, setLoading]   = useState(true);
@@ -108,6 +107,7 @@ export default function FeedPage() {
 
     const [search, setSearch] = useState("");
     const [sevFilter, setSevFilter] = useState<string>("all");
+    const [sidebarId, setSidebarId] = useState<string | null>(null);
 
     const filtered = open.filter(i => {
         if (sevFilter !== "all" && i.severity !== sevFilter) return false;
@@ -122,6 +122,14 @@ export default function FeedPage() {
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
+            <IssueSidebar
+                issueId={sidebarId}
+                onClose={() => setSidebarId(null)}
+                onStatusChange={(id, status) => {
+                    setIssues(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+                }}
+                allIds={filtered.map(i => i.id)}
+            />
             <div className="max-w-5xl mx-auto px-6 py-8">
 
                 {/* Greeting */}
@@ -259,7 +267,7 @@ export default function FeedPage() {
 
                                     return (
                                         <div key={issue.id}
-                                            onClick={() => router.push(`/dashboard/issues/${issue.id}`)}
+                                            onClick={() => setSidebarId(issue.id)}
                                             className="grid grid-cols-[32px_1fr_120px_140px_100px] gap-4 px-4 py-3.5 border-b border-[var(--color-border)] last:border-0 hover:bg-white/3 transition-colors cursor-pointer group items-center">
 
                                             {/* Type icon */}

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, ChevronLeft, ChevronRight, Check, Activity, ExternalLink, List } from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight, Check, Activity, List } from "lucide-react";
 import { Card } from "@/components/ui/zentinel-card";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getIssues, getDomains, getRepositories } from "@/lib/queries";
+import { IssueSidebar } from "@/components/issues/IssueSidebar";
 
 // ─────────────── Configuration ───────────────
 const SEVERITY_CONFIG: Record<string, { color: string, bg: string, label: string }> = {
@@ -162,6 +163,7 @@ export default function IssuesPage() {
 
     // Filters state
     const [activeTab, setActiveTab] = useState("open");
+    const [sidebarId, setSidebarId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [severityFilter, setSeverityFilter] = useState("all");
     const [repoFilter, setRepoFilter] = useState("all");
@@ -246,6 +248,14 @@ export default function IssuesPage() {
 
     return (
         <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+            <IssueSidebar
+                issueId={sidebarId}
+                onClose={() => setSidebarId(null)}
+                onStatusChange={(id, status) =>
+                    setIssues(prev => prev.map(i => i.id === id ? { ...i, status } : i))
+                }
+                allIds={paginatedIssues.map((i: any) => i.id)}
+            />
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-syne font-bold text-white tracking-tight">Issues</h1>
@@ -385,7 +395,7 @@ export default function IssuesPage() {
                                         }
 
                                         return (
-                                            <tr key={issue.id} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => window.location.href = `/dashboard/issues/${issue.id}`}>
+                                            <tr key={issue.id} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setSidebarId(issue.id)}>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`w-2 h-2 rounded-full ${conf.bg.replace('/10', '')} ${conf.color.replace('text-', 'bg-')}`} />
