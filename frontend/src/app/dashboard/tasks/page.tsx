@@ -12,7 +12,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; 
     open:        { label: "Open",        bg: "bg-blue-50",    color: "text-blue-700",   border: "border-blue-200"   },
     in_progress: { label: "In Progress", bg: "bg-orange-50",  color: "text-orange-700", border: "border-orange-200" },
     completed:   { label: "Completed",   bg: "bg-green-50",   color: "text-green-700",  border: "border-green-200"  },
-    delegated:   { label: "Delegated",   bg: "bg-purple-50",  color: "text-purple-700", border: "border-purple-200" },
+    delegated:   { label: "Delegated",   bg: "bg-blue-50",  color: "text-blue-700", border: "border-blue-200" },
     snoozed:     { label: "Snoozed",     bg: "bg-yellow-50",  color: "text-yellow-700", border: "border-yellow-200" },
 };
 
@@ -51,14 +51,14 @@ function DelegateModal({ onClose, onDelegate }: { onClose: () => void; onDelegat
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="Email or name"
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                     <div className="flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                             Delegate
                         </button>
                     </div>
@@ -129,7 +129,7 @@ function AddTaskModal({
                             value={taskTitle}
                             onChange={e => setTaskTitle(e.target.value)}
                             required
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Task title"
                         />
                     </div>
@@ -139,7 +139,7 @@ function AddTaskModal({
                             value={taskDesc}
                             onChange={e => setTaskDesc(e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             placeholder="Optional description"
                         />
                     </div>
@@ -147,7 +147,7 @@ function AddTaskModal({
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                             <select value={taskPriority} onChange={e => setTaskPriority(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
                                 <option value="high">High</option>
@@ -157,20 +157,20 @@ function AddTaskModal({
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Due date</label>
                             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Assign to</label>
                         <input type="text" value={assignTo} onChange={e => setAssignTo(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Email or name (optional)" />
                     </div>
                     <div className="flex gap-3 pt-2">
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-60">
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Adding…' : 'Add Task'}
                         </button>
                     </div>
@@ -338,12 +338,12 @@ export default function TasksPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <CheckSquare2 className="h-6 w-6 text-purple-600" />
+                        <CheckSquare2 className="h-6 w-6 text-blue-600" />
                         <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
                     </div>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         <Plus className="h-4 w-4" /> Add Task
                     </button>
@@ -355,7 +355,7 @@ export default function TasksPage() {
                         { key: 'open',        label: 'Open',        icon: '○', iconColor: 'text-blue-500'   },
                         { key: 'in_progress', label: 'In Progress', icon: '◑', iconColor: 'text-orange-500' },
                         { key: 'completed',   label: 'Completed',   icon: '●', iconColor: 'text-green-500'  },
-                        { key: 'delegated',   label: 'Delegated',   icon: '◎', iconColor: 'text-purple-500' },
+                        { key: 'delegated',   label: 'Delegated',   icon: '◎', iconColor: 'text-blue-500' },
                     ].map(({ key, label, icon, iconColor }) => (
                         <div key={key} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-2">
@@ -378,7 +378,7 @@ export default function TasksPage() {
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 placeholder="Search tasks"
-                                className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
                     </div>
@@ -392,7 +392,7 @@ export default function TasksPage() {
                             <p className="text-xs text-gray-500">Add your first task to get started</p>
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 <Plus className="h-4 w-4" /> Add Task
                             </button>

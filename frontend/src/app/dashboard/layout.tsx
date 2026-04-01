@@ -23,10 +23,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => { window.removeEventListener("storage", check); clearInterval(interval); };
     }, []);
 
-    // Force light mode (Aikido-style - no dark mode)
+    // Force light mode in dashboard — restore dark on leaving (for landing page)
     useEffect(() => {
+        document.documentElement.classList.remove("dark");
         document.documentElement.classList.add("light");
-        localStorage.setItem("zentinel-theme", "light");
+        return () => {
+            document.documentElement.classList.remove("light");
+            document.documentElement.classList.add("dark");
+        };
     }, []);
 
     return (

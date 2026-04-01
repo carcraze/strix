@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
     Search, ChevronDown, ChevronRight, Filter, X,
     MoreVertical, Shield, CheckSquare2, BellOff, EyeOff,
     Link2, Edit2, Package, Code2, Server, KeyRound,
     Globe, Zap, Cloud, Cpu, Box, Smartphone, AlertTriangle,
-    Clock, Lock, FileText,
+    Clock, Lock, FileText, AlertCircle, History, Settings,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { getIssues } from "@/lib/queries";
@@ -42,14 +43,17 @@ const ISSUE_TYPES = [
 
 // ─────────────── Quick Filters ───────────────
 const QUICK_FILTERS = [
-    { id: "quick-fixes", label: "Quick Fixes",          icon: "⚡" },
-    { id: "sla-soon",    label: "SLA Due Soon",          icon: "⏰" },
-    { id: "out-sla",     label: "Out of SLA",            icon: "⚠" },
-    { id: "recent",      label: "Recently Discovered",   icon: "🔍" },
-    { id: "ignored",     label: "Ignored Issues",        icon: "👁" },
-    { id: "frontend",    label: "Frontend",              icon: "</>" },
-    { id: "backend",     label: "Backend",               icon: "⚙" },
+    { id: "quick-fixes", label: "Quick Fixes",          Icon: Zap },
+    { id: "sla-soon",    label: "SLA Due Soon",          Icon: Clock },
+    { id: "out-sla",     label: "Out of SLA",            Icon: AlertCircle },
+    { id: "recent",      label: "Recently Discovered",   Icon: History },
+    { id: "ignored",     label: "Ignored Issues",        Icon: EyeOff },
+    { id: "frontend",    label: "Frontend",              Icon: Code2 },
+    { id: "backend",     label: "Backend",               Icon: Server },
 ];
+
+// ─────────────── Language List ───────────────
+const LANGUAGES = ["JavaScript","TypeScript","PHP","Java","Scala","Go","Python","Ruby",".NET","Rust","Dart","Swift","Elixir","C/C++","Clojure","Kotlin","Apex","Visual Basic"];
 
 // ─────────────── Severity Progress Bar ───────────────
 function SeverityBar({ critical, high, medium, low }: { critical: number; high: number; medium: number; low: number }) {
@@ -71,7 +75,7 @@ function TypeBadge({ type }: { type: string }) {
     const colors: Record<string, string> = {
         ts:      "bg-blue-100 text-blue-700 border-blue-300",
         js:      "bg-yellow-100 text-yellow-700 border-yellow-300",
-        http:    "bg-purple-100 text-purple-700 border-purple-300",
+        http:    "bg-blue-100 text-blue-700 border-blue-300",
         py:      "bg-green-100 text-green-700 border-green-300",
         go:      "bg-cyan-100 text-cyan-700 border-cyan-300",
         default: "bg-gray-100 text-gray-700 border-gray-300",
@@ -139,7 +143,7 @@ function SnoozeModal({ onClose, onSnooze }: { onClose: () => void; onSnooze: (da
                         <button
                             key={opt.days}
                             onClick={() => onSnooze(opt.days)}
-                            className="px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors"
+                            className="px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
                         >
                             {opt.label}
                         </button>
@@ -230,11 +234,11 @@ function AutofixModal({ issue, onClose }: { issue: any; onClose: () => void }) {
                             <button
                                 onClick={handleCreatePr}
                                 disabled={creating || !!prUrl}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-l-lg hover:bg-purple-700 transition-colors disabled:opacity-60"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-l-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
                             >
                                 {creating ? "Creating…" : prUrl ? "PR Created" : "Create PR"}
                             </button>
-                            <button className="px-2 py-2 bg-purple-600 text-white rounded-r-lg border-l border-purple-500 hover:bg-purple-700 transition-colors">
+                            <button className="px-2 py-2 bg-blue-600 text-white rounded-r-lg border-l border-blue-500 hover:bg-blue-700 transition-colors">
                                 <ChevronDown className="h-4 w-4" />
                             </button>
                         </div>
@@ -314,7 +318,7 @@ function AddTaskModal({
                             value={taskTitle}
                             onChange={e => setTaskTitle(e.target.value)}
                             required
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Task title"
                         />
                     </div>
@@ -324,7 +328,7 @@ function AddTaskModal({
                             value={taskDesc}
                             onChange={e => setTaskDesc(e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             placeholder="Optional description"
                         />
                     </div>
@@ -334,7 +338,7 @@ function AddTaskModal({
                             <select
                                 value={taskPriority}
                                 onChange={e => setTaskPriority(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
@@ -348,7 +352,7 @@ function AddTaskModal({
                                 type="date"
                                 value={dueDate}
                                 onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
                     </div>
@@ -358,7 +362,7 @@ function AddTaskModal({
                             type="text"
                             value={assignTo}
                             onChange={e => setAssignTo(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Email or name (optional)"
                         />
                     </div>
@@ -366,7 +370,7 @@ function AddTaskModal({
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-60">
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Adding…' : 'Add Task'}
                         </button>
                     </div>
@@ -424,7 +428,7 @@ function AdjustSeverityModal({
                         <select
                             value={newSeverity}
                             onChange={e => setNewSeverity(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="critical">Critical</option>
                             <option value="high">High</option>
@@ -438,7 +442,7 @@ function AdjustSeverityModal({
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             placeholder="Explain why you're changing the severity…"
                         />
                     </div>
@@ -446,7 +450,7 @@ function AdjustSeverityModal({
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button onClick={handleConfirm} disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-60">
+                        <button onClick={handleConfirm} disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Saving…' : 'Confirm'}
                         </button>
                     </div>
@@ -513,6 +517,7 @@ function RowMenu({
 
 // ─────────────── Main Component ───────────────
 export default function IssuesPage() {
+    const router = useRouter();
     const [loading, setLoading]       = useState(true);
     const [issues, setIssues]         = useState<any[]>([]);
     const [userName, setUserName]     = useState("there");
@@ -747,23 +752,32 @@ export default function IssuesPage() {
                 </div>
             )}
 
+            {/* ─── Sticky Top Bar ─── */}
+            <div className="border-b border-gray-200 bg-white px-6 py-3 flex items-center gap-2 -mx-6 mb-4 sticky top-0 z-30">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-200 transition-colors">
+                    All Teams <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+                {/* right side */}
+                <div className="ml-auto flex items-center gap-3">
+                    <button className="p-2 hover:bg-gray-100 rounded-lg"><Search className="h-5 w-5 text-gray-600" /></button>
+                    <span className="text-sm text-gray-600 cursor-pointer hover:text-gray-900">Docs</span>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg">
+                        <Settings className="h-5 w-5 text-gray-600" />
+                    </button>
+                </div>
+            </div>
+
             <div className="max-w-7xl mx-auto p-6 space-y-6">
                 {/* ─── Header ─── */}
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl text-gray-600">
                         Hello, <span className="text-gray-900 font-semibold">{userName}</span>!
                     </h1>
-                    <div className="flex items-center gap-3">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Search className="h-5 w-5 text-gray-600" />
-                        </button>
-                        <button className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">Docs</button>
-                    </div>
                 </div>
 
                 {/* ──────────── 4 METRIC CARDS ──────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:row-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <div onClick={() => router.push('/dashboard/issues')} className="md:row-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm cursor-pointer">
                         <div className="mb-4">
                             <SeverityBar critical={stats.critical} high={stats.high} medium={stats.medium} low={stats.low} />
                         </div>
@@ -779,7 +793,7 @@ export default function IssuesPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <div onClick={() => router.push('/dashboard/issues/ignored')} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-2 mb-3">
                             <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-lg">⚙</div>
                             <span className="text-sm text-gray-600 font-medium">Auto Ignored</span>
@@ -788,16 +802,16 @@ export default function IssuesPage() {
                         <div className="text-sm text-gray-500">{stats.hoursSaved} hours saved</div>
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <div onClick={() => router.push('/dashboard/issues?filter=new')} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg font-bold">●</div>
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg font-bold">●</div>
                             <span className="text-sm text-gray-600 font-medium">New</span>
                         </div>
                         <div className="text-3xl font-bold text-gray-900 mb-1">{stats.newCount}</div>
                         <div className="text-sm text-gray-500">in last 7 days</div>
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm md:col-start-2">
+                    <div onClick={() => router.push('/dashboard/issues/solved')} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm md:col-start-2 cursor-pointer hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-2 mb-3">
                             <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg font-bold">✓</div>
                             <span className="text-sm text-gray-600 font-medium">Solved</span>
@@ -877,25 +891,36 @@ export default function IssuesPage() {
                                         {QUICK_FILTERS.map(filter => (
                                             <button key={filter.id} onClick={() => toggleQuickFilter(filter.id)}
                                                 className={`w-full text-left flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${selectedQuickFilters.includes(filter.id) ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}`}>
-                                                <span>{filter.icon}</span>
+                                                <filter.Icon className="h-4 w-4 text-gray-500" />
                                                 <span className="flex-1">{filter.label}</span>
                                                 {selectedQuickFilters.includes(filter.id) && <ChevronRight className="h-4 w-4 text-blue-600" />}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="px-4 pt-3 pb-2 space-y-3 border-t border-gray-200">
-                                        {[
-                                            { label: "Language", value: languageFilter, onChange: setLanguageFilter, options: [{ value: "all", label: "All Languages" }, ...availableLanguages.map(l => ({ value: l, label: l }))] },
-                                            { label: "Severity", value: severityFilter, onChange: setSeverityFilter, options: [{ value: "all", label: "All Severities" }, ...["critical","high","medium","low"].map(v => ({ value: v, label: v[0].toUpperCase()+v.slice(1) }))] },
-                                            { label: "Status",   value: statusFilter,   onChange: setStatusFilter,   options: [{ value: "all", label: "All Statuses" }, { value: "open", label: "Open" }, { value: "new", label: "New" }, { value: "ignored", label: "Ignored" }] },
-                                        ].map(({ label, value, onChange, options }) => (
-                                            <div key={label}>
-                                                <label className="text-xs text-gray-600 mb-1.5 block">{label}</label>
-                                                <select value={value} onChange={e => onChange(e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                                </select>
-                                            </div>
-                                        ))}
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1.5 block">Language</label>
+                                            <select value={languageFilter} onChange={e => setLanguageFilter(e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="all">All Languages</option>
+                                                {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1.5 block">Severity</label>
+                                            <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="all">All Severities</option>
+                                                {["critical","high","medium","low"].map(v => <option key={v} value={v}>{v[0].toUpperCase()+v.slice(1)}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1.5 block">Status</label>
+                                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="all">All Statuses</option>
+                                                <option value="open">Open</option>
+                                                <option value="new">New</option>
+                                                <option value="ignored">Ignored</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -933,9 +958,9 @@ export default function IssuesPage() {
                             {selectedQuickFilters.map(filterId => {
                                 const filter = QUICK_FILTERS.find(f => f.id === filterId);
                                 return filter ? (
-                                    <span key={filterId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md">
-                                        {filter.icon} {filter.label}
-                                        <button onClick={() => toggleQuickFilter(filterId)} className="hover:text-purple-900"><X className="h-3 w-3" /></button>
+                                    <span key={filterId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                                        <filter.Icon className="h-3 w-3" /> {filter.label}
+                                        <button onClick={() => toggleQuickFilter(filterId)} className="hover:text-blue-900"><X className="h-3 w-3" /></button>
                                     </span>
                                 ) : null;
                             })}
@@ -962,19 +987,19 @@ export default function IssuesPage() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-white border-b border-gray-200">
+                            <table className="w-full text-left text-sm border-collapse">
+                                <thead>
                                     <tr>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Type</th>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Name</th>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Severity</th>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Location</th>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Fix time</th>
-                                        <th className="px-5 py-3 font-semibold text-sm text-gray-900">Status</th>
-                                        <th className="px-2 py-3 w-10" />
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Type</th>
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Name</th>
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Severity</th>
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Location</th>
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Fix time</th>
+                                        <th className="px-4 py-3 font-semibold text-xs text-gray-600 uppercase tracking-wider bg-gray-50 border-b border-r border-gray-200 last:border-r-0">Status</th>
+                                        <th className="px-2 py-3 bg-gray-50 border-b border-gray-200 w-10" />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody>
                                     {filteredIssues.map((issue) => {
                                         const conf      = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.low;
                                         const typeIcon  = getTypeIcon(issue);
@@ -993,25 +1018,25 @@ export default function IssuesPage() {
                                         return (
                                             <tr
                                                 key={issue.id}
-                                                className="hover:bg-gray-50 transition-colors cursor-pointer group relative"
+                                                className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer group"
                                                 onClick={() => setSidebarId(issue.id)}
                                                 onMouseEnter={() => setHoveredIssueId(issue.id)}
                                                 onMouseLeave={() => setHoveredIssueId(null)}
                                             >
                                                 {/* Type */}
-                                                <td className="px-5 py-4">
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0">
                                                     <TypeBadge type={typeIcon} />
                                                 </td>
 
                                                 {/* Name — with hover card */}
-                                                <td className="px-5 py-4 relative">
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0 relative">
                                                     <div className="font-medium text-gray-900">{issue.title}</div>
                                                     <div className="text-xs text-gray-500 mt-0.5">in {filePath}</div>
                                                     {isHovered && <IssueHoverCard issue={issue} />}
                                                 </td>
 
                                                 {/* Severity */}
-                                                <td className="px-5 py-4">
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0">
                                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${conf.bg} ${conf.color}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
                                                         {conf.label}
@@ -1019,7 +1044,7 @@ export default function IssuesPage() {
                                                 </td>
 
                                                 {/* Location */}
-                                                <td className="px-5 py-4">
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0">
                                                     <div className="flex items-center gap-2 text-gray-700">
                                                         <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -1029,14 +1054,14 @@ export default function IssuesPage() {
                                                 </td>
 
                                                 {/* Fix time */}
-                                                <td className="px-5 py-4 text-gray-600 text-sm">{fixTime(issue.severity)}</td>
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0 text-gray-600 text-sm">{fixTime(issue.severity)}</td>
 
                                                 {/* Status */}
-                                                <td className="px-5 py-4">
+                                                <td className="px-4 py-3.5 border-r border-gray-200 last:border-r-0">
                                                     {isAutoIgnored ? (
                                                         <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm text-gray-600 bg-gray-100">Auto Ignored</span>
                                                     ) : isNew ? (
-                                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm text-purple-700 bg-purple-100 border border-purple-200">New</span>
+                                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm text-blue-700 bg-blue-100 border border-blue-200">New</span>
                                                     ) : (
                                                         <button
                                                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors"
@@ -1048,7 +1073,7 @@ export default function IssuesPage() {
                                                 </td>
 
                                                 {/* Three dots menu */}
-                                                <td className="px-2 py-4 relative" onClick={e => e.stopPropagation()}>
+                                                <td className="px-2 py-3.5 relative" onClick={e => e.stopPropagation()}>
                                                     <button
                                                         className={`p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors ${isHovered || menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                                                         onClick={e => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : issue.id); }}
