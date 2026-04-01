@@ -14,7 +14,14 @@ import { updateIssueStatus, snoozeIssue } from "@/lib/queries";
 
 // ── Fix time estimate ─────────────────────────────────────────────────────────
 export function fixTime(severity: string): string {
-    return { critical: "4–8 hr", high: "2–4 hr", medium: "1–2 hr", low: "30 min" }[severity] ?? "1–2 hr";
+    const map: Record<string, string[]> = {
+        critical: ["7 hr", "5 hr", "4 hr", "8 hr"],
+        high:     ["2 hr 20 min", "3 hr", "2 hr", "1 hr 30 min"],
+        medium:   ["1 hr", "45 min", "1 hr 30 min"],
+        low:      ["30 min", "20 min", "45 min"],
+    };
+    const options = map[severity] || map.medium;
+    return options[0];
 }
 
 // ── Snooze options ────────────────────────────────────────────────────────────

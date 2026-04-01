@@ -99,6 +99,10 @@ schema.graphql
 .opencode/
 zentinelvertex.json
 
+# Reference screenshots (local only, never commit)
+aikidodsbd/
+currentdashboard/
+
 # Project Specific
 env
 inspect_output.txt

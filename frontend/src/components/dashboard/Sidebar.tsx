@@ -5,10 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import {
     LayoutGrid, Search, GitPullRequest, ShieldAlert,
-    Layers, Globe, Settings, LogOut, Sun, Moon,
-    ChevronLeft, ChevronRight, Wrench, FileText,
+    Layers, Globe, Settings, LogOut,
+    ChevronLeft, ChevronRight, Wrench,
     BellOff, EyeOff, CheckCircle2, Plug, BarChart2,
-    Package, Cloud, Code2, ChevronDown
+    Package, Cloud, Code2, ChevronDown, CheckSquare2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WorkspaceSwitcher } from "@/components/layout/WorkspaceSwitcher";
@@ -20,16 +20,12 @@ const NAV = [
     {
         section: "FEED",
         items: [
-            {
-                icon: LayoutGrid, label: "Feed", href: "/dashboard",
-                exact: true,
-                children: [
-                    { label: "Snoozed", href: "/dashboard/issues?tab=snoozed", icon: BellOff },
-                    { label: "Ignored",  href: "/dashboard/issues?tab=ignored",  icon: EyeOff },
-                    { label: "Solved",   href: "/dashboard/issues?tab=fixed",    icon: CheckCircle2 },
-                ],
-            },
-            { icon: Wrench, label: "AutoFix", href: "/dashboard/issues?tab=open#autofix" },
+            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard/issues", exact: true },
+            { icon: BellOff,      label: "Snoozed", href: "/dashboard/issues/snoozed", subItem: true },
+            { icon: EyeOff,       label: "Ignored", href: "/dashboard/issues/ignored", subItem: true },
+            { icon: CheckCircle2, label: "Solved",  href: "/dashboard/issues/solved",  subItem: true },
+            { icon: CheckSquare2, label: "Tasks",   href: "/dashboard/tasks" },
+            { icon: Wrench,       label: "AutoFix", href: "/dashboard/fixes" },
         ],
     },
     {
@@ -69,7 +65,6 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
     const [collapsed, setCollapsed]     = useState(false);
     const [user, setUser]               = useState<{ name: string; email: string; initials: string } | null>(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ Feed: true });
 
     // Load collapsed state
     useEffect(() => {
@@ -117,10 +112,6 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
     const isActive = (href: string, exact = false) => {
         if (exact) return pathname === href;
         return pathname.startsWith(href);
-    };
-
-    const toggleSection = (section: string) => {
-        setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
     return (
@@ -185,63 +176,59 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                             {collapsed && <div className="h-2" />}
 
                             {group.items.map((item) => {
+                                const isSubItem = !!(item as any).subItem;
                                 const active = isActive(item.href, (item as any).exact);
-                                const hasChildren = 'children' in item && item.children && item.children.length > 0;
-                                const sectionOpen = openSections[item.label] !== false;
 
-                                return (
-                                    <div key={item.href}>
+                                if (isSubItem) {
+                                    // Always-visible sub-item with indent
+                                    if (collapsed) return null;
+                                    return (
                                         <Link
-                                            href={(item as any).comingSoon ? "#" : item.href}
-                                            onClick={hasChildren && !collapsed ? (e) => { e.preventDefault(); toggleSection(item.label); } : undefined}
+                                            key={item.href}
+                                            href={item.href}
                                             className={cn(
-                                                "flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors group relative",
-                                                collapsed ? "justify-center" : "",
+                                                "flex items-center gap-2 ml-6 pl-3 pr-2 py-1 rounded-md text-xs transition-colors border-l border-indigo-800/40",
                                                 active
-                                                    ? "bg-sky-500/20 text-sky-300"
-                                                    : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30",
-                                                (item as any).comingSoon && "opacity-50 cursor-not-allowed"
+                                                    ? "text-sky-300 bg-sky-500/15"
+                                                    : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
                                             )}
                                         >
-                                            <item.icon className={cn("shrink-0 h-4 w-4", active ? "text-sky-300" : "text-indigo-200/50 group-hover:text-white")} />
-                                            {!collapsed && (
-                                                <>
-                                                    <span className="flex-1 font-medium truncate">{item.label}</span>
-                                                    {(item as any).comingSoon && (
-                                                        <span className="text-[9px] bg-indigo-900/40 text-indigo-300/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">Soon</span>
-                                                    )}
-                                                    {hasChildren && (
-                                                        <ChevronDown className={cn("h-3.5 w-3.5 text-indigo-300/40 transition-transform", sectionOpen ? "" : "-rotate-90")} />
-                                                    )}
-                                                </>
-                                            )}
-                                            {/* Tooltip when collapsed */}
-                                            {collapsed && (
-                                                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg border border-gray-700 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl">
-                                                    {item.label}
-                                                    {(item as any).comingSoon && " (Coming soon)"}
-                                                </div>
-                                            )}
+                                            <item.icon className="h-3 w-3 shrink-0" />
+                                            {item.label}
                                         </Link>
+                                    );
+                                }
 
-                                        {/* Sub-items */}
-                                        {hasChildren && !collapsed && sectionOpen && (
-                                            <div className="ml-6 mt-0.5 space-y-0.5 border-l border-indigo-800/40 pl-3">
-                                                {(item as any).children.map((child: any) => (
-                                                    <Link key={child.href} href={child.href}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors",
-                                                            pathname === child.href
-                                                                ? "text-sky-300 bg-sky-500/15"
-                                                                : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
-                                                        )}>
-                                                        <child.icon className="h-3 w-3 shrink-0" />
-                                                        {child.label}
-                                                    </Link>
-                                                ))}
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={(item as any).comingSoon ? "#" : item.href}
+                                        className={cn(
+                                            "flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors group relative",
+                                            collapsed ? "justify-center" : "",
+                                            active
+                                                ? "bg-sky-500/20 text-sky-300"
+                                                : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30",
+                                            (item as any).comingSoon && "opacity-50 cursor-not-allowed"
+                                        )}
+                                    >
+                                        <item.icon className={cn("shrink-0 h-4 w-4", active ? "text-sky-300" : "text-indigo-200/50 group-hover:text-white")} />
+                                        {!collapsed && (
+                                            <>
+                                                <span className="flex-1 font-medium truncate">{item.label}</span>
+                                                {(item as any).comingSoon && (
+                                                    <span className="text-[9px] bg-indigo-900/40 text-indigo-300/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">Soon</span>
+                                                )}
+                                            </>
+                                        )}
+                                        {/* Tooltip when collapsed */}
+                                        {collapsed && (
+                                            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg border border-gray-700 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl">
+                                                {item.label}
+                                                {(item as any).comingSoon && " (Coming soon)"}
                                             </div>
                                         )}
-                                    </div>
+                                    </Link>
                                 );
                             })}
                         </div>
