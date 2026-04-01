@@ -69,16 +69,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
     const [collapsed, setCollapsed]     = useState(false);
     const [user, setUser]               = useState<{ name: string; email: string; initials: string } | null>(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
-    const [isLight, setIsLight]         = useState(false);
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({ Feed: true });
-
-    // Load theme
-    useEffect(() => {
-        const saved = localStorage.getItem("zentinel-theme");
-        const preferLight = saved === "light" || (!saved); // default to light
-        if (preferLight) { document.documentElement.classList.add("light"); setIsLight(true); }
-        else             { document.documentElement.classList.remove("light"); setIsLight(false); }
-    }, []);
 
     // Load collapsed state
     useEffect(() => {
@@ -112,13 +103,6 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const toggleTheme = () => {
-        const next = !isLight;
-        setIsLight(next);
-        if (next) { document.documentElement.classList.add("light"); localStorage.setItem("zentinel-theme", "light"); }
-        else       { document.documentElement.classList.remove("light"); localStorage.setItem("zentinel-theme", "dark"); }
-    };
-
     const toggleCollapse = () => {
         const next = !collapsed;
         setCollapsed(next);
@@ -146,34 +130,34 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                 <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setIsOpen?.(false)} />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar - Permanent Dark Navy (Aikido-style) */}
             <aside className={cn(
                 "fixed left-0 top-0 z-50 h-[100dvh] flex flex-col transition-all duration-300 ease-in-out",
-                "bg-[#1e1f2e] border-r border-white/8",
+                "bg-[#1e1b4b] border-r border-indigo-900/30",
                 collapsed ? "w-[60px]" : "w-[240px]",
                 isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
             )}>
 
                 {/* ── Logo + collapse toggle ── */}
-                <div className={cn("flex items-center h-14 border-b border-white/8 shrink-0 px-3", collapsed ? "justify-center" : "justify-between")}>
+                <div className={cn("flex items-center h-14 border-b border-indigo-900/30 shrink-0 px-3", collapsed ? "justify-center" : "justify-between")}>
                     {!collapsed && (
                         <Link href="/dashboard" className="flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-lg bg-[#00E5FF] flex items-center justify-center shrink-0">
-                                <span className="text-black font-black text-sm">Z</span>
+                            <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center shrink-0">
+                                <span className="text-white font-black text-sm">Z</span>
                             </div>
                             <span className="text-white font-black text-base tracking-tight">Zentinel</span>
                         </Link>
                     )}
                     {collapsed && (
                         <Link href="/dashboard">
-                            <div className="h-7 w-7 rounded-lg bg-[#00E5FF] flex items-center justify-center">
-                                <span className="text-black font-black text-sm">Z</span>
+                            <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                                <span className="text-white font-black text-sm">Z</span>
                             </div>
                         </Link>
                     )}
                     <button
                         onClick={toggleCollapse}
-                        className={cn("p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/8 transition-colors hidden lg:flex", collapsed && "absolute -right-3 top-5 bg-[#1e1f2e] border border-white/20 rounded-full p-0.5 shadow-lg")}
+                        className={cn("p-1 rounded-lg text-indigo-300/60 hover:text-white hover:bg-indigo-800/40 transition-colors hidden lg:flex", collapsed && "absolute -right-3 top-5 bg-[#1e1b4b] border border-indigo-700/50 rounded-full p-0.5 shadow-lg")}
                     >
                         {collapsed
                             ? <ChevronRight className="h-3.5 w-3.5" />
@@ -183,7 +167,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
 
                 {/* ── Workspace switcher ── */}
                 {!collapsed && (
-                    <div className="px-3 py-2 border-b border-white/8 shrink-0">
+                    <div className="px-3 py-2 border-b border-indigo-900/30 shrink-0">
                         <WorkspaceSwitcher />
                     </div>
                 )}
@@ -194,7 +178,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                         <div key={group.section} className="mb-1">
                             {/* Section label */}
                             {!collapsed && (
-                                <div className="px-2 pt-3 pb-1 text-[10px] font-semibold text-white/30 uppercase tracking-[0.12em]">
+                                <div className="px-2 pt-3 pb-1 text-[10px] font-semibold text-indigo-300/40 uppercase tracking-[0.12em]">
                                     {group.section}
                                 </div>
                             )}
@@ -214,26 +198,26 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                                                 "flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors group relative",
                                                 collapsed ? "justify-center" : "",
                                                 active
-                                                    ? "bg-[#00E5FF]/15 text-[#00E5FF]"
-                                                    : "text-white/60 hover:text-white hover:bg-white/8",
+                                                    ? "bg-sky-500/20 text-sky-300"
+                                                    : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30",
                                                 (item as any).comingSoon && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
-                                            <item.icon className={cn("shrink-0 h-4 w-4", active ? "text-[#00E5FF]" : "text-white/50 group-hover:text-white")} />
+                                            <item.icon className={cn("shrink-0 h-4 w-4", active ? "text-sky-300" : "text-indigo-200/50 group-hover:text-white")} />
                                             {!collapsed && (
                                                 <>
                                                     <span className="flex-1 font-medium truncate">{item.label}</span>
                                                     {(item as any).comingSoon && (
-                                                        <span className="text-[9px] bg-white/10 text-white/40 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">Soon</span>
+                                                        <span className="text-[9px] bg-indigo-900/40 text-indigo-300/60 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">Soon</span>
                                                     )}
                                                     {hasChildren && (
-                                                        <ChevronDown className={cn("h-3.5 w-3.5 text-white/30 transition-transform", sectionOpen ? "" : "-rotate-90")} />
+                                                        <ChevronDown className={cn("h-3.5 w-3.5 text-indigo-300/40 transition-transform", sectionOpen ? "" : "-rotate-90")} />
                                                     )}
                                                 </>
                                             )}
                                             {/* Tooltip when collapsed */}
                                             {collapsed && (
-                                                <div className="absolute left-full ml-2 px-2 py-1 bg-[#111] text-white text-xs rounded-lg border border-white/10 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl">
+                                                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg border border-gray-700 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl">
                                                     {item.label}
                                                     {(item as any).comingSoon && " (Coming soon)"}
                                                 </div>
@@ -242,14 +226,14 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
 
                                         {/* Sub-items */}
                                         {hasChildren && !collapsed && sectionOpen && (
-                                            <div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/8 pl-3">
+                                            <div className="ml-6 mt-0.5 space-y-0.5 border-l border-indigo-800/40 pl-3">
                                                 {(item as any).children.map((child: any) => (
                                                     <Link key={child.href} href={child.href}
                                                         className={cn(
                                                             "flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors",
                                                             pathname === child.href
-                                                                ? "text-[#00E5FF] bg-[#00E5FF]/10"
-                                                                : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                                                                ? "text-sky-300 bg-sky-500/15"
+                                                                : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
                                                         )}>
                                                         <child.icon className="h-3 w-3 shrink-0" />
                                                         {child.label}
@@ -264,40 +248,31 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                     ))}
                 </nav>
 
-                {/* ── Bottom: theme + user ── */}
-                <div className="shrink-0 border-t border-white/8 p-2 space-y-1">
-                    {/* Theme toggle */}
-                    <button onClick={toggleTheme}
-                        className={cn("flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-xs text-white/40 hover:text-white hover:bg-white/8 transition-colors", collapsed && "justify-center")}>
-                        {isLight
-                            ? <Moon className="h-4 w-4 shrink-0" />
-                            : <Sun  className="h-4 w-4 shrink-0" />}
-                        {!collapsed && <span>{isLight ? "Dark mode" : "Light mode"}</span>}
-                    </button>
-
+                {/* ── Bottom: user ── */}
+                <div className="shrink-0 border-t border-indigo-900/30 p-2">
                     {/* User */}
                     <div className="relative" ref={userMenuRef}>
                         {showUserMenu && (
-                            <div className="absolute bottom-full left-0 right-0 mb-1 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
-                                <div className="px-3 py-2.5 border-b border-white/8">
+                            <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
+                                <div className="px-3 py-2.5 border-b border-gray-700">
                                     <p className="text-xs font-medium text-white truncate">{user?.name}</p>
-                                    <p className="text-xs text-white/40 truncate">{user?.email}</p>
+                                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                                 </div>
                                 <button onClick={handleLogout}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                                     <LogOut className="h-3.5 w-3.5" /> Log out
                                 </button>
                             </div>
                         )}
                         <button onClick={() => setShowUserMenu(v => !v)}
-                            className={cn("flex items-center gap-2.5 w-full p-1.5 rounded-lg hover:bg-white/8 transition-colors text-left", collapsed && "justify-center")}>
-                            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-[#00E5FF] to-[#A855F7] flex items-center justify-center shrink-0">
+                            className={cn("flex items-center gap-2.5 w-full p-1.5 rounded-lg hover:bg-indigo-800/30 transition-colors text-left", collapsed && "justify-center")}>
+                            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center shrink-0">
                                 <span className="text-white font-bold text-[11px]">{user?.initials || "U"}</span>
                             </div>
                             {!collapsed && (
                                 <div className="min-w-0 flex-1">
                                     <p className="text-xs font-medium text-white truncate">{user?.name || "…"}</p>
-                                    <p className="text-[10px] text-white/40 truncate">{user?.email || ""}</p>
+                                    <p className="text-[10px] text-indigo-300/60 truncate">{user?.email || ""}</p>
                                 </div>
                             )}
                         </button>

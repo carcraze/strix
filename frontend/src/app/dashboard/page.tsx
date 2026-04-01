@@ -162,7 +162,7 @@ export default function FeedPage() {
     const isEmpty = !loading && open.length === 0;
 
     return (
-        <div className="min-h-screen bg-[var(--background)]">
+        <div className="min-h-screen bg-gray-50">
             <IssueSidebar
                 issueId={sidebarId}
                 onClose={() => setSidebarId(null)}
@@ -171,17 +171,27 @@ export default function FeedPage() {
                 }}
                 allIds={filtered.map(i => i.id)}
             />
-            <div className="max-w-5xl mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-6 py-6">
 
                 {/* Greeting */}
-                <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-2xl font-bold text-[var(--foreground)]">
-                        Hello, <span className="text-[var(--color-cyan)]">{userName}</span>!
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-xl text-gray-600">
+                        Hello, <span className="text-gray-900 font-semibold">{userName}</span>!
                     </h1>
-                    <Link href="/dashboard/pentests/new"
-                        className="flex items-center gap-2 bg-[var(--color-cyan)] text-black font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
-                        <Plus className="h-4 w-4" /> New Pentest
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <Search className="h-5 w-5 text-gray-600" />
+                        </button>
+                        <button className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                            Docs
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -212,118 +222,114 @@ export default function FeedPage() {
                 ) : (
                     <>
                         {/* ── KPI row ── */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             {/* Open issues card with severity bar */}
-                            <div className="col-span-2 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
-                                <div className="mb-3">
+                            <div className="md:row-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                <div className="mb-4">
                                     <SeverityBar critical={critical} high={high} medium={medium} low={low} />
                                 </div>
-                                <div className="flex items-baseline gap-2 mb-2">
-                                    <span className="text-2xl font-bold text-[var(--foreground)]">{open.length}</span>
-                                    <span className="text-[var(--color-textSecondary)] text-sm">Open Issues</span>
+                                <div className="flex items-baseline gap-2 mb-3">
+                                    <span className="text-4xl font-bold text-gray-900">{open.length}</span>
+                                    <span className="text-gray-600 text-base">Open Issues</span>
                                 </div>
-                                <div className="flex gap-3 text-xs font-mono">
-                                    {critical > 0 && <span className="text-red-500">● {critical}</span>}
-                                    {high     > 0 && <span className="text-orange-400">● {high}</span>}
-                                    {medium   > 0 && <span className="text-yellow-400">● {medium}</span>}
-                                    {low      > 0 && <span className="text-green-400">● {low}</span>}
+                                <div className="flex gap-4 text-sm font-medium">
+                                    {critical > 0 && <span className="text-red-600">■ {critical}</span>}
+                                    {high     > 0 && <span className="text-orange-600">■ {high}</span>}
+                                    {medium   > 0 && <span className="text-blue-600">■ {medium}</span>}
+                                    {low      > 0 && <span className="text-green-600">■ {low}</span>}
                                 </div>
+                            </div>
+
+                            {/* Auto Ignored */}
+                            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-lg">
+                                        ⚙
+                                    </div>
+                                    <span className="text-sm text-gray-600 font-medium">Auto Ignored</span>
+                                </div>
+                                <div className="text-3xl font-bold text-gray-900 mb-1">{ignoredCount}</div>
+                                <div className="text-sm text-gray-500">{hoursSaved} hours saved</div>
                             </div>
 
                             {/* New this week */}
-                            <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
+                            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                        <Plus className="h-4 w-4 text-blue-400" />
+                                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg font-bold">
+                                        ●
                                     </div>
-                                    <span className="text-xs text-[var(--color-textSecondary)] font-medium">New</span>
+                                    <span className="text-sm text-gray-600 font-medium">New</span>
                                 </div>
-                                <div className="text-2xl font-bold text-[var(--foreground)]">{newCount}</div>
-                                <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
+                                <div className="text-3xl font-bold text-gray-900 mb-1">{newCount}</div>
+                                <div className="text-sm text-gray-500">in last 7 days</div>
                             </div>
 
                             {/* Fixed this week */}
-                            <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl p-5">
+                            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm md:col-start-2">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="h-7 w-7 rounded-lg bg-green-500/10 flex items-center justify-center">
-                                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg font-bold">
+                                        ✓
                                     </div>
-                                    <span className="text-xs text-[var(--color-textSecondary)] font-medium">Fixed</span>
+                                    <span className="text-sm text-gray-600 font-medium">Solved</span>
                                 </div>
-                                <div className="text-2xl font-bold text-[var(--foreground)]">{fixedCount}</div>
-                                <div className="text-xs text-[var(--color-textMuted)] mt-1">in last 7 days</div>
+                                <div className="text-3xl font-bold text-gray-900 mb-1">{fixedCount}</div>
+                                <div className="text-sm text-gray-500">in last 7 days</div>
                             </div>
 
-                        {/* Hours saved by AI auto-ignore */}
-                        {hoursSaved > 0 && (
-                            <div className="col-span-2 md:col-span-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-                                    <Sparkles className="h-5 w-5 text-purple-400" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-bold text-[var(--foreground)]">{hoursSaved} hours saved</p>
-                                    <p className="text-xs text-[var(--color-textSecondary)]">
-                                        AI auto-ignored {ignoredCount} false positive{ignoredCount !== 1 ? 's' : ''} — most common reason: false positive pattern detected
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Trend sparkline — full width row */}
-                        {trendData.some(v => v > 0) && (
-                            <div className="col-span-2 md:col-span-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-center justify-between gap-4">
-                                <div>
-                                    <p className="text-xs text-[var(--color-textSecondary)] font-medium mb-0.5">New issues · last 14 days</p>
-                                    <p className="text-lg font-bold text-[var(--foreground)]">{newCount} total</p>
-                                </div>
-                                <TrendSparkline data={trendData} />
-                            </div>
-                        )}
-                        </div>
-
-                        {/* ── Filters ── */}
-                        <div className="flex items-center gap-3 mb-4 flex-wrap">
-                            <div className="relative flex-1 min-w-[180px]">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-textMuted)]" />
-                                <input
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    placeholder="Search issues..."
-                                    className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--surface-container)] border border-[var(--color-border)] rounded-lg text-[var(--foreground)] placeholder:text-[var(--color-textMuted)] focus:outline-none focus:border-[var(--color-cyan)] transition-colors"
-                                />
-                            </div>
-                            <div className="flex gap-1.5">
-                                {["all", "critical", "high", "medium", "low"].map(s => (
-                                    <button key={s} onClick={() => setSevFilter(s)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize
-                                            ${sevFilter === s
-                                                ? "bg-[var(--color-cyan)] text-black"
-                                                : "bg-[var(--surface-container)] border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:text-[var(--foreground)]"
-                                            }`}>
-                                        {s === "all" ? "All findings" : s}
-                                    </button>
-                                ))}
-                            </div>
-                            <Link href="/dashboard/issues" className="text-xs text-[var(--color-textMuted)] hover:text-[var(--foreground)] flex items-center gap-1 transition-colors ml-auto">
-                                View all <ArrowRight className="h-3 w-3" />
-                            </Link>
                         </div>
 
                         {/* ── Issue list ── */}
-                        <div className="bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                            {/* Filters Row */}
+                            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 flex-wrap">
+                                <div className="relative flex-1 min-w-[200px]">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <input
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        placeholder="Search"
+                                        className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={() => setSevFilter("all")}
+                                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                        sevFilter === "all"
+                                            ? "bg-gray-100 text-gray-900"
+                                            : "text-gray-600 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    All findings
+                                </button>
+
+                                <div className="flex gap-2 ml-auto">
+                                    <Link
+                                        href="/dashboard/issues"
+                                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        View all <ArrowRight className="h-4 w-4 inline ml-1" />
+                                    </Link>
+                                </div>
+                            </div>
                             {/* Table header */}
-                            <div className="grid grid-cols-[32px_1fr_110px_110px_90px_90px] gap-3 px-4 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-textMuted)] uppercase tracking-wider">
-                                <div />
-                                <div>Name</div>
-                                <div>Severity</div>
-                                <div>Source</div>
-                                <div className="flex items-center gap-1"><Clock className="h-3 w-3" />Fix Time</div>
-                                <div className="text-right">Action</div>
+                            <div className="bg-white border-b border-gray-200">
+                                <div className="grid grid-cols-[40px_1fr_120px_150px_100px_120px] gap-3 px-5 py-3">
+                                    <div className="text-sm font-semibold text-gray-900">Type</div>
+                                    <div className="text-sm font-semibold text-gray-900">Name</div>
+                                    <div className="text-sm font-semibold text-gray-900">Severity</div>
+                                    <div className="text-sm font-semibold text-gray-900">Source</div>
+                                    <div className="text-sm font-semibold text-gray-900">Fix time</div>
+                                    <div className="text-sm font-semibold text-gray-900">Status</div>
+                                </div>
                             </div>
 
                             {filtered.length === 0 ? (
-                                <div className="py-16 text-center text-[var(--color-textMuted)] text-sm">
-                                    No issues match your filter.
+                                <div className="py-24 text-center">
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 text-2xl">
+                                        📋
+                                    </div>
+                                    <p className="text-sm text-gray-600">No issues found</p>
                                 </div>
                             ) : (
                                 filtered.map(issue => {
@@ -333,76 +339,74 @@ export default function FeedPage() {
                                         || (issue.pentests as any)?.name
                                         || "—";
 
+                                    // Type badge
+                                    const typeIcon = issue.repository_id ? "TS" : "HTTP";
+                                    const typeColors: Record<string, string> = {
+                                        ts: "bg-blue-100 text-blue-700 border-blue-300",
+                                        http: "bg-purple-100 text-purple-700 border-purple-300",
+                                        default: "bg-gray-100 text-gray-700 border-gray-300",
+                                    };
+                                    const typeColor = typeColors[typeIcon.toLowerCase()] || typeColors.default;
+
+                                    const isNew = new Date(issue.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000);
+
                                     return (
                                         <div key={issue.id}
                                             onClick={() => setSidebarId(issue.id)}
-                                            className="grid grid-cols-[32px_1fr_110px_110px_90px_90px] gap-3 px-4 py-3.5 border-b border-[var(--color-border)] last:border-0 hover:bg-white/3 transition-colors cursor-pointer group items-center">
+                                            className="grid grid-cols-[40px_1fr_120px_150px_100px_120px] gap-3 px-5 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer group items-center">
 
                                             {/* Type icon */}
-                                            <TypeBadge source={source} />
+                                            <div className={`h-7 w-9 rounded border flex items-center justify-center text-[10px] font-bold font-mono ${typeColor}`}>
+                                                {typeIcon}
+                                            </div>
 
                                             {/* Name */}
                                             <div className="min-w-0">
-                                                <p className="text-sm font-medium text-[var(--foreground)] truncate group-hover:text-[var(--color-cyan)] transition-colors">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
                                                     {issue.title}
                                                 </p>
-                                                <p className="text-xs text-[var(--color-textMuted)] truncate mt-0.5">{sourceName}</p>
+                                                <p className="text-xs text-gray-500 truncate mt-0.5">in {sourceName}</p>
                                             </div>
 
                                             {/* Severity */}
                                             <div>
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${sev.pill}`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${sev.pill}`}>
                                                     <span className={`w-1.5 h-1.5 rounded-full ${sev.dot}`} />
                                                     {sev.label}
                                                 </span>
                                             </div>
 
                                             {/* Source */}
-                                            <div className="text-xs text-[var(--color-textSecondary)] truncate">
-                                                {source === "pr"
-                                                    ? <span className="flex items-center gap-1"><GitPullRequest className="h-3 w-3 shrink-0" />{sourceName}</span>
-                                                    : <span className="flex items-center gap-1"><Search className="h-3 w-3 shrink-0" />{sourceName}</span>
-                                                }
+                                            <div className="text-sm text-gray-700 truncate flex items-center gap-2">
+                                                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                </svg>
+                                                {sourceName}
                                             </div>
 
                                             {/* Fix time */}
-                                            <div className="flex items-center gap-1 text-xs text-[var(--color-textMuted)]">
-                                                <Clock className="h-3 w-3 shrink-0" />
+                                            <div className="text-sm text-gray-600">
                                                 {fixTime(issue.severity)}
                                             </div>
 
                                             {/* Action */}
-                                            <div className="flex justify-end">
-                                                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-cyan)] border border-[var(--color-cyan)]/30 rounded-lg px-2.5 py-1 group-hover:bg-[var(--color-cyan)]/10 transition-colors">
-                                                    View Fix <ChevronRight className="h-3 w-3" />
-                                                </span>
+                                            <div>
+                                                {isNew ? (
+                                                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm text-purple-700 bg-purple-100 border border-purple-200">
+                                                        New
+                                                    </span>
+                                                ) : (
+                                                    <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors">
+                                                        View Fix
+                                                        <ChevronRight className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
                                 })
                             )}
                         </div>
-
-                        {/* Quick links */}
-                        <div className="grid grid-cols-3 gap-3 mt-6">
-                            {[
-                                { href: "/dashboard/pentests/new", icon: Search,          label: "New Pentest",      sub: "Scan a domain or repo" },
-                                { href: "/dashboard/pr-reviews",   icon: GitPullRequest,   label: "PR Reviews",       sub: "See all code reviews" },
-                                { href: "/dashboard/issues",       icon: ShieldAlert,      label: "All Issues",       sub: "Full issue management" },
-                            ].map(({ href, icon: Icon, label, sub }) => (
-                                <Link key={href} href={href}
-                                    className="flex items-center gap-3 p-4 bg-[var(--surface-container)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-cyan)]/40 hover:bg-[var(--color-cyan)]/5 transition-colors group">
-                                    <div className="h-8 w-8 rounded-lg bg-[var(--color-cyan)]/10 flex items-center justify-center shrink-0">
-                                        <Icon className="h-4 w-4 text-[var(--color-cyan)]" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-medium text-[var(--foreground)] group-hover:text-[var(--color-cyan)] transition-colors">{label}</p>
-                                        <p className="text-xs text-[var(--color-textMuted)] truncate">{sub}</p>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-
                     </>
                 )}
             </div>

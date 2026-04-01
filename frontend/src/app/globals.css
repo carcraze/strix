@@ -123,48 +123,49 @@
   --sidebar-ring: #00E5FF;
 }
 
-/* ── Light mode overrides ─────────────────────────────────────────────────── */
-.light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+/* ── Aikido-style Light Mode (Default & Only) ─────────────────────────────── */
+:root, .light {
+  --background: #f9fafb;
+  --foreground: #111827;
 
-  --surface: #f8fafc;
-  --surface-container-low: #f1f5f9;
+  --surface: #ffffff;
+  --surface-container-low: #f3f4f6;
   --surface-container: #ffffff;
-  --surface-container-highest: #e2e8f0;
+  --surface-container-highest: #e5e7eb;
 
-  --on-surface: #0f172a;
-  --on-surface-variant: #475569;
-  --outline-variant: #e2e8f0;
+  --on-surface: #111827;
+  --on-surface-variant: #6b7280;
+  --outline-variant: #e5e7eb;
 
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0284c7;
-  --border: #e2e8f0;
+  --popover-foreground: #111827;
+  --muted: #f3f4f6;
+  --muted-foreground: #9ca3af;
+  --accent: #f3f4f6;
+  --accent-foreground: #0ea5e9;
+  --border: #e5e7eb;
   --input: #ffffff;
 
-  --sidebar: #f1f5f9;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0284c7;
-  --sidebar-accent: #e2e8f0;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  /* Permanent dark navy sidebar (Aikido-style) */
+  --sidebar-bg: #1e1b4b; /* Deep indigo/navy */
+  --sidebar-foreground: #e0e7ff;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-accent: #312e81;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #312e81;
 
-  /* Adjust semantic colours for legibility on white */
-  --color-cyan:   #0284c7;
-  --color-amber:  #b45309;
-  --color-green:  #16a34a;
-  --color-red:    #dc2626;
-  --color-purple: #7c3aed;
-  --color-textSecondary: #475569;
-  --color-textMuted:     #94a3b8;
+  /* Premium SaaS severity colors */
+  --color-cyan:   #0ea5e9;
+  --color-amber:  #f59e0b;
+  --color-green:  #10b981;
+  --color-red:    #ef4444;
+  --color-purple: #8b5cf6;
+  --color-textSecondary: #6b7280;
+  --color-textMuted:     #9ca3af;
   --color-bgCard:        #ffffff;
-  --color-border:        #e2e8f0;
+  --color-border:        #e5e7eb;
 }
 
 @layer utilities {

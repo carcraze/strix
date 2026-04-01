@@ -23,13 +23,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => { window.removeEventListener("storage", check); clearInterval(interval); };
     }, []);
 
-    // Default to light mode on first load
+    // Force light mode (Aikido-style - no dark mode)
     useEffect(() => {
-        const saved = localStorage.getItem("zentinel-theme");
-        if (!saved) {
-            document.documentElement.classList.add("light");
-            localStorage.setItem("zentinel-theme", "light");
-        }
+        document.documentElement.classList.add("light");
+        localStorage.setItem("zentinel-theme", "light");
     }, []);
 
     return (
@@ -37,15 +34,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <WorkspaceProvider>
                 <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex">
 
-                    {/* Mobile header */}
-                    <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 h-14 bg-[#1e1f2e] border-b border-white/8">
+                    {/* Mobile header - Aikido navy */}
+                    <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 h-14 bg-[#1e1b4b] border-b border-indigo-900/30">
                         <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-lg bg-[#00E5FF] flex items-center justify-center">
-                                <span className="text-black font-black text-sm">Z</span>
+                            <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                                <span className="text-white font-black text-sm">Z</span>
                             </div>
                             <span className="text-white font-black text-base tracking-tight">Zentinel</span>
                         </div>
-                        <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">
+                        <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 text-indigo-200/70 hover:text-white">
                             <Menu className="h-5 w-5" />
                         </button>
                     </div>
