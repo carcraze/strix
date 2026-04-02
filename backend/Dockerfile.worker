@@ -1,14 +1,25 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl git nmap \
+    curl git nmap wget ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# ── Trivy (SCA + IaC scanner) ────────────────────────────────────────────────
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+    | sh -s -- -b /usr/local/bin
+
+# ── TruffleHog (secrets scanner) ─────────────────────────────────────────────
+RUN curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
+    | sh -s -- -b /usr/local/bin
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir strix-ai
+
+# ── Semgrep (SAST) + Checkov (IaC) — Python packages ────────────────────────
+RUN pip install --no-cache-dir semgrep checkov
 
 COPY . .
 

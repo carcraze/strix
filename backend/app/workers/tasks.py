@@ -22,7 +22,18 @@ celery_app.conf.update(
     accept_content=["json"],
     result_serializer="json",
     task_always_eager=False,
-    worker_prefetch_multiplier=1,  # one task at a time per worker — prevents memory spikes on large instructions
+    worker_prefetch_multiplier=1,  # one task at a time per worker — prevents memory spikes
+
+    # GAP 4: Per-queue concurrency limits via routing.
+    # day_zero scans are memory-heavy (clone + 5 parallel tools + AI triage).
+    # We give day_zero its own queue and cap it at 2 concurrent scans so that
+    # a HN traffic spike (50 founders signing up at once) cannot OOM the VM.
+    # Pentest scans run on the separate 'scans' queue with concurrency=2.
+    # The Redis queue absorbs the spike — tasks wait, not crash.
+    task_routes={
+        "run_day_zero_scan": {"queue": "day_zero"},  # separate low-concurrency queue
+        "run_pentest":       {"queue": "scans"},
+    },
 )
 
 
@@ -220,17 +231,20 @@ Do not call finish_scan until all sub-agents have reported back.
         # BUG FIX: Private repos require an OAuth token to clone.
         # Look up the GitHub/GitLab integration token for this org so the agent can clone private repos.
         # Without this, private repo clones fail silently and the agent skips source code analysis.
+        # ── GAP 6: Tokens are stored encrypted in Supabase Vault ─────────────
+        # Never read access_token directly (it is now NULL after migration).
+        # Use the get_integration_token() RPC which decrypts via vault internally.
         _repo_token_cache: dict = {}
         def _get_repo_token(provider: str) -> str:
             if provider not in _repo_token_cache:
                 try:
-                    integ = supabase_admin.table("integrations") \
-                        .select("access_token") \
-                        .eq("organization_id", org_id) \
-                        .eq("provider", provider) \
-                        .execute().data
-                    _repo_token_cache[provider] = integ[0]["access_token"] if integ else ""
-                except Exception:
+                    result = supabase_admin.rpc(
+                        "get_integration_token",
+                        {"p_org_id": org_id, "p_provider": provider},
+                    ).execute()
+                    _repo_token_cache[provider] = result.data or ""
+                except Exception as e:
+                    print(f"[Worker] Failed to read vault token for {provider}: {e}")
                     _repo_token_cache[provider] = ""
             return _repo_token_cache[provider]
 
@@ -535,6 +549,48 @@ Zero tolerance for false positives — if you cannot prove it with a PoC, do not
 If the target is fully secure, state: PASSED — with a one-sentence explanation."""
 
     return base
+
+
+@celery_app.task(bind=True, name="run_day_zero_scan", max_retries=0)
+def run_day_zero_task(
+    self,
+    org_id: str,
+    repo_id: str,
+    repo_full_name: str,
+    scan_run_id: str,
+    github_token: str | None = None,
+):
+    """Day Zero onboarding scan — runs on the Celery worker, not Cloud Run.
+    Parallel: SCA (Trivy/OSV) + SAST (Semgrep) + IaC (Checkov) + Secrets (TruffleHog) + License.
+    After scanning: Claude Sonnet 4.6 via Vertex AI triages findings for false positives.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        from app.services.day_zero_scanner import DayZeroScanner
+        scanner = DayZeroScanner(
+            org_id=org_id,
+            repo_id=repo_id,
+            repo_full_name=repo_full_name,
+            github_token=github_token,
+            scan_run_id=scan_run_id,
+        )
+        result = loop.run_until_complete(scanner.run_pipeline())
+        logging.getLogger("zentinel").info(
+            f"[DayZero] Completed scan_run {scan_run_id}: "
+            f"{result.get('findings', 0)} findings, "
+            f"{result.get('auto_ignored', 0)} auto-ignored"
+        )
+        return result
+    except Exception as e:
+        logging.getLogger("zentinel").error(f"[DayZero] Task failed for {repo_full_name}: {e}")
+        supabase_admin.table("scan_runs").update({
+            "status": "failed",
+            "error_message": str(e)[:500],
+        }).eq("id", scan_run_id).execute()
+        raise
+    finally:
+        loop.close()
 
 
 def _normalize_severity(raw: str) -> str:

@@ -1110,18 +1110,82 @@ function TeamsTab({ orgId }: { orgId: string }) {
 }
 
 // ─── TAB 4: REPOSITORIES ──────────────────────────────────────────────────────
-function AddRepoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddRepoModal({ open, onClose, orgId }: { open: boolean; onClose: () => void; orgId: string }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [autoScan, setAutoScan] = useState(true);
+  const [connecting, setConnecting] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [showToast, setShowToast] = useState(false);
 
-  const handleConnect = () => {
-    setToastMsg("Repository connected! We're setting up scanning…");
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-    setRepoUrl("");
-    onClose();
+  const showMsg = (msg: string) => {
+    setToastMsg(msg); setShowToast(true);
+    setTimeout(() => setShowToast(false), 4000);
+  };
+
+  const handleConnect = async () => {
+    const raw = repoUrl.trim();
+    if (!raw) return;
+
+    // Parse "github.com/owner/repo" or "owner/repo"
+    const match = raw.replace(/^https?:\/\//, "").replace(/^github\.com\//, "").replace(/\.git$/, "");
+    const parts = match.split("/");
+    if (parts.length < 2) {
+      showMsg("Enter a valid repo like owner/repo");
+      return;
+    }
+    const fullName = `${parts[0]}/${parts[1]}`;
+
+    setConnecting(true);
+    try {
+      // 1. Insert into repositories table
+      const { data: repo, error: insertErr } = await supabase
+        .from("repositories")
+        .insert({
+          organization_id: orgId,
+          provider: "github",
+          provider_repo_id: fullName,
+          full_name: fullName,
+          auto_review_enabled: autoScan,
+        })
+        .select("id")
+        .single();
+
+      if (insertErr) throw new Error(insertErr.message);
+
+      showMsg(`✓ ${fullName} connected! Triggering Day Zero scan…`);
+      setRepoUrl("");
+      onClose();
+
+      // 2. Auto-trigger Day Zero scan — show errors if rate-limited
+      if (repo?.id) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const scanResp = await fetch("/api/code-scan/day-zero", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            organization_id: orgId,
+            repository_id: repo.id,
+            repo_full_name: fullName,
+          }),
+        });
+        if (scanResp.status === 429) {
+          const body = await scanResp.json().catch(() => ({}));
+          showMsg(`⚠ ${body?.detail?.message || "Scan rate limit reached — try again in an hour."}`);
+        } else if (scanResp.status === 503) {
+          showMsg(`✓ ${fullName} connected! Scanner starting up — findings will appear in AutoFix shortly.`);
+        } else {
+          const d = await scanResp.json().catch(() => ({}));
+          console.log("[DayZero] Scan queued:", d.scan_run_id);
+        }
+      }
+    } catch (err: any) {
+      showMsg(`Error: ${err.message}`);
+    } finally {
+      setConnecting(false);
+    }
   };
 
   return (
@@ -1148,10 +1212,10 @@ function AddRepoModal({ open, onClose }: { open: boolean; onClose: () => void })
             <button onClick={onClose} className="px-5 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50">Cancel</button>
             <button
               onClick={handleConnect}
-              disabled={!repoUrl.trim()}
-              className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50"
+              disabled={!repoUrl.trim() || connecting}
+              className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              Connect
+              {connecting ? "Connecting…" : "Connect"}
             </button>
           </div>
         </div>
@@ -1208,7 +1272,7 @@ function RepositoriesTab({ orgId }: { orgId: string }) {
 
   return (
     <>
-      <AddRepoModal open={showAddRepo} onClose={() => setShowAddRepo(false)} />
+      <AddRepoModal open={showAddRepo} onClose={() => setShowAddRepo(false)} orgId={orgId} />
 
       {/* Toolbar */}
       <div className="bg-white border-b border-gray-100 py-4 flex items-center gap-3 -mx-6 px-6 flex-wrap">

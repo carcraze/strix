@@ -14,3 +14,5 @@ slowapi
 opentelemetry-exporter-otlp-proto-http
 traceloop-sdk
 scrubadub[crypto]
+anthropic[vertex]
+httpx
