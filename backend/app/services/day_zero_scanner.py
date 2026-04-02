@@ -15,6 +15,7 @@ from datetime import datetime
 import httpx
 
 from app.services.supabase import supabase_admin
+from app.services.cache import invalidate_org
 
 
 class DayZeroScanner:
@@ -289,6 +290,9 @@ class DayZeroScanner:
                 "ai_tokens_used":     ai_tokens,
                 "findings_capped":    capped,
             }).eq("id", self.scan_run_id).execute()
+
+            # Bust the frontend stats cache so the metric cards update immediately
+            invalidate_org(self.org_id)
 
             return {
                 "scan_run_id":     self.scan_run_id,

@@ -198,10 +198,22 @@ export default function IntegrationsPage() {
 
     useEffect(() => { fetchConnected(); }, [activeWorkspace]);
 
-    // Refetch if we just connected something
+    // Show success toast and refetch when OAuth completes
+    const [toast, setToast] = useState<string | null>(null);
     useEffect(() => {
-        const justConnected = searchParams.get("connected");
-        if (justConnected) fetchConnected();
+        const connected = searchParams.get("connected");
+        const repos     = searchParams.get("repos");
+        const error     = searchParams.get("error");
+        if (connected) {
+            fetchConnected();
+            const repoMsg = repos ? ` ${repos} repositories synced.` : '';
+            setToast(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!${repoMsg}`);
+            setTimeout(() => setToast(null), 5000);
+        }
+        if (error) {
+            setToast(`Connection failed: ${error.replace(/_/g, ' ')}. Please try again.`);
+            setTimeout(() => setToast(null), 5000);
+        }
     }, [searchParams]);
 
     const isConnected = (id: string) => connected.has(id);
@@ -214,6 +226,16 @@ export default function IntegrationsPage() {
     };
 
     return (
+        <>
+        {toast && (
+            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl shadow-xl text-sm font-medium ${
+                toast.includes('failed') || toast.includes('Error')
+                    ? 'bg-red-600 text-white'
+                    : 'bg-green-600 text-white'
+            }`}>
+                {toast}
+            </div>
+        )}
         <div className="flex-1 w-full bg-[#050505] p-8 overflow-y-auto animate-in fade-in duration-300">
             <div className="max-w-[780px] mx-auto">
 
@@ -244,7 +266,7 @@ export default function IntegrationsPage() {
                             logoColor="#ffffff"
                             connected={isConnected("github")}
                             connectHref={`/api/integrations/authorize?provider=github&state=${orgId}`}
-                            manageHref="/dashboard/repositories"
+                            manageHref="/dashboard/settings?tab=repositories"
                             providerId="github"
                             orgId={orgId}
                             onDisconnect={handleDisconnect}
@@ -256,7 +278,7 @@ export default function IntegrationsPage() {
                             logoColor="#FC6D26"
                             connected={isConnected("gitlab")}
                             connectHref={`/api/integrations/authorize?provider=gitlab&state=${orgId}`}
-                            manageHref="/dashboard/repositories"
+                            manageHref="/dashboard/settings?tab=repositories"
                             providerId="gitlab"
                             orgId={orgId}
                             onDisconnect={handleDisconnect}
@@ -268,7 +290,7 @@ export default function IntegrationsPage() {
                             logoColor="#2684FF"
                             connected={isConnected("bitbucket")}
                             connectHref={`/api/integrations/authorize?provider=bitbucket&state=${orgId}`}
-                            manageHref="/dashboard/repositories"
+                            manageHref="/dashboard/settings?tab=repositories"
                             providerId="bitbucket"
                             orgId={orgId}
                             onDisconnect={handleDisconnect}
@@ -325,5 +347,6 @@ export default function IntegrationsPage() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

@@ -10,7 +10,7 @@ import {
     Clock, Lock, FileText, AlertCircle, History, Settings,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { getIssues } from "@/lib/queries";
+import { getIssues, getIssueStats } from "@/lib/queries";
 import { IssueSidebar, fixTime } from "@/components/issues/IssueSidebar";
 import { supabase } from "@/lib/supabase";
 import { updateIssueStatus } from "@/lib/queries";
@@ -519,7 +519,11 @@ function RowMenu({
 export default function IssuesPage() {
     const router = useRouter();
     const [loading, setLoading]       = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore]       = useState(true);
+    const [page, setPage]             = useState(0);
     const [issues, setIssues]         = useState<any[]>([]);
+    const [stats, setStats]           = useState<any>(null);
     const [userName, setUserName]     = useState("there");
     const { activeWorkspace }         = useWorkspace();
 
@@ -581,13 +585,22 @@ export default function IssuesPage() {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
+    // ─── Fetch stats via COUNT queries (zero row data transferred) ───
+    useEffect(() => {
+        if (!activeWorkspace) return;
+        getIssueStats(activeWorkspace.id).then(setStats).catch(console.error);
+    }, [activeWorkspace]);
+
+    // ─── Fetch first page of issues ───
     useEffect(() => {
         const fetchData = async () => {
             if (!activeWorkspace) return;
             setLoading(true);
+            setPage(0);
             try {
-                const issuesData = await getIssues(activeWorkspace.id);
+                const issuesData = await getIssues(activeWorkspace.id, 0);
                 setIssues(issuesData || []);
+                setHasMore((issuesData?.length ?? 0) === 50);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -597,20 +610,37 @@ export default function IssuesPage() {
         fetchData();
     }, [activeWorkspace]);
 
-    // ─── Derived Stats ───
-    const stats = useMemo(() => {
-        const now     = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const loadMore = async () => {
+        if (!activeWorkspace || loadingMore || !hasMore) return;
+        setLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const more = await getIssues(activeWorkspace.id, nextPage);
+            setIssues(prev => [...prev, ...(more || [])]);
+            setPage(nextPage);
+            setHasMore((more?.length ?? 0) === 50);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    // Stats come from the lightweight COUNT queries, not computed from loaded rows
+    const derivedStats = useMemo(() => stats ?? {
+        openTotal: 0, critical: 0, high: 0, medium: 0, low: 0,
+        autoIgnored: 0, hoursSaved: 0, newCount: 0, solvedCount: 0,
+    }, [stats]);
+
+    // Keep backward compat — pages that reference `stats` directly
+    const computedStats = useMemo(() => {
+        // Still compute from loaded issues for severity bar accuracy on current page
         const openIssues   = issues.filter(i => i.status === 'open' || !i.status);
         const critical     = openIssues.filter(i => i.severity === 'critical').length;
         const high         = openIssues.filter(i => i.severity === 'high').length;
         const medium       = openIssues.filter(i => i.severity === 'medium').length;
         const low          = openIssues.filter(i => i.severity === 'low').length;
-        const autoIgnored  = issues.filter(i => i.status === 'ignored' && i.is_false_positive);
-        const hoursSaved   = autoIgnored.reduce((sum, i) => sum + (i.hours_saved || 0), 0);
-        const newCount     = issues.filter(i => new Date(i.found_at || i.created_at) >= weekAgo).length;
-        const solvedCount  = issues.filter(i => i.status === 'fixed' && new Date(i.updated_at || i.created_at) >= weekAgo).length;
-        return { openTotal: openIssues.length, critical, high, medium, low, autoIgnored: autoIgnored.length, hoursSaved: Math.round(hoursSaved * 10) / 10, newCount, solvedCount };
+        return { openTotal: openIssues.length, critical, high, medium, low, autoIgnored: derivedStats.autoIgnored, hoursSaved: derivedStats.hoursSaved, newCount: derivedStats.newCount, solvedCount: derivedStats.solvedCount };
     }, [issues]);
 
     // ─── Helper: Detect issue type ───
@@ -779,17 +809,17 @@ export default function IssuesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div onClick={() => router.push('/dashboard/issues')} className="md:row-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm cursor-pointer">
                         <div className="mb-4">
-                            <SeverityBar critical={stats.critical} high={stats.high} medium={stats.medium} low={stats.low} />
+                            <SeverityBar critical={computedStats.critical} high={computedStats.high} medium={computedStats.medium} low={computedStats.low} />
                         </div>
                         <div className="flex items-baseline gap-2 mb-3">
-                            <span className="text-4xl font-bold text-gray-900">{stats.openTotal}</span>
+                            <span className="text-4xl font-bold text-gray-900">{computedStats.openTotal}</span>
                             <span className="text-gray-600 text-base">Open Issues</span>
                         </div>
                         <div className="flex gap-4 text-sm font-medium">
-                            {stats.critical > 0 && <span className="text-red-600">■ {stats.critical}</span>}
-                            {stats.high     > 0 && <span className="text-orange-600">■ {stats.high}</span>}
-                            {stats.medium   > 0 && <span className="text-blue-600">■ {stats.medium}</span>}
-                            {stats.low      > 0 && <span className="text-green-600">■ {stats.low}</span>}
+                            {computedStats.critical > 0 && <span className="text-red-600">■ {computedStats.critical}</span>}
+                            {computedStats.high     > 0 && <span className="text-orange-600">■ {computedStats.high}</span>}
+                            {computedStats.medium   > 0 && <span className="text-blue-600">■ {computedStats.medium}</span>}
+                            {computedStats.low      > 0 && <span className="text-green-600">■ {computedStats.low}</span>}
                         </div>
                     </div>
 
@@ -798,8 +828,8 @@ export default function IssuesPage() {
                             <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-lg">⚙</div>
                             <span className="text-sm text-gray-600 font-medium">Auto Ignored</span>
                         </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{stats.autoIgnored}</div>
-                        <div className="text-sm text-gray-500">{stats.hoursSaved} hours saved</div>
+                        <div className="text-3xl font-bold text-gray-900 mb-1">{computedStats.autoIgnored}</div>
+                        <div className="text-sm text-gray-500">{computedStats.hoursSaved} hours saved</div>
                     </div>
 
                     <div onClick={() => router.push('/dashboard/issues?filter=new')} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
@@ -807,7 +837,7 @@ export default function IssuesPage() {
                             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg font-bold">●</div>
                             <span className="text-sm text-gray-600 font-medium">New</span>
                         </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{stats.newCount}</div>
+                        <div className="text-3xl font-bold text-gray-900 mb-1">{computedStats.newCount}</div>
                         <div className="text-sm text-gray-500">in last 7 days</div>
                     </div>
 
@@ -816,7 +846,7 @@ export default function IssuesPage() {
                             <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg font-bold">✓</div>
                             <span className="text-sm text-gray-600 font-medium">Solved</span>
                         </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{stats.solvedCount}</div>
+                        <div className="text-3xl font-bold text-gray-900 mb-1">{computedStats.solvedCount}</div>
                         <div className="text-sm text-gray-500">in last 7 days</div>
                     </div>
                 </div>
@@ -1098,6 +1128,19 @@ export default function IssuesPage() {
                                     })}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {/* ── Load More (pagination) ── */}
+                    {hasMore && !loading && filteredIssues.length > 0 && (
+                        <div className="flex justify-center py-4 border-t border-gray-100">
+                            <button
+                                onClick={loadMore}
+                                disabled={loadingMore}
+                                className="px-6 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors disabled:opacity-50"
+                            >
+                                {loadingMore ? "Loading…" : "Load more issues"}
+                            </button>
                         </div>
                     )}
                 </div>

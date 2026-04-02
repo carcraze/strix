@@ -80,6 +80,8 @@ export async function GET(request: Request) {
         }
     }
 
-    // Return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/sign-in?error=auth_callback_failed`)
+    // Always redirect to the production app URL — never use `origin` here
+    // because Supabase may have the wrong Site URL configured (e.g. localhost).
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zentinel.dev'
+    return NextResponse.redirect(`${appUrl}/sign-in?error=auth_callback_failed`)
 }

@@ -183,7 +183,7 @@ export default function IgnoredPage() {
         if (!activeWorkspace) return;
         setLoading(true);
         getIssues(activeWorkspace.id)
-            .then(data => { setAllIssues((data as Record<string, unknown>[]) || []); setLoading(false); })
+            .then(data => { setAllIssues((data as any[]) || []); setLoading(false); })
             .catch(err => { console.error(err); setLoading(false); });
     }, [activeWorkspace, refreshKey]);
 
