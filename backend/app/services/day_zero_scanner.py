@@ -32,6 +32,16 @@ class DayZeroScanner:
     CHECKOV_TIMEOUT_SECS: int = 180           # 3 min Checkov
     TRUFFLEHOG_TIMEOUT_SECS: int = 180        # 3 min TruffleHog
 
+    # ── Isolated tool paths ───────────────────────────────────────────────────
+    # semgrep + checkov live in their own venv to avoid opentelemetry version
+    # conflicts with strix-agent. Trivy + TruffleHog are standalone binaries.
+    # Override with env vars in production if paths differ.
+    import os as _os
+    SEMGREP_BIN:   str = _os.environ.get("SEMGREP_BIN",   "/home/alvin/scan-tools-env/bin/semgrep")
+    CHECKOV_BIN:   str = _os.environ.get("CHECKOV_BIN",   "/home/alvin/scan-tools-env/bin/checkov")
+    TRIVY_BIN:     str = _os.environ.get("TRIVY_BIN",     "trivy")       # system binary
+    TRUFFLEHOG_BIN:str = _os.environ.get("TRUFFLEHOG_BIN","trufflehog")  # system binary
+
     # Repo size gate — reject before cloning (GitHub API reports size in KB)
     MAX_REPO_SIZE_MB: int = 500               # 500 MB cloned size
 
@@ -327,7 +337,7 @@ class DayZeroScanner:
         findings = []
         try:
             stdout, rc = await self._safe_run(
-                "trivy", "fs", "--format", "json", "--quiet",
+                self.TRIVY_BIN, "fs", "--format", "json", "--quiet",
                 "--scanners", "vuln",
                 "--skip-dirs", "node_modules,.git,vendor",
                 # GAP 2: Disable archive extraction to prevent zip-bomb expansion.
@@ -511,7 +521,7 @@ class DayZeroScanner:
         findings = []
         try:
             stdout, rc = await self._safe_run(
-                "semgrep", "scan", "--config=auto", "--json", "--quiet",
+                self.SEMGREP_BIN, "scan", "--config=auto", "--json", "--quiet",
                 "--max-target-bytes=5000000",   # 5 MB per file — Semgrep's own guard
                 "--exclude", "node_modules",
                 "--exclude", ".git",
@@ -569,7 +579,7 @@ class DayZeroScanner:
         findings = []
         try:
             stdout, rc = await self._safe_run(
-                "checkov", "-d", self.workspace, "-o", "json", "--quiet",
+                self.CHECKOV_BIN, "-d", self.workspace, "-o", "json", "--quiet",
                 "--skip-path", "node_modules",
                 "--skip-path", ".git",
                 timeout_secs=self.CHECKOV_TIMEOUT_SECS,
@@ -609,7 +619,7 @@ class DayZeroScanner:
         findings = []
         try:
             stdout, _ = await self._safe_run(
-                "trufflehog", "filesystem", self.workspace,
+                self.TRUFFLEHOG_BIN, "filesystem", self.workspace,
                 "--json",
                 "--no-update",
                 # GAP 1: NEVER let TruffleHog make outbound network calls.
