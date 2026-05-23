@@ -1,9 +1,10 @@
 import json
 import logging
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from opentelemetry import trace
@@ -35,6 +36,7 @@ _global_tracer: Optional["Tracer"] = None
 _OTEL_BOOTSTRAP_LOCK = threading.Lock()
 _OTEL_BOOTSTRAPPED = False
 _OTEL_REMOTE_ENABLED = False
+
 
 def get_global_tracer() -> Optional["Tracer"]:
     return _global_tracer
@@ -797,17 +799,25 @@ class Tracer:
         )
 
     def get_total_llm_stats(self) -> dict[str, Any]:
-        from strix.tools.agents_graph.agents_graph_actions import _agent_instances
+        from strix.tools.agents_graph.agents_graph_actions import (
+            _agent_instances,
+            _completed_agent_llm_totals,
+            _agent_llm_stats_lock,
+        )
+
+        with _agent_llm_stats_lock:
+            completed_totals = dict(_completed_agent_llm_totals)
+            active_agents = list(_agent_instances.values())
 
         total_stats = {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cached_tokens": 0,
-            "cost": 0.0,
-            "requests": 0,
+            "input_tokens": int(completed_totals.get("input_tokens", 0) or 0),
+            "output_tokens": int(completed_totals.get("output_tokens", 0) or 0),
+            "cached_tokens": int(completed_totals.get("cached_tokens", 0) or 0),
+            "cost": float(completed_totals.get("cost", 0.0) or 0.0),
+            "requests": int(completed_totals.get("requests", 0) or 0),
         }
 
-        for agent_instance in _agent_instances.values():
+        for agent_instance in active_agents:
             if hasattr(agent_instance, "llm") and hasattr(agent_instance.llm, "_total_stats"):
                 agent_stats = agent_instance.llm._total_stats
                 total_stats["input_tokens"] += agent_stats.input_tokens

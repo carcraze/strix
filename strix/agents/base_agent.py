@@ -134,7 +134,8 @@ class BaseAgent(metaclass=AgentMeta):
         }
         agents_graph_actions._agent_graph["nodes"][self.state.agent_id] = node
 
-        agents_graph_actions._agent_instances[self.state.agent_id] = self
+        with agents_graph_actions._agent_llm_stats_lock:
+            agents_graph_actions._agent_instances[self.state.agent_id] = self
         agents_graph_actions._agent_states[self.state.agent_id] = self.state
 
         if self.state.parent_id:
@@ -281,7 +282,7 @@ class BaseAgent(metaclass=AgentMeta):
 
             return
 
-        await asyncio.sleep(0.5)
+        await self.state.wait_for_wake(timeout=0.5)
 
     async def _enter_waiting_state(
         self,
