@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronRight, Users, Search, ChevronDown, Plus, Edit2,
   Zap, UserPlus, X, Check, Info, Download, Settings as Cog,
@@ -1772,7 +1773,12 @@ function IntegrationsTab() {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { activeWorkspace } = useWorkspace();
-  const [activeTab, setActiveTab] = useState("general");
+  const searchParams = useSearchParams();
+  // Read ?tab= from URL so /dashboard/settings?tab=repositories opens the right tab
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get("tab");
+    return TABS.some(tab => tab.id === t) ? t! : "general";
+  });
   const [repoCount, setRepoCount] = useState(0);
   const [memberCount, setMemberCount] = useState(1);
 
