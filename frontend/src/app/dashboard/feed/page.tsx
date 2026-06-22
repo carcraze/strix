@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Settings, Filter, ChevronDown, Shield, Package, Braces, Server, KeyRound, Waves, Cog, Code2, Cloud, Globe, Container, Monitor, Zap, Clock, AlertTriangle, History, Ban, RefreshCw, Download } from "lucide-react";
+import { Search, Settings, Filter, ChevronDown, Shield, Package, Braces, Server, KeyRound, Waves, Cog, Code2, Cloud, Globe, Container, Monitor, Zap, Clock, AlertTriangle, History, Ban, RefreshCw, Download, Bell } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
@@ -125,6 +125,10 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("there");
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [newCount, setNewCount] = useState(0);
+  const [fixedCount, setFixedCount] = useState(0);
+  const [ignoredCount, setIgnoredCount] = useState(0);
+  const [hoursSaved, setHoursSaved] = useState(0);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -170,13 +174,23 @@ export default function FeedPage() {
   const fetchIssues = async () => {
     if (!activeWorkspace) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("issues")
-      .select("id, title, description, severity, status, scan_type, language, is_false_positive, file_path, found_at, created_at, repository_id, pentest_id, repositories(full_name), pentests(name)")
-      .eq("organization_id", activeWorkspace.id)
-      .order("found_at", { ascending: false })
-      .limit(500);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const [{ data }, { data: newData }, { data: fixedData }, { data: ignoredData }] = await Promise.all([
+      supabase
+        .from("issues")
+        .select("id, title, description, severity, status, scan_type, language, is_false_positive, file_path, found_at, created_at, repository_id, pentest_id, repositories(full_name), pentests(name)")
+        .eq("organization_id", activeWorkspace.id)
+        .order("found_at", { ascending: false })
+        .limit(500),
+      supabase.from("issues").select("id").eq("organization_id", activeWorkspace.id).gte("found_at", weekAgo),
+      supabase.from("issues").select("id").eq("organization_id", activeWorkspace.id).eq("status", "fixed").gte("found_at", weekAgo),
+      supabase.from("issues").select("id, hours_saved").eq("organization_id", activeWorkspace.id).eq("is_false_positive", true),
+    ]);
     setIssues((data as unknown as Issue[]) || []);
+    setNewCount(newData?.length || 0);
+    setFixedCount(fixedData?.length || 0);
+    setIgnoredCount((ignoredData || []).length);
+    setHoursSaved(Math.round((ignoredData || []).reduce((s, r) => s + (r.hours_saved || 0), 0) * 10) / 10);
     setLoading(false);
   };
 
@@ -261,8 +275,8 @@ export default function FeedPage() {
             Heyy, <span className="font-semibold text-gray-900">{userName}</span>!
           </h1>
           <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Search">
-              <Search className="h-5 w-5 text-gray-600" />
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative" title="Notifications">
+              <Bell className="h-5 w-5 text-gray-600" />
             </button>
             <Link href="/dashboard/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Settings">
               <Settings className="h-5 w-5 text-gray-600" />
@@ -272,6 +286,63 @@ export default function FeedPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* ── KPI Overview Cards ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Open Issues */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm col-span-2 lg:col-span-1">
+            <div className="h-1.5 w-full bg-gray-100 rounded-full mb-4 overflow-hidden flex">
+              {issues.filter(i => i.severity === "critical").length > 0 && <div className="bg-red-500 h-full" style={{ flex: issues.filter(i => i.severity === "critical").length }} />}
+              {issues.filter(i => i.severity === "high").length > 0 && <div className="bg-orange-400 h-full" style={{ flex: issues.filter(i => i.severity === "high").length }} />}
+              {issues.filter(i => i.severity === "medium").length > 0 && <div className="bg-blue-400 h-full" style={{ flex: issues.filter(i => i.severity === "medium").length }} />}
+              {issues.filter(i => i.severity === "low").length > 0 && <div className="bg-green-400 h-full" style={{ flex: issues.filter(i => i.severity === "low").length }} />}
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{issues.filter(i => ["open","in_progress"].includes(i.status)).length}</p>
+            <p className="text-sm text-gray-600 mt-1">Open Issues</p>
+            <div className="flex items-center gap-3 mt-3 text-xs font-medium">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-500" />{issues.filter(i => i.severity === "critical").length}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-orange-400" />{issues.filter(i => i.severity === "high").length}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-400" />{issues.filter(i => i.severity === "medium").length}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-400" />{issues.filter(i => i.severity === "low").length}</span>
+            </div>
+          </div>
+
+          {/* Auto Ignored */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center">
+                <Cog className="h-3.5 w-3.5 text-gray-600" />
+              </div>
+              <span className="text-sm text-gray-600 font-medium">Auto Ignored</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{ignoredCount}</p>
+            <p className="text-sm text-gray-500 mt-1">{hoursSaved} hours saved</p>
+          </div>
+
+          {/* New */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-xs">+</span>
+              </div>
+              <span className="text-sm text-gray-600 font-medium">New</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{newCount}</p>
+            <p className="text-sm text-gray-500 mt-1">in last 7 days</p>
+          </div>
+
+          {/* Solved */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 font-bold text-xs">✓</span>
+              </div>
+              <span className="text-sm text-gray-600 font-medium">Solved</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{fixedCount}</p>
+            <p className="text-sm text-gray-500 mt-1">in last 7 days</p>
+          </div>
+        </div>
+
         {/* ── Filter Bar ── */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
           {/* Search input */}
