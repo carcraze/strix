@@ -1,0 +1,35 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/moyopal-453021/zentinel-backend/zentinel-api:$SHORT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/moyopal-453021/zentinel-backend/zentinel-api:latest'
+      - '-f'
+      - 'backend/Dockerfile'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/moyopal-453021/zentinel-backend/zentinel-api']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'zentinel-api'
+      - '--image'
+      - 'us-central1-docker.pkg.dev/moyopal-453021/zentinel-backend/zentinel-api:$SHORT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+
+images:
+  - 'us-central1-docker.pkg.dev/moyopal-453021/zentinel-backend/zentinel-api:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '900s'

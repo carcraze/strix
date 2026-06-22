@@ -1,0 +1,25 @@
+# Ignore everything except what's needed for backend build
+.git
+.github
+.agents
+.agent
+.agentskills
+.agentskillsfrontend-design
+.claude
+frontend/node_modules
+frontend/.next
+frontend/package-lock.json
+*.zip
+*.pdf
+*.png
+*.svg
+docs/
+containers/
+strix_runs/
+__pycache__
+*.pyc
+.mypy_cache
+.ruff_cache
+.pytest_cache
+htmlcov
+uv.lock

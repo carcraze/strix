@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git \
@@ -6,10 +6,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Install backend dependencies
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Install strix package (needed by Celery workers)
+COPY pyproject.toml /strix-pkg/pyproject.toml
+COPY strix /strix-pkg/strix
+COPY README.md /strix-pkg/README.md
+RUN pip install --no-cache-dir /strix-pkg && rm -rf /strix-pkg
+
+# Copy backend code
+COPY backend/app ./app
 
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
