@@ -24,8 +24,25 @@ const PRIORITY_CONFIG: Record<string, { dot: string; label: string }> = {
 };
 
 // ─────────────── Delegate Modal ───────────────
-function DelegateModal({ onClose, onDelegate }: { onClose: () => void; onDelegate: (name: string) => void }) {
+function DelegateModal({ onClose, onDelegate, orgId }: { onClose: () => void; onDelegate: (name: string) => void; orgId?: string }) {
     const [name, setName] = useState('');
+    const [members, setMembers] = useState<{ name: string; email: string }[]>([]);
+
+    useEffect(() => {
+        if (!orgId) return;
+        supabase
+            .from('organization_members')
+            .select('user_profiles(first_name, last_name, email)')
+            .eq('organization_id', orgId)
+            .then(({ data }) => {
+                if (data) {
+                    setMembers(data.map((m: any) => ({
+                        name: `${m.user_profiles?.first_name || ''} ${m.user_profiles?.last_name || ''}`.trim(),
+                        email: m.user_profiles?.email || '',
+                    })).filter(m => m.name || m.email));
+                }
+            });
+    }, [orgId]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,15 +67,32 @@ function DelegateModal({ onClose, onDelegate }: { onClose: () => void; onDelegat
                             type="text"
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            placeholder="Email or name"
+                            placeholder="Search team member..."
                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+                        {members.length > 0 && (
+                            <div className="mt-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg">
+                                {members
+                                    .filter(m => !name || m.name.toLowerCase().includes(name.toLowerCase()) || m.email.toLowerCase().includes(name.toLowerCase()))
+                                    .map((m, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => { setName(m.name || m.email); }}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                                    >
+                                        <span className="font-medium text-gray-900">{m.name}</span>
+                                        {m.email && <span className="text-gray-500 ml-2 text-xs">{m.email}</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-gray-900 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                             Delegate
                         </button>
                     </div>
@@ -241,7 +275,7 @@ export default function TasksPage() {
         try {
             const { data, error } = await supabase
                 .from('tasks')
-                .select('*, issues(title)')
+                .select('*, issues(title, severity), user_profiles:assigned_to(first_name, last_name, email)')
                 .eq('organization_id', activeWorkspace.id)
                 .order('created_at', { ascending: false });
             if (error) throw error;
@@ -298,10 +332,34 @@ export default function TasksPage() {
     };
 
     const handleDelegate = async (task: any, name: string) => {
-        const extra = { description: [task.description, `Delegated to: ${name}`].filter(Boolean).join('\n\n') };
-        await updateTaskStatus(task.id, 'delegated', extra);
+        const { data: { user } } = await supabase.auth.getUser();
+        // Find the team member by name/email in organization_members
+        const { data: members } = await supabase
+            .from('organization_members')
+            .select('user_id, user_profiles(first_name, last_name, email)')
+            .eq('organization_id', activeWorkspace?.id);
+
+        const match = members?.find((m: any) => {
+            const profile = m.user_profiles;
+            if (!profile) return false;
+            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim().toLowerCase();
+            return fullName.includes(name.toLowerCase()) || profile.email?.toLowerCase().includes(name.toLowerCase());
+        });
+
+        const assignedTo = match?.user_id || null;
+        const assignedName = match ? `${match.user_profiles?.first_name || ''} ${match.user_profiles?.last_name || ''}`.trim() : name;
+
+        await supabase.from('tasks').update({
+            status: 'delegated',
+            assigned_to: assignedTo,
+            assigned_to_name: assignedName,
+            delegated_by: user?.id,
+            delegated_at: new Date().toISOString(),
+        }).eq('id', task.id);
+
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'delegated', assigned_to_name: assignedName } : t));
         setDelegateTask(null);
-        showToast(`Task delegated to ${name}`);
+        showToast(`Task delegated to ${assignedName}`);
     };
 
     const handleSnooze = async (taskId: string) => {
@@ -324,6 +382,7 @@ export default function TasksPage() {
                 <DelegateModal
                     onClose={() => setDelegateTask(null)}
                     onDelegate={(name) => handleDelegate(delegateTask, name)}
+                    orgId={activeWorkspace?.id}
                 />
             )}
 
