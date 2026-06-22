@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Settings, Filter, ChevronDown, Shield } from "lucide-react";
+import { Search, Settings, Filter, ChevronDown, Shield, Package, Braces, Server, KeyRound, Waves, Cog, Code2, Cloud, Globe, Container, Monitor, Zap, Clock, AlertTriangle, History, Ban, RefreshCw, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
@@ -36,21 +36,21 @@ const SEV_CONFIG = {
 
 const SCAN_TYPE_GROUPS = [
   [
-    { value: "sca", label: "Open-source Dependencies", icon: "📦" },
-    { value: "sast", label: "SAST", icon: "{ }" },
-    { value: "iac", label: "Infrastructure as Code", icon: "{⊡}" },
-    { value: "secrets", label: "Exposed Secrets", icon: "🔑" },
+    { value: "sca", label: "Open-source Dependencies", Icon: Package },
+    { value: "sast", label: "SAST", Icon: Braces },
+    { value: "iac", label: "Infrastructure as Code", Icon: Server },
+    { value: "secrets", label: "Exposed Secrets", Icon: KeyRound },
   ],
   [
-    { value: "dast", label: "DAST/Surface Monitoring", icon: "≋" },
-    { value: "pentest", label: "AI Pentest Issues", icon: "⚙" },
-    { value: "code_quality", label: "Code Audit Issues", icon: "{•}" },
+    { value: "dast", label: "DAST/Surface Monitoring", Icon: Waves },
+    { value: "pentest", label: "AI Pentest Issues", Icon: Cog },
+    { value: "code_quality", label: "Code Audit Issues", Icon: Code2 },
   ],
   [
-    { value: "cloud", label: "Cloud Configurations", icon: "☁" },
-    { value: "k8s", label: "Kubernetes Configurations", icon: "🌐" },
-    { value: "container", label: "Container Images", icon: "📋" },
-    { value: "vm", label: "Virtual Machines", icon: "💻" },
+    { value: "cloud", label: "Cloud Configurations", Icon: Cloud },
+    { value: "k8s", label: "Kubernetes Configurations", Icon: Globe },
+    { value: "container", label: "Container Images", Icon: Container },
+    { value: "vm", label: "Virtual Machines", Icon: Monitor },
   ],
 ];
 
@@ -336,7 +336,7 @@ export default function FeedPage() {
                           onChange={() => toggleType(item.value)}
                           className="h-4 w-4 rounded border-gray-300 text-sky-500 focus:ring-sky-500"
                         />
-                        <span className="text-sm">{item.icon}</span>
+                        <item.Icon className="h-4 w-4 text-gray-500" />
                         <span className="text-sm text-gray-700">{item.label}</span>
                       </label>
                     ))}
@@ -370,11 +370,11 @@ export default function FeedPage() {
                 </div>
                 {/* Quick filter items */}
                 {[
-                  { key: "quick_fixes", icon: "⚡", label: "Quick Fixes" },
-                  { key: "sla_due_soon", icon: "⏰", label: "SLA Due Soon" },
-                  { key: "out_of_sla", icon: "⚠", label: "Out of SLA" },
-                  { key: "recently_discovered", icon: "🕐", label: "Recently Discovered" },
-                  { key: "ignored", icon: "🚫", label: "Ignored Issues" },
+                  { key: "quick_fixes", Icon: Zap, label: "Quick Fixes" },
+                  { key: "sla_due_soon", Icon: Clock, label: "SLA Due Soon" },
+                  { key: "out_of_sla", Icon: AlertTriangle, label: "Out of SLA" },
+                  { key: "recently_discovered", Icon: History, label: "Recently Discovered" },
+                  { key: "ignored", Icon: Ban, label: "Ignored Issues" },
                 ].map((qf) => (
                   <button
                     key={qf.key}
@@ -383,7 +383,7 @@ export default function FeedPage() {
                       quickFilter === qf.key ? "text-sky-700 bg-sky-50" : "text-gray-700"
                     }`}
                   >
-                    <span>{qf.icon}</span>
+                    <qf.Icon className="h-4 w-4 text-gray-500" />
                     <span>{qf.label}</span>
                   </button>
                 ))}
@@ -396,7 +396,7 @@ export default function FeedPage() {
                     stackFilter === "frontend" ? "text-sky-700 bg-sky-50" : "text-gray-700"
                   }`}
                 >
-                  <span>&lt;/&gt;</span>
+                  <Code2 className="h-4 w-4 text-gray-500" />
                   <span>Frontend</span>
                 </button>
                 <button
@@ -405,7 +405,7 @@ export default function FeedPage() {
                     stackFilter === "backend" ? "text-sky-700 bg-sky-50" : "text-gray-700"
                   }`}
                 >
-                  <span>⊟</span>
+                  <Server className="h-4 w-4 text-gray-500" />
                   <span>Backend</span>
                 </button>
                 <div className="border-t border-gray-100 my-1" />
@@ -482,14 +482,14 @@ export default function FeedPage() {
                   onClick={() => { fetchIssues(); setShowActionsDropdown(false); }}
                   className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  <span>🔄</span>
+                  <RefreshCw className="h-4 w-4 text-gray-500" />
                   <span>Refresh Table</span>
                 </button>
                 <button
                   onClick={() => { exportCSV(filtered); setShowActionsDropdown(false); }}
                   className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  <span>📥</span>
+                  <Download className="h-4 w-4 text-gray-500" />
                   <span>Export Issues</span>
                 </button>
               </div>
