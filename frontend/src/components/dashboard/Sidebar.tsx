@@ -20,7 +20,7 @@ const NAV = [
     {
         section: "FEED",
         items: [
-            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard", exact: true, hasDropdown: true,
+            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard/feed", exact: true, hasDropdown: true,
               subItems: [
                 { icon: BellOff,      label: "Snoozed", href: "/dashboard/issues/snoozed" },
                 { icon: EyeOff,       label: "Ignored", href: "/dashboard/issues/ignored" },
@@ -57,6 +57,71 @@ const NAV = [
         ],
     },
 ];
+
+// ── Feed Dropdown Component ───────────────────────────────────────────────────
+function FeedDropdown({
+    item,
+    subItems,
+    active,
+    isActive,
+}: {
+    item: any;
+    subItems: { icon: any; label: string; href: string }[];
+    active: boolean;
+    isActive: (href: string, exact?: boolean) => boolean;
+}) {
+    const [expanded, setExpanded] = useState(true);
+    const router = useRouter();
+
+    return (
+        <div>
+            <button
+                onClick={() => {
+                    router.push(item.href);
+                    setExpanded(!expanded);
+                }}
+                className={cn(
+                    "w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-colors group",
+                    active
+                        ? "bg-sky-500/20 text-sky-300"
+                        : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30"
+                )}
+            >
+                <div className="flex items-center gap-2.5">
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                </div>
+                <ChevronDown className={cn(
+                    "h-3.5 w-3.5 text-indigo-300/50 transition-transform duration-200",
+                    expanded ? "" : "-rotate-90"
+                )} />
+            </button>
+            {expanded && (
+                <div className="mt-0.5 space-y-0.5">
+                    {subItems.map(sub => {
+                        const SubIcon = sub.icon;
+                        const subActive = isActive(sub.href);
+                        return (
+                            <Link
+                                key={sub.href}
+                                href={sub.href}
+                                className={cn(
+                                    "flex items-center gap-2 ml-6 pl-3 pr-2 py-1 rounded-md text-xs transition-colors border-l border-indigo-800/40",
+                                    subActive
+                                        ? "text-sky-300 bg-sky-500/15"
+                                        : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
+                                )}
+                            >
+                                <SubIcon className="h-3 w-3 shrink-0" />
+                                {sub.label}
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (v: boolean) => void }) {
     const pathname = usePathname();
@@ -191,44 +256,13 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                                 // Dropdown item (Feed with sub-items)
                                 if (hasDropdown && subItems && !collapsed) {
                                     return (
-                                        <div key={item.href}>
-                                            <Link
-                                                href={item.href}
-                                                className={cn(
-                                                    "flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-colors group",
-                                                    active
-                                                        ? "bg-sky-500/20 text-sky-300"
-                                                        : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <item.icon className="h-4 w-4 shrink-0" />
-                                                    {item.label}
-                                                </div>
-                                                <ChevronDown className="h-3.5 w-3.5 text-indigo-300/50" />
-                                            </Link>
-                                            {/* Always-visible sub-items */}
-                                            <div className="mt-0.5 space-y-0.5">
-                                                {subItems.map(sub => {
-                                                    const subActive = isActive(sub.href);
-                                                    return (
-                                                        <Link
-                                                            key={sub.href}
-                                                            href={sub.href}
-                                                            className={cn(
-                                                                "flex items-center gap-2 ml-6 pl-3 pr-2 py-1 rounded-md text-xs transition-colors border-l border-indigo-800/40",
-                                                                subActive
-                                                                    ? "text-sky-300 bg-sky-500/15"
-                                                                    : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
-                                                            )}
-                                                        >
-                                                            <sub.icon className="h-3 w-3 shrink-0" />
-                                                            {sub.label}
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                        <FeedDropdown
+                                            key={item.href}
+                                            item={item}
+                                            subItems={subItems}
+                                            active={active}
+                                            isActive={isActive}
+                                        />
                                     );
                                 }
 
