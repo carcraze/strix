@@ -105,8 +105,8 @@ jobs:
             --build-arg SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} \
             --build-arg WORKOS_CLIENT_ID=${{ secrets.WORKOS_CLIENT_ID }} \
             --build-arg WORKOS_API_KEY=${{ secrets.WORKOS_API_KEY }} \
-            --build-arg GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }} \
-            --build-arg GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }} \
+            --build-arg GITHUB_CLIENT_ID=${{ secrets.GH_OAUTH_CLIENT_ID }} \
+            --build-arg GITHUB_CLIENT_SECRET=${{ secrets.GH_OAUTH_CLIENT_SECRET }} \
             --build-arg GITLAB_CLIENT_ID=${{ secrets.GITLAB_CLIENT_ID }} \
             --build-arg GITLAB_CLIENT_SECRET=${{ secrets.GITLAB_CLIENT_SECRET }} \
             --build-arg BITBUCKET_CLIENT_ID=${{ secrets.BITBUCKET_CLIENT_ID }} \
@@ -114,7 +114,7 @@ jobs:
             --build-arg DODO_PAYMENTS_API_KEY=${{ secrets.DODO_PAYMENTS_API_KEY }} \
             --build-arg DODO_WEBHOOK_SECRET=${{ secrets.DODO_WEBHOOK_SECRET }} \
             --build-arg SCANNER_BACKEND_URL=${{ secrets.SCANNER_BACKEND_URL }} \
-            --build-arg GITHUB_WEBHOOK_SECRET=${{ secrets.GITHUB_WEBHOOK_SECRET }} \
+            --build-arg GITHUB_WEBHOOK_SECRET=${{ secrets.GH_WEBHOOK_SECRET }} \
             --build-arg GITLAB_WEBHOOK_SECRET=${{ secrets.GITLAB_WEBHOOK_SECRET }} \
             --build-arg BITBUCKET_WEBHOOK_SECRET=${{ secrets.BITBUCKET_WEBHOOK_SECRET }} \
             frontend/
