@@ -20,7 +20,7 @@ const NAV = [
     {
         section: "FEED",
         items: [
-            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard/issues", exact: true },
+            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard", exact: true },
             { icon: BellOff,      label: "Snoozed", href: "/dashboard/issues/snoozed", subItem: true },
             { icon: EyeOff,       label: "Ignored", href: "/dashboard/issues/ignored", subItem: true },
             { icon: CheckCircle2, label: "Solved",  href: "/dashboard/issues/solved",  subItem: true },
@@ -42,7 +42,6 @@ const NAV = [
         items: [
             { icon: Search,      label: "Pentests",   href: "/dashboard/pentests" },
             { icon: GitPullRequest, label: "PR Reviews", href: "/dashboard/pr-reviews" },
-            { icon: ShieldAlert, label: "Issues",     href: "/dashboard/issues" },
             { icon: Code2,       label: "Code Quality", href: "/dashboard/code-quality", comingSoon: true },
             { icon: BarChart2,   label: "Reports",    href: "/dashboard/reports",    comingSoon: true },
         ],
