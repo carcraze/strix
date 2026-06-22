@@ -735,7 +735,7 @@ function ChecksTab({
                             return (
                               <button
                                 key={idx}
-                                onClick={() => action.subView ? setCheckSubView(action.subView) : undefined}
+                                onClick={() => (action as any).subView ? setCheckSubView((action as any).subView) : undefined}
                                 className="text-xs text-teal-600 hover:text-teal-700 font-medium"
                               >
                                 {action.label}
