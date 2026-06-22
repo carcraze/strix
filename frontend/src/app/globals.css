@@ -60,9 +60,11 @@
 }
 
 /* Dark mode (explicit .dark class) */
-:root, .dark {
+:root {
   --radius: 0.5rem;
+}
 
+.dark {
   /* Zentinel Design System (Terminal Black) */
   --background: #000000;
   --foreground: #ffffff;

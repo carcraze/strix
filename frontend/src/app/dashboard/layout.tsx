@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import SecurityCheck from "@/components/SecurityCheck";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
@@ -9,6 +10,7 @@ import { Menu } from "lucide-react";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const { setTheme } = useTheme();
 
     // Sync collapsed state for layout offset
     useEffect(() => {
@@ -23,15 +25,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => { window.removeEventListener("storage", check); clearInterval(interval); };
     }, []);
 
-    // Force light mode in dashboard — restore dark on leaving (for landing page)
+    // Force light mode in dashboard
     useEffect(() => {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.classList.add("light");
+        setTheme("light");
         return () => {
-            document.documentElement.classList.remove("light");
-            document.documentElement.classList.add("dark");
+            setTheme("dark");
         };
-    }, []);
+    }, [setTheme]);
 
     return (
         <SecurityCheck>
