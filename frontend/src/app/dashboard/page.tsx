@@ -213,7 +213,7 @@ export default function FeedPage() {
 
       const totalHours = (ignoredData || []).reduce((sum, r) => sum + (r.hours_saved || 0), 0);
 
-      setIssues((allIssues as Issue[]) || []);
+      setIssues((allIssues as unknown as Issue[]) || []);
       setNewCount(newIssues?.length || 0);
       setFixedCount(fixedIssues?.length || 0);
       setIgnoredCount((ignoredData || []).length);
