@@ -424,7 +424,19 @@ Do not call finish_scan until all sub-agents have reported back.
             "fix_description":     f.get("remediation_steps"),
             "auto_fix_available":  False,  # Can determine this later based on templates
         } for f in findings]
-        supabase_admin.table("issues").insert(issue_rows).execute()
+        inserted = supabase_admin.table("issues").insert(issue_rows).select("id, title, severity").execute()
+
+        # ── AUTO-CREATE TASKS for critical/high findings ─────────
+        if inserted.data:
+            task_rows = [{
+                "organization_id": org_id,
+                "issue_id": issue["id"],
+                "title": f"Fix: {issue['title']}",
+                "priority": issue["severity"],
+                "status": "open",
+            } for issue in inserted.data if issue.get("severity") in ("critical", "high")]
+            if task_rows:
+                supabase_admin.table("tasks").insert(task_rows).execute()
 
     # ── PDF REPORT ───────────────────────────────────────────────
     report_url = None
