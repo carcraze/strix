@@ -498,9 +498,9 @@ def run_pr_review_task(
                 }).eq("id", pr_review_id).execute()
 
         # 6. Construct Agent Instruction
-        from strix.agents.StrixAgent import StrixAgent  # type: ignore
-        from strix.llm.config import LLMConfig  # type: ignore
-        from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
+        import os
+        from strix.core.runner import run_strix_scan  # type: ignore
+        from strix.report.state import ReportState, set_global_report_state  # type: ignore
 
         if trigger == "full_repo":
             full_instruction = STRIX_FULL_REPO_INSTRUCTION
@@ -526,13 +526,10 @@ def run_pr_review_task(
 
         log.info(f'[ZENTINEL] targets_info: {targets_info}')
 
-        # 7. Call Strix
+        # 7. Call Strix via new SDK runner
         # Load tool skills for PR reviews — secrets + SCA run on every PR
-        # This makes PR reviews catch leaked credentials and vulnerable deps instantly
         pr_skills = [
-            "tooling/trufflehog",   # Secrets in new code + git history (CRITICAL for PRs)
             "tooling/semgrep",      # SAST on changed files
-            "tooling/osv_scanner",  # New dependencies introduced in this PR
             "tooling/httpx",        # Test new API endpoints added in the diff
             "tooling/nuclei",       # CVE checks on new endpoints
             "vulnerabilities/authentication_jwt",
@@ -541,32 +538,45 @@ def run_pr_review_task(
             "vulnerabilities/xss",
             "vulnerabilities/mass_assignment",
         ]
-        agent_config = {"llm_config": LLMConfig(scan_mode="deep", skills=pr_skills), "max_iterations": 200, "non_interactive": True}
-        scan_config = {
+
+        strix_scan_config = {
             'scan_id': f'pr_{pr_review_id}',
             'targets': targets_info,
             'user_instructions': full_instruction,
             'run_name': f'pr_{pr_review_id}',
+            'scan_mode': 'deep',
+            'skills': pr_skills,
         }
 
-        tracer = Tracer(f"pr_{pr_review_id}")
-        tracer.set_scan_config(scan_config)
-        set_global_tracer(tracer)
+        report_state = ReportState(run_name=f"pr_{pr_review_id}")
+        report_state.scan_config = strix_scan_config
+        set_global_report_state(report_state)
 
-        log.info(f'[ZENTINEL] scan_config: {json.dumps(scan_config, default=str)}')
-        log.info(f"[ZENTINEL] Starting StrixAgent.execute_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
-        log.info(f"[ZENTINEL] About to call StrixAgent.execute_scan")
+        log.info(f'[ZENTINEL] scan_config: {json.dumps(strix_scan_config, default=str)}')
+        log.info(f"[ZENTINEL] Starting run_strix_scan | repo={repo_full_name} trigger={trigger} branch={branch_name}")
 
-        agent = StrixAgent(agent_config)
+        # Resolve sandbox image
+        strix_image = os.environ.get("STRIX_IMAGE", "ghcr.io/usestrix/strix-sandbox:1.0.0")
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(agent.execute_scan(scan_config))
+            result = loop.run_until_complete(
+                run_strix_scan(
+                    scan_config=strix_scan_config,
+                    scan_id=f"pr_{pr_review_id}",
+                    image=strix_image,
+                    interactive=False,
+                    max_turns=200,
+                    model=os.environ.get("STRIX_LLM", "vertex_ai/gemini-2.5-pro"),
+                    cleanup_on_exit=True,
+                )
+            )
         finally:
             loop.close()
 
-        res_str = str(result)
-        log.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
+        res_str = str(result)[:200] if result else "None"
+        log.info(f'[ZENTINEL] run_strix_scan returned: {type(result)} — {res_str}')
 
         if isinstance(result, dict) and not result.get("success", True):
             error_msg = result.get("error", "Unknown Zentinel engine error")

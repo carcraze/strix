@@ -109,10 +109,10 @@ def run_pentest_task(
     final_report_markdown = None
 
     try:
-        # ── DIRECT EXECUTOR INVOCATION ────────────────────────────
-        from strix.agents.StrixAgent import StrixAgent  # type: ignore
-        from strix.llm.config import LLMConfig  # type: ignore
-        from strix.telemetry.tracer import Tracer, set_global_tracer  # type: ignore
+        # ── STRIX SDK v1.0 INVOCATION ────────────────────────────
+        import os
+        from strix.core.runner import run_strix_scan  # type: ignore
+        from strix.report.state import ReportState, set_global_report_state  # type: ignore
 
         # 1. Build the final instruction for Strix.
         #
@@ -276,7 +276,7 @@ Do not call finish_scan until all sub-agents have reported back.
                 }
                 targets_info.append(repo_target)
 
-        # 3. Formulate configs
+        # 3. Formulate scan config for the new SDK runner
         _depth_limits = {
             "quick":      150,
             "web_api":    250,
@@ -284,11 +284,10 @@ Do not call finish_scan until all sub-agents have reported back.
             "compliance": 450,
             "deep":       500,
         }
-        max_iters = _depth_limits.get(scan_type, 300)
+        max_turns = _depth_limits.get(scan_type, 300)
 
         # Load tool skills based on scan type.
         # The sandbox already has these tools installed — skills tell the agent HOW to use them.
-        # Previously zero tool skills were loaded — agent did everything manually with a browser.
         _base_tools = [
             "tooling/subfinder",   # Subdomain enumeration
             "tooling/naabu",       # Port discovery
@@ -299,12 +298,8 @@ Do not call finish_scan until all sub-agents have reported back.
             "tooling/nmap",        # Service/port scanning
         ]
         _sast_tools = [
-            "tooling/semgrep",      # AST-based SAST — all languages (Feature #1)
-            "tooling/sqlmap",       # SQL injection automation (Feature #2)
-            "tooling/trufflehog",   # Secrets detection — 800+ detectors, git history (Feature #9)
-            "tooling/osv_scanner",  # SCA — CVEs with CVSS + reachability (Feature #3)
-            "tooling/trivy",        # Container security + IaC + filesystem CVEs (Features #4, #5)
-            "tooling/checkov",      # IaC misconfigs — Terraform/K8s/CloudFormation (Feature #5)
+            "tooling/semgrep",      # AST-based SAST — all languages
+            "tooling/sqlmap",       # SQL injection automation
         ]
         _vuln_skills = [
             "vulnerabilities/sql_injection",
@@ -326,22 +321,19 @@ Do not call finish_scan until all sub-agents have reported back.
         else:
             skill_list = _base_tools
 
-        llm_config = LLMConfig(scan_mode=scan_mode, skills=skill_list)
-        agent_config = {
-            "llm_config": llm_config,
-            "max_iterations": max_iters,
-            "non_interactive": True,
-        }
-        scan_config = {
+        # Build scan_config dict in the format run_strix_scan() expects
+        strix_scan_config = {
             "scan_id": pentest_id,
             "targets": targets_info,
             "user_instructions": instruction,
-            "run_name": pentest_id,  # Tracer saves outputs to strix_runs/<run_name>
+            "run_name": pentest_id,
+            "scan_mode": scan_mode,
+            "skills": skill_list,
         }
 
-        # 4. Setup telemetry and bind Redis stream callback
-        tracer = Tracer(pentest_id)
-        tracer.set_scan_config(scan_config)
+        # 4. Setup report state and bind Redis stream callback
+        report_state = ReportState(run_name=pentest_id)
+        report_state.scan_config = strix_scan_config
 
         def redis_finding_callback(report: dict):
             publish_event(redis_channel, "finding", {
@@ -350,26 +342,41 @@ Do not call finish_scan until all sub-agents have reported back.
                 "description": report.get("description"),
             })
 
-        tracer.vulnerability_found_callback = redis_finding_callback
-        set_global_tracer(tracer)
+        report_state.vulnerability_found_callback = redis_finding_callback
+        set_global_report_state(report_state)
 
-        # 5. Execute synchronously inside the Celery worker
-        agent = StrixAgent(agent_config)
-        
-        strix_logger.info(f"[ZENTINEL] About to call StrixAgent.execute_scan for pentest {pentest_id}")
-        # Async run wrapper
+        # 5. Configure environment for the Strix SDK
+        # The SDK reads STRIX_LLM and LLM_API_KEY from environment
+        os.environ.setdefault("STRIX_LLM", settings.STRIX_LLM)
+
+        # Resolve sandbox image
+        strix_image = os.environ.get("STRIX_IMAGE", "ghcr.io/usestrix/strix-sandbox:1.0.0")
+
+        # 6. Execute via the new SDK runner
+        strix_logger.info(f"[ZENTINEL] Launching run_strix_scan for pentest {pentest_id}")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(agent.execute_scan(scan_config))
+            result = loop.run_until_complete(
+                run_strix_scan(
+                    scan_config=strix_scan_config,
+                    scan_id=pentest_id,
+                    image=strix_image,
+                    local_sources=None,
+                    interactive=False,
+                    max_turns=max_turns,
+                    model=settings.STRIX_LLM,
+                    cleanup_on_exit=True,
+                )
+            )
         finally:
             loop.close()
-            
-        res_str = str(result)
-        strix_logger.info(f'[ZENTINEL] execute_scan returned: {type(result)} — {"{:.200s}".format(res_str)}')
-        
-        findings = tracer.vulnerability_reports
-        final_report_markdown = tracer.final_scan_result
+
+        res_str = str(result)[:200] if result else "None"
+        strix_logger.info(f'[ZENTINEL] run_strix_scan returned: {type(result)} — {res_str}')
+
+        findings = report_state.vulnerability_reports
+        final_report_markdown = report_state.final_scan_result
 
     except Exception as e:
         publish_event(redis_channel, "error", {"message": str(e)})
