@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const APP_BASE = 'https://app.zentinel.dev';
+const APP_BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zentinel.dev';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -17,8 +17,12 @@ export async function GET(request: Request) {
     let authUrl = '';
 
     if (provider === 'github') {
+        const clientId = process.env.GITHUB_CLIENT_ID || process.env.GH_OAUTH_CLIENT_ID;
+        if (!clientId) {
+            return NextResponse.json({ error: 'GitHub OAuth not configured' }, { status: 500 });
+        }
         const params = new URLSearchParams({
-            client_id: process.env.GITHUB_CLIENT_ID!,
+            client_id: clientId,
             redirect_uri: redirectUri,
             scope: 'repo read:org',
             state,
@@ -26,23 +30,27 @@ export async function GET(request: Request) {
         });
         authUrl = `https://github.com/login/oauth/authorize?${params}`;
     } else if (provider === 'gitlab') {
+        const clientId = process.env.GITLAB_CLIENT_ID;
+        if (!clientId) {
+            return NextResponse.json({ error: 'GitLab OAuth not configured' }, { status: 500 });
+        }
         const params = new URLSearchParams({
-            client_id: process.env.GITLAB_CLIENT_ID!,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
             state,
-            // api: full access (MR comments, code suggestions, private repos)
-            // write_repository: push access needed for AI-suggested fixes
             scope: 'api read_repository write_repository',
         });
         authUrl = `https://gitlab.com/oauth/authorize?${params}`;
     } else if (provider === 'bitbucket') {
+        const clientId = process.env.BITBUCKET_CLIENT_ID;
+        if (!clientId) {
+            return NextResponse.json({ error: 'Bitbucket OAuth not configured' }, { status: 500 });
+        }
         const params = new URLSearchParams({
-            client_id: process.env.BITBUCKET_CLIENT_ID!,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
-            // repository:write allows cloning private + pushing fixes
-            // pullrequest allows reading PRs. (Removed pullrequest:write to fix invalid_scope error)
             scope: 'repository repository:write pullrequest',
             state,
         });

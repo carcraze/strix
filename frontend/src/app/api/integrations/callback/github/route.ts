@@ -37,8 +37,8 @@ export async function GET(request: Request) {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                client_id:     process.env.GITHUB_CLIENT_ID,
-                client_secret: process.env.GITHUB_CLIENT_SECRET,
+                client_id:     process.env.GITHUB_CLIENT_ID || process.env.GH_OAUTH_CLIENT_ID,
+                client_secret: process.env.GITHUB_CLIENT_SECRET || process.env.GH_OAUTH_CLIENT_SECRET,
                 code,
                 redirect_uri:  REDIRECT_URI,
             }),
