@@ -1,666 +1,789 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Search, Layers, Github, GitBranch, Lock, Globe, X, Settings, ChevronDown, Check, Loader2, Play } from "lucide-react";
-import { Card } from "@/components/ui/zentinel-card";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { getRepositories } from "@/lib/queries";
+import {
+  Search, Filter, Package, Scale, Braces, Code, Server,
+  Container, Smartphone, ChevronRight, MoreVertical, ToggleLeft, ToggleRight
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
-type GhRepo = {
-    id: string;
-    name: string;
-    description?: string;
-    private: boolean;
-    url: string;
-    default_branch?: string;
-    language?: string;
-    stars?: number;
-    provider: string;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Repository = {
+  id: string;
+  organization_id: string;
+  provider: string;
+  provider_repo_id: string;
+  full_name: string;
+  default_branch: string;
+  auto_review_enabled: boolean;
+  schedule_enabled: boolean;
+  block_merge_on_critical: boolean;
+  created_at: string;
 };
 
-const PROVIDERS = [
-    { id: 'github', label: 'GitHub' },
-    { id: 'gitlab', label: 'GitLab' },
-    { id: 'bitbucket', label: 'Bitbucket' },
-];
+type PrReview = {
+  id: string;
+  organization_id: string;
+  repository_id: string;
+  pr_number: number;
+  pr_title: string;
+  status: string;
+  issues_found: number;
+  created_at: string;
+  provider: string;
+  trigger_source: string;
+  repo_full_name?: string;
+};
+
+type CheckRule = {
+  id: string;
+  organization_id: string;
+  rule_type: string;
+  language: string;
+  description: string;
+  auto_fix: boolean;
+  score: string;
+  is_default: boolean;
+  is_enabled: boolean;
+  custom_context: string | null;
+  created_at: string;
+};
+
+type Tab = "repositories" | "pull-requests" | "checks";
+type CheckSubView = null | "sast" | "iac" | "mobile";
+
+// ─── Score Badge ─────────────────────────────────────────────────────────────
+
+function ScoreBadge({ score }: { score: string }) {
+  const s = score?.toLowerCase() || "";
+  if (s === "critical") return <span className="inline-flex items-center gap-1.5 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-red-500" />Critical</span>;
+  if (s === "high") return <span className="inline-flex items-center gap-1.5 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-orange-500" />High</span>;
+  if (s === "medium") return <span className="inline-flex items-center gap-1.5 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-blue-500" />Medium</span>;
+  if (s === "low") return <span className="inline-flex items-center gap-1.5 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-green-500" />Low</span>;
+  return <span className="text-xs text-gray-400">{score}</span>;
+}
+
+// ─── Status Badge ────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string }) {
+  const s = status?.toLowerCase() || "";
+  if (s === "completed" || s === "passed") return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">Passed</span>;
+  if (s === "failed") return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">Failed</span>;
+  if (s === "pending") return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">Pending</span>;
+  if (s === "running") return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">Running</span>;
+  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{status}</span>;
+}
+
+// ─── Main Page Component ─────────────────────────────────────────────────────
 
 export default function RepositoriesPage() {
-    const [loading, setLoading] = useState(true);
-    const [repositories, setRepositories] = useState<any[]>([]);
-    const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace } = useWorkspace();
+  const orgId = activeWorkspace?.id;
 
-    // Modal state
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [activeProvider, setActiveProvider] = useState<string>('github');
-    const [search, setSearch] = useState('');
-    const [fetchingRepos, setFetchingRepos] = useState(false);
-    const [availableRepos, setAvailableRepos] = useState<GhRepo[]>([]);
-    const [addingRepos, setAddingRepos] = useState<Set<string>>(new Set());
-    const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
+  // Tab state
+  const [activeTab, setActiveTab] = useState<Tab>("repositories");
 
-    // Pagination settings
-    const [currentPage, setCurrentPage] = useState(1);
-    const reposPerPage = 20;
+  // Data
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [prReviews, setPrReviews] = useState<PrReview[]>([]);
+  const [checkRules, setCheckRules] = useState<CheckRule[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    // Load saved repositories
-    useEffect(() => {
-        const fetchRepositories = async () => {
-            if (!activeWorkspace) return;
-            setLoading(true);
-            try {
-                const data = await getRepositories(activeWorkspace.id);
-                setRepositories(data || []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchRepositories();
-    }, [activeWorkspace]);
+  // Filters — Repositories tab
+  const [repoSearch, setRepoSearch] = useState("");
 
-    // Check which providers are connected
-    useEffect(() => {
-        const checkIntegrations = async () => {
-            if (!activeWorkspace) return;
-            const { data } = await supabase
-                .from('integrations')
-                .select('provider')
-                .eq('organization_id', activeWorkspace.id);
-            if (data) setConnectedProviders(data.map((r: any) => r.provider));
-        };
-        checkIntegrations();
-    }, [activeWorkspace]);
+  // Filters — Pull Requests tab
+  const [prSearch, setPrSearch] = useState("");
+  const [prRepoFilter, setPrRepoFilter] = useState("all");
+  const [prStateFilter, setPrStateFilter] = useState("all");
 
-    // Fetch repos from selected provider
-    const loadRepos = useCallback(async (provider: string, searchTerm: string) => {
-        if (!activeWorkspace) return;
-        setFetchingRepos(true);
-        setAvailableRepos([]);
-        try {
-            const res = await fetch(`/api/repos?org=${activeWorkspace.id}&provider=${provider}&search=${encodeURIComponent(searchTerm)}`);
-            const { repos, error } = await res.json();
-            if (error) {
-                setAvailableRepos([]);
-            } else {
-                setAvailableRepos(repos || []);
-            }
-        } catch {
-            setAvailableRepos([]);
-        } finally {
-            setFetchingRepos(false);
-        }
-    }, [activeWorkspace]);
+  // Checks tab sub-view
+  const [checkSubView, setCheckSubView] = useState<CheckSubView>(null);
+  const [ruleLanguageFilter, setRuleLanguageFilter] = useState("");
+  const [ruleTypeFilter, setRuleTypeFilter] = useState("all");
+  const [showMoreInfo, setShowMoreInfo] = useState(false);
 
-    // Debounced search
-    useEffect(() => {
-        if (!isAddModalOpen) return;
-        const t = setTimeout(() => loadRepos(activeProvider, search), 400);
-        return () => clearTimeout(t);
-    }, [search, activeProvider, isAddModalOpen, loadRepos]);
+  // ─── Fetch data ──────────────────────────────────────────────────────────────
 
-    // Switch provider tab
-    const switchProvider = (p: string) => {
-        setActiveProvider(p);
-        setSearch('');
+  useEffect(() => {
+    if (!orgId) return;
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [repoRes, prRes, rulesRes] = await Promise.all([
+          supabase.from("repositories").select("*").eq("organization_id", orgId),
+          supabase.from("pr_reviews").select("*, repositories(full_name)").eq("organization_id", orgId).order("created_at", { ascending: false }),
+          supabase.from("check_rules").select("*").or(`organization_id.eq.${orgId},is_default.eq.true`),
+        ]);
+        setRepositories((repoRes.data as unknown as Repository[]) || []);
+        const prs = ((prRes.data as unknown as any[]) || []).map((pr) => ({
+          ...pr,
+          repo_full_name: pr.repositories?.full_name || "",
+        }));
+        setPrReviews(prs as PrReview[]);
+        setCheckRules((rulesRes.data as unknown as CheckRule[]) || []);
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchAll();
+  }, [orgId]);
 
-    // Auto-save a newly clicked repository
-    const handleAddSingleRepo = async (repo: GhRepo) => {
-        if (!activeWorkspace) return;
+  // ─── Filtered data ───────────────────────────────────────────────────────────
 
-        // Optimistically show loading state
-        setAddingRepos(prev => new Set(prev).add(repo.id));
+  const filteredRepos = useMemo(() => {
+    if (!repoSearch.trim()) return repositories;
+    return repositories.filter((r) =>
+      r.full_name.toLowerCase().includes(repoSearch.toLowerCase())
+    );
+  }, [repositories, repoSearch]);
 
-        try {
-            const res = await fetch('/api/repos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orgId: activeWorkspace.id,
-                    provider: repo.provider,
-                    repoId: repo.id,
-                    repoName: repo.name,
-                    defaultBranch: repo.default_branch || 'main'
-                })
-            });
+  const filteredPRs = useMemo(() => {
+    let result = prReviews;
+    if (prSearch.trim()) {
+      result = result.filter(
+        (pr) =>
+          pr.pr_title.toLowerCase().includes(prSearch.toLowerCase()) ||
+          pr.repo_full_name?.toLowerCase().includes(prSearch.toLowerCase())
+      );
+    }
+    if (prRepoFilter !== "all") {
+      result = result.filter((pr) => pr.repository_id === prRepoFilter);
+    }
+    if (prStateFilter !== "all") {
+      result = result.filter((pr) => pr.status?.toLowerCase() === prStateFilter);
+    }
+    return result;
+  }, [prReviews, prSearch, prRepoFilter, prStateFilter]);
 
-            if (!res.ok) {
-                const err = await res.json();
-                if (typeof showToast === 'function') showToast(`❌ Failed to connect repo: ${err.error || 'Unknown error'}`);
-                throw new Error(err.error);
-            }
+  const filteredRules = useMemo(() => {
+    if (!checkSubView) return [];
+    let result = checkRules.filter((r) => r.rule_type === checkSubView);
+    if (ruleLanguageFilter) {
+      result = result.filter((r) => r.language?.toLowerCase() === ruleLanguageFilter.toLowerCase());
+    }
+    if (ruleTypeFilter === "autofix") {
+      result = result.filter((r) => r.auto_fix);
+    }
+    return result;
+  }, [checkRules, checkSubView, ruleLanguageFilter, ruleTypeFilter]);
 
-            if (typeof showToast === 'function') showToast(`✅ Repository connected securely.`);
+  const ruleLanguages = useMemo(() => {
+    if (!checkSubView) return [];
+    const langs = new Set(checkRules.filter((r) => r.rule_type === checkSubView).map((r) => r.language).filter(Boolean));
+    return Array.from(langs).sort();
+  }, [checkRules, checkSubView]);
 
-            // Re-fetch repos after adding
-            const data = await getRepositories(activeWorkspace.id);
-            setRepositories(data || []);
-            // Intentionally keeping modal open so users can add more
-        } catch (err) {
-            console.error("Failed to save repo", err);
-        } finally {
-            setAddingRepos(prev => {
-                const next = new Set(prev);
-                next.delete(repo.id);
-                return next;
-            });
-        }
-    };
+  // ─── Helper: last scan date for a repo ───────────────────────────────────────
 
-    // Remove repo
-    const handleRemoveRepo = async (repo: any) => {
-        if (!activeWorkspace) return;
-        if (!confirm("Are you sure you want to remove this repository from your workspace and delete its webhook?")) return;
-        try {
-            const res = await fetch('/api/repos', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orgId: activeWorkspace.id,
-                    provider: repo.provider,
-                    repoId: repo.provider_repo_id,
-                    repoName: repo.full_name || repo.name
-                })
-            });
+  const getLastScan = (repoId: string) => {
+    const pr = prReviews.find((p) => p.repository_id === repoId);
+    if (!pr) return "Never";
+    return new Date(pr.created_at).toLocaleDateString();
+  };
 
-            if (!res.ok) {
-                const err = await res.json();
-                if (typeof showToast === 'function') showToast(`❌ Failed to remove repo: ${err.error || 'Unknown error'}`);
-                throw new Error(err.error);
-            }
+  const getIssueCount = (repoId: string) => {
+    return prReviews.filter((p) => p.repository_id === repoId).reduce((sum, p) => sum + (p.issues_found || 0), 0);
+  };
 
-            if (typeof showToast === 'function') showToast(`✅ Repository removed.`);
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
-            setRepositories(prev => prev.filter(r => r.id !== repo.id));
-        } catch (err) {
-            console.error("Failed to remove repo", err);
-        }
-    };
+  return (
+    <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
 
-    const handleToggleAutoReview = async (repoId: string, current: boolean) => {
-        try {
-            const { error } = await supabase
-                .from('repositories')
-                .update({ auto_review_enabled: !current })
-                .eq('id', repoId);
-            
-            if (error) throw error;
-            setRepositories(prev => prev.map(r => r.id === repoId ? { ...r, auto_review_enabled: !current } : r));
-        } catch (err) {
-            console.error("Failed to toggle auto review", err);
-        }
-    };
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">Repositories</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+              {repositories.length} active repos
+            </span>
+          </div>
+          <Link
+            href="/dashboard/integrations"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-medium rounded-lg hover:bg-sky-600 transition-colors"
+          >
+            Connect Repository
+          </Link>
+        </div>
 
-    const [scanModal, setScanModal] = useState<{ repo: any, prs: any[] } | null>(null);
-    const [scanMode, setScanMode] = useState<'pr' | 'full_repo'>('pr');
-    const [scanInput, setScanInput] = useState('');
-    const [scanning, setScanning] = useState(false);
-    const [fetchingPRs, setFetchingPRs] = useState(false);
-    const [toast, setToast] = useState<string | null>(null);
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex gap-6">
+            {([
+              { key: "repositories", label: "Repositories" },
+              { key: "pull-requests", label: "Pull Requests" },
+              { key: "checks", label: "Checks" },
+            ] as { key: Tab; label: string }[]).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => { setActiveTab(tab.key); setCheckSubView(null); }}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.key
+                    ? "text-sky-600 border-sky-600"
+                    : "text-gray-500 border-transparent hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-    const showToast = (msg: string) => {
-        setToast(msg);
-        setTimeout(() => setToast(null), 4000);
-    };
+        {/* Tab Content */}
+        {activeTab === "repositories" && (
+          <RepositoriesTab
+            repos={filteredRepos}
+            loading={loading}
+            search={repoSearch}
+            onSearchChange={setRepoSearch}
+            getLastScan={getLastScan}
+            getIssueCount={getIssueCount}
+          />
+        )}
+        {activeTab === "pull-requests" && (
+          <PullRequestsTab
+            prs={filteredPRs}
+            repos={repositories}
+            loading={loading}
+            search={prSearch}
+            onSearchChange={setPrSearch}
+            repoFilter={prRepoFilter}
+            onRepoFilterChange={setPrRepoFilter}
+            stateFilter={prStateFilter}
+            onStateFilterChange={setPrStateFilter}
+          />
+        )}
+        {activeTab === "checks" && (
+          <ChecksTab
+            checkSubView={checkSubView}
+            setCheckSubView={setCheckSubView}
+            filteredRules={filteredRules}
+            ruleLanguages={ruleLanguages}
+            ruleLanguageFilter={ruleLanguageFilter}
+            setRuleLanguageFilter={setRuleLanguageFilter}
+            ruleTypeFilter={ruleTypeFilter}
+            setRuleTypeFilter={setRuleTypeFilter}
+            showMoreInfo={showMoreInfo}
+            setShowMoreInfo={setShowMoreInfo}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
-    const handleScanNow = async (repo: any) => {
-        setFetchingPRs(true);
-        // Temporarily open with empty PRs while fetching
-        setScanModal({ repo, prs: [] });
-        setScanMode('pr');
-        setScanInput('');
-        
-        try {
-            const provider = repo.provider || 'github';
-            const res = await fetch(`/api/repos/prs?repo=${repo.id}&provider=${provider}&org=${activeWorkspace?.id}`);
-            if (res.ok) {
-                const data = await res.json();
-                setScanModal({ repo, prs: data.prs || [] });
-                // auto select first PR if exists
-                if (data.prs && data.prs.length > 0) {
-                    setScanInput(data.prs[0].number.toString());
-                }
-            } else {
-                showToast(`❌ Failed to fetch open PRs for this repository`);
-            }
-        } catch {
-            showToast('❌ Network error while fetching PRs');
-        } finally {
-            setFetchingPRs(false);
-        }
-    };
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 1: Repositories
+// ═══════════════════════════════════════════════════════════════════════════════
 
-    const submitManualScan = async () => {
-        if (!scanModal) return;
-        
-        const provider = scanModal.repo.provider || 'github';
-        if (!connectedProviders.includes(provider)) {
-            showToast('❌ Connect your repository first');
-            return;
-        }
+function RepositoriesTab({
+  repos,
+  loading,
+  search,
+  onSearchChange,
+  getLastScan,
+  getIssueCount,
+}: {
+  repos: Repository[];
+  loading: boolean;
+  search: string;
+  onSearchChange: (v: string) => void;
+  getLastScan: (id: string) => string;
+  getIssueCount: (id: string) => number;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Filter row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search repositories..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 bg-white"
+          />
+        </div>
+        <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+          <Filter className="h-4 w-4 text-gray-500" />
+        </button>
+        <Link
+          href="/dashboard/integrations"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-medium rounded-lg hover:bg-sky-600 transition-colors"
+        >
+          Connect Repository
+        </Link>
+      </div>
 
-        if (scanMode === 'pr' && (!scanInput || parseInt(scanInput, 10) <= 0)) {
-            showToast('❌ Please enter a valid PR number');
-            return;
-        }
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Repo name</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Language</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Issues</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ignored</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Last scan</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                  Loading repositories...
+                </td>
+              </tr>
+            ) : repos.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center">
+                  <p className="text-sm text-gray-500">Connect your first repository to start scanning</p>
+                </td>
+              </tr>
+            ) : (
+              repos.map((repo) => (
+                <tr key={repo.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{repo.full_name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">—</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{getIssueCount(repo.id)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">0</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{getLastScan(repo.id)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
-        setScanning(true);
-        try {
-            const body: any = {
-                repo_id: scanModal.repo.id,
-                provider: provider,
-                trigger: scanMode === 'full_repo' ? 'full_repo' : 'manual',
-            };
-            if (scanMode === 'pr') {
-                body.pr_number = parseInt(scanInput, 10);
-            } else {
-                body.branch_name = scanModal.repo.default_branch || 'main';
-            }
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 2: Pull Requests
+// ═══════════════════════════════════════════════════════════════════════════════
 
-            const res = await fetch('/api/pr-reviews/manual-launch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
+function PullRequestsTab({
+  prs,
+  repos,
+  loading,
+  search,
+  onSearchChange,
+  repoFilter,
+  onRepoFilterChange,
+  stateFilter,
+  onStateFilterChange,
+}: {
+  prs: PrReview[];
+  repos: Repository[];
+  loading: boolean;
+  search: string;
+  onSearchChange: (v: string) => void;
+  repoFilter: string;
+  onRepoFilterChange: (v: string) => void;
+  stateFilter: string;
+  onStateFilterChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <span>Repositories</span>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-gray-900 font-medium">Pull Requests</span>
+      </div>
 
-            if (res.ok) {
-                setScanModal(null);
-                showToast('✅ Scan queued — results will appear in the PR Reviews feed.');
-            } else {
-                const err = await res.json();
-                showToast(`❌ ${err.error || 'Failed to queue scan'}`);
-            }
-        } catch {
-            showToast('❌ Network error, please try again.');
-        } finally {
-            setScanning(false);
-        }
-    };
+      {/* Filter row */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search pull requests..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 bg-white"
+          />
+        </div>
 
-    const providerIcon = (p: string) => {
-        if (p === 'github') return <Github className="h-3.5 w-3.5" />;
-        if (p === 'gitlab') return <span className="text-[#FC6D26] font-bold text-xs">GL</span>;
-        return <span className="text-[#2684FF] font-bold text-xs">BB</span>;
-    };
+        <select
+          value={repoFilter}
+          onChange={(e) => onRepoFilterChange(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+        >
+          <option value="all">All Repositories</option>
+          {repos.map((r) => (
+            <option key={r.id} value={r.id}>{r.full_name}</option>
+          ))}
+        </select>
+        <select
+          value={stateFilter}
+          onChange={(e) => onStateFilterChange(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+        >
+          <option value="all">All States</option>
+          <option value="completed">Gate Passed</option>
+          <option value="failed">Gate Failed</option>
+          <option value="timed_out">Timed Out</option>
+          <option value="pending">Pending</option>
+        </select>
+        <button className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">
+          Manage PR Checks
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">PR Name</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Repository</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Scan Date</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
+                  Loading pull requests...
+                </td>
+              </tr>
+            ) : prs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-16 text-center">
+                  <div className="space-y-3">
+                    <p className="text-base font-medium text-gray-900">No PR Scan History Yet</p>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                      Setup PR Gating and stop newly introduced issues from being merged.
+                    </p>
+                    <button className="mt-2 inline-flex items-center px-4 py-2 bg-sky-500 text-white text-sm font-medium rounded-lg hover:bg-sky-600 transition-colors">
+                      Configure PR Gating
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              prs.map((pr) => (
+                <tr key={pr.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    #{pr.pr_number} {pr.pr_title}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{pr.repo_full_name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {new Date(pr.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={pr.status} />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 3: Checks
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CHECK_CATEGORIES = [
+  {
+    id: "dependency",
+    icon: Package,
+    title: "Open source dependency monitoring",
+    description: "We monitor 3rd party package dependencies you are using in your app for any known vulnerabilities.",
+    link: { label: "View monitored lockfiles", href: "#" },
+  },
+  {
+    id: "license",
+    icon: Scale,
+    title: "License management",
+    description: "Zentinel checks the licenses of all your dependencies to make sure you are legally permitted to make use of them.",
+    link: { label: "View all licenses", href: "#" },
+  },
+  {
+    id: "sast",
+    icon: Braces,
+    title: "SAST",
+    description: "Static application security testing.",
+    actions: [
+      { label: "Create custom rule", type: "button" as const },
+      { label: "View SAST rules", type: "link" as const, subView: "sast" as CheckSubView },
+    ],
+  },
+  {
+    id: "ai",
+    icon: Code,
+    title: "AI Code Audit",
+    description: "Run a one-off AI code audit. Credits are required.",
+    actions: [
+      { label: "Try now", type: "green-pill" as const },
+      { label: "View AI Code Audits", type: "link" as const },
+    ],
+  },
+  {
+    id: "iac",
+    icon: Server,
+    title: "IaC",
+    description: "Infrastructure as Code testing. Check which files we can monitor in your application.",
+    actions: [
+      { label: "View IaC rules", type: "link" as const, subView: "iac" as CheckSubView },
+    ],
+  },
+  {
+    id: "container",
+    icon: Container,
+    title: "Container Images",
+    description: "Zentinel checks container images for vulnerabilities.",
+    actions: [
+      { label: "View container rules", type: "link" as const },
+    ],
+  },
+  {
+    id: "mobile",
+    icon: Smartphone,
+    title: "Mobile issues",
+    description: "Mobile manifest file monitoring.",
+    actions: [
+      { label: "View mobile rules", type: "link" as const, subView: "mobile" as CheckSubView },
+    ],
+  },
+];
+
+function ChecksTab({
+  checkSubView,
+  setCheckSubView,
+  filteredRules,
+  ruleLanguages,
+  ruleLanguageFilter,
+  setRuleLanguageFilter,
+  ruleTypeFilter,
+  setRuleTypeFilter,
+  showMoreInfo,
+  setShowMoreInfo,
+}: {
+  checkSubView: CheckSubView;
+  setCheckSubView: (v: CheckSubView) => void;
+  filteredRules: CheckRule[];
+  ruleLanguages: string[];
+  ruleLanguageFilter: string;
+  setRuleLanguageFilter: (v: string) => void;
+  ruleTypeFilter: string;
+  setRuleTypeFilter: (v: string) => void;
+  showMoreInfo: boolean;
+  setShowMoreInfo: (v: boolean) => void;
+}) {
+  // Sub-view: Rules table
+  if (checkSubView) {
+    const iacLanguages = ["AWS", "GCP", "Azure", "Docker", "Kubernetes", "Ansible", "Pulumi"];
+    const mobileLanguages = ["All platforms", "Android", "iOS"];
+
+    let languageOptions: string[] = [];
+    if (checkSubView === "iac") languageOptions = iacLanguages;
+    else if (checkSubView === "mobile") languageOptions = mobileLanguages;
+    else languageOptions = ruleLanguages;
+
+    const subViewTitle = checkSubView === "sast" ? "SAST Rules" : checkSubView === "iac" ? "IaC Rules" : "Mobile Rules";
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-            {/* Toast Notification */}
-            {toast && (
-                <div className="fixed top-6 right-6 z-[100] bg-[#111] border border-gray-200 text-gray-900 text-sm px-5 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top-2 duration-300 max-w-sm">
-                    {toast}
-                </div>
-            )}
+      <div className="space-y-4">
+        {/* Back navigation */}
+        <button
+          onClick={() => { setCheckSubView(null); setRuleLanguageFilter(""); setRuleTypeFilter("all"); }}
+          className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 font-medium"
+        >
+          ← Back to Checks
+        </button>
 
-            {/* Scan Now Modal */}
-            {scanModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-                        <div className="p-6 pb-4 flex items-start justify-between border-b border-gray-200">
-                            <div>
-                                <h2 className="text-xl font-syne font-bold text-gray-900">Manual Scan</h2>
-                                <p className="text-sm text-gray-500 mt-1 font-mono truncate max-w-xs">{scanModal.repo.full_name}</p>
-                            </div>
-                            <button onClick={() => setScanModal(null)} className="text-gray-400 hover:text-gray-900 transition-colors">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            {/* Mode toggle */}
-                            <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
-                                <button
-                                    onClick={() => { setScanMode('pr'); setScanInput(''); }}
-                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'pr' ? 'bg-white text-black' : 'bg-transparent text-gray-500 hover:text-gray-900'}`}
-                                >
-                                    PR Scan
-                                </button>
-                                <button
-                                    onClick={() => { setScanMode('full_repo'); setScanInput(''); }}
-                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'full_repo' ? 'bg-white text-black' : 'bg-transparent text-gray-500 hover:text-gray-900'}`}
-                                >
-                                    Full Repo Scan
-                                </button>
-                            </div>
-                                                {/* Input */}
-                            {scanMode === 'pr' ? (
-                                fetchingPRs ? (
-                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-gray-500 flex flex-row items-center font-mono">
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Fetching open pull requests...
-                                    </div>
-                                ) : scanModal.prs.length === 0 ? (
-                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-red-400 font-mono">
-                                        No open pull requests found — Please open a PR on {scanModal.repo.provider} first to begin a security review.
-                                    </div>
-                                ) : (
-                                    <select
-                                        value={scanInput}
-                                        onChange={e => setScanInput(e.target.value)}
-                                        className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-white/20 transition-colors appearance-none font-mono"
-                                    >
-                                        <option value="" disabled>Select an open PR...</option>
-                                        {scanModal.prs.map((pr: any) => (
-                                            <option key={pr.number} value={pr.number} className="bg-[#111] text-gray-900">
-                                                #{pr.number}: {pr.title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )
-                            ) : (
-                                <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-gray-500 font-mono">
-                                    Full repository scan on default branch ({scanModal.repo.default_branch || 'main'})
-                                </div>
-                            )}
-                            <p className="text-xs text-gray-400">
-                                {scanMode === 'pr'
-                                    ? 'Select an open pull request to run a security review.'
-                                    : 'Perform a full deep scan of the entire repository codebase. Results will appear in the Issues dashboard.'}
-                            </p>
-                        </div>
-                        <div className="px-6 pb-6 flex gap-3">
-                            <button
-                                onClick={() => setScanModal(null)}
-                                className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-white/60 hover:text-gray-900 hover:border-white/20 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={submitManualScan}
-                                disabled={(scanMode === 'pr' && !scanInput) || scanning}
-                                className="flex-1 py-2 rounded-lg bg-white text-black font-bold text-sm hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                                {scanning ? 'Queuing...' : 'Launch Scan'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+        <h2 className="text-lg font-semibold text-gray-900">{subViewTitle}</h2>
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-syne font-bold text-gray-900 tracking-tight">Repositories</h1>
-                    <p className="text-[var(--color-textSecondary)] mt-1">Manage source code for white-box scanning and PR reviews.</p>
-                </div>
-                <button
-                    onClick={() => { setIsAddModalOpen(true); loadRepos(activeProvider, ''); }}
-                    className="inline-flex items-center justify-center bg-white text-black font-bold py-2 px-4 rounded-lg hover:bg-gray-100 transition-all shadow-sm"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Repository
-                </button>
-            </div>
-
-            {/* Add Repository Modal */}
-            {isAddModalOpen && (
-
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-
-                        {/* Modal Header */}
-                        <div className="p-6 pb-4 flex items-start justify-between border-b border-gray-200">
-                            <div>
-                                <h2 className="text-xl font-syne font-bold text-gray-900">Add Repositories</h2>
-                                <p className="text-sm text-gray-500 mt-1">Select from your connected integrations</p>
-                            </div>
-                            <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        {/* Provider Tabs */}
-                        <div className="flex items-center gap-1 px-6 pt-4 pb-2">
-                            {PROVIDERS.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => switchProvider(p.id)}
-                                    className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeProvider === p.id
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-gray-500 hover:text-gray-900'
-                                        } ${!connectedProviders.includes(p.id) ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                    disabled={!connectedProviders.includes(p.id)}
-                                >
-                                    {providerIcon(p.id)}
-                                    {p.label}
-                                    {!connectedProviders.includes(p.id) && <span className="text-[10px] text-gray-400">(not connected)</span>}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Search */}
-                        <div className="px-6 py-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search repositories..."
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-
-                        {/* Repo List */}
-                        <div className="px-6 pb-4 flex-1 overflow-y-auto min-h-[240px]">
-                            {fetchingRepos ? (
-                                <div className="flex items-center justify-center h-40 text-gray-400">
-                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                                    <span className="text-sm">Loading repositories...</span>
-                                </div>
-                            ) : availableRepos.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-40 text-center">
-                                    <Layers className="h-8 w-8 text-white/20 mb-2" />
-                                    <p className="text-sm text-gray-500">
-                                        {connectedProviders.includes(activeProvider)
-                                            ? 'No repositories found'
-                                            : `Connect ${PROVIDERS.find(p => p.id === activeProvider)?.label} first`
-                                        }
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-1">
-                                    {availableRepos.map(repo => {
-                                        const isAdded = repositories.some(r => r.provider_repo_id === repo.id);
-                                        const isAdding = addingRepos.has(repo.id);
-
-                                        return (
-                                            <button
-                                                key={repo.id}
-                                                onClick={() => handleAddSingleRepo(repo)}
-                                                disabled={isAdding || isAdded}
-                                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors ${isAdded
-                                                    ? 'bg-emerald-400/5 border border-emerald-400/10 cursor-default'
-                                                    : 'hover:bg-white/[0.04] border border-transparent disabled:opacity-50 disabled:cursor-not-allowed'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="shrink-0 text-gray-500">
-                                                        {repo.private ? <Lock className="h-3.5 w-3.5" /> : <Globe className="h-3.5 w-3.5" />}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{repo.name}</p>
-                                                        {repo.description && (
-                                                            <p className="text-xs text-white/35 truncate mt-0.5">{repo.description}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0 ml-3">
-                                                    {repo.language && (
-                                                        <span className="text-[10px] text-gray-400 font-mono">{repo.language}</span>
-                                                    )}
-                                                    {isAdded ? (
-                                                        <Check className="h-4 w-4 text-emerald-400" />
-                                                    ) : isAdding ? (
-                                                        <Loader2 className="h-4 w-4 text-[var(--color-cyan)] animate-spin" />
-                                                    ) : (
-                                                        <Plus className="h-4 w-4 text-gray-400 hover:text-gray-900 transition-colors" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="p-5 bg-black/30 border-t border-gray-200 flex items-center justify-between">
-                            <Link href="/dashboard/integrations" className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-900 transition-colors">
-                                <Settings className="h-4 w-4" />
-                                Manage integrations
-                            </Link>
-                            <button onClick={() => setIsAddModalOpen(false)} className="bg-white/10 hover:bg-white/20 text-gray-900 text-sm font-medium py-2 px-5 rounded-lg transition-colors border border-white/5">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Search filter for existing repos */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-textMuted)]" />
-                    <input
-                        type="text"
-                        placeholder="Filter added repositories..."
-                        className="w-full bg-[var(--color-bgCard)] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-[#A855F7] transition-colors"
-                    />
-                </div>
-            </div>
-
-            {/* Table */}
-            <Card className="p-0 overflow-hidden shadow-xl border border-[var(--color-border)]">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-black/40 border-b border-[var(--color-border)] font-syne text-[var(--color-textMuted)]">
-                            <tr>
-                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Repository</th>
-                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Status</th>
-                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Auto-Review</th>
-                                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right border-r-0">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--color-border)]">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-[var(--color-textMuted)]">
-                                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                                        Loading repositories...
-                                    </td>
-                                </tr>
-                            ) : repositories.length === 0 ? (
-                                <tr>
-                                    <td colSpan={4}>
-                                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                                            <Layers className="h-10 w-10 text-[var(--color-textMuted)] mb-4" />
-                                            <h3 className="text-lg font-syne font-medium text-gray-900 mb-2">No repositories connected</h3>
-                                            <p className="text-[var(--color-textSecondary)] max-w-sm mx-auto mb-6">
-                                                Click <strong>Add Repository</strong> to pick repos from your connected GitHub, GitLab, or Bitbucket account.
-                                            </p>
-                                            <button
-                                                onClick={() => { setIsAddModalOpen(true); loadRepos(activeProvider, ''); }}
-                                                className="inline-flex items-center gap-2 bg-white text-black font-bold py-2 px-4 rounded-lg hover:bg-gray-100"
-                                            >
-                                                <Plus className="h-4 w-4" /> Add Repository
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                repositories
-                                    .slice((currentPage - 1) * reposPerPage, currentPage * reposPerPage)
-                                    .map((repo) => (
-                                        <tr key={repo.id} className="hover:bg-gray-100 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <Link href={`/dashboard/repositories/${repo.id}`} className="font-medium text-gray-900 flex items-center gap-2 hover:text-[#A855F7] transition-colors w-fit">
-                                                    {repo.provider === 'github' ? <Github className="h-4 w-4" /> : <GitBranch className="h-4 w-4 text-[var(--color-textMuted)]" />}
-                                                    {repo.full_name || repo.name}
-                                                </Link>
-                                                <div className="text-xs text-[var(--color-textMuted)] mt-1 ml-6">
-                                                    Branch: {repo.default_branch || 'main'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {repo.auto_review_enabled ? (
-                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                                        Active
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
-                                                        Disabled
-                                                    </Badge>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Switch 
-                                                        checked={!!repo.auto_review_enabled} 
-                                                        onCheckedChange={() => handleToggleAutoReview(repo.id, !!repo.auto_review_enabled)}
-                                                        className="data-[state=checked]:bg-[#A855F7]"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <button
-                                                        onClick={() => handleScanNow(repo)}
-                                                        className="inline-flex items-center gap-1.5 text-xs text-gray-900 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md transition-colors border border-white/5"
-                                                    >
-                                                        <Play className="h-3 w-3" /> Scan now
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            handleRemoveRepo(repo);
-                                                        }}
-                                                        className="text-[var(--color-textMuted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded hover:bg-red-400/10"
-                                                        title="Remove repository"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination Controls */}
-                {repositories.length > reposPerPage && (
-                    <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between bg-black/20">
-                        <span className="text-sm text-[var(--color-textMuted)] font-syne">
-                            Showing {((currentPage - 1) * reposPerPage) + 1} to {Math.min(currentPage * reposPerPage, repositories.length)} of {repositories.length} repos
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm text-gray-900 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                            >
-                                Previous
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(Math.ceil(repositories.length / reposPerPage), p + 1))}
-                                disabled={currentPage >= Math.ceil(repositories.length / reposPerPage)}
-                                className="px-3 py-1 text-sm text-gray-900 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Card>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <select
+            value={ruleLanguageFilter}
+            onChange={(e) => setRuleLanguageFilter(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+          >
+            <option value="">
+              {checkSubView === "mobile" ? "All platforms" : "Select..."}
+            </option>
+            {languageOptions.map((lang) => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
+          </select>
+          <select
+            value={ruleTypeFilter}
+            onChange={(e) => setRuleTypeFilter(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+          >
+            <option value="all">All types</option>
+            <option value="autofix">AutoFix supported rules</option>
+          </select>
+          <button
+            onClick={() => setShowMoreInfo(!showMoreInfo)}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {showMoreInfo ? <ToggleRight className="h-4 w-4 text-sky-500" /> : <ToggleLeft className="h-4 w-4 text-gray-400" />}
+            Show More Info
+          </button>
         </div>
+
+        {/* Rules Table */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Language</th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">AutoFix</th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Score</th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredRules.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                    No rules found for current filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredRules.map((rule) => (
+                  <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{rule.language}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
+                      {showMoreInfo ? rule.description : rule.description?.substring(0, 80) + (rule.description?.length > 80 ? "..." : "")}
+                    </td>
+                    <td className="px-6 py-4">
+                      {rule.auto_fix ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">Yes</span>
+                      ) : null}
+                    </td>
+                    <td className="px-6 py-4">
+                      <ScoreBadge score={rule.score} />
+                    </td>
+                    <td className="px-6 py-4">
+                      <RuleMenu ruleId={rule.id} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
+  }
+
+  // Main Checks view — categories table
+  return (
+    <div className="space-y-4">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase w-12">Type</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Checks</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {CHECK_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <Icon className="h-5 w-5 text-gray-500" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-gray-900">{cat.title}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {"link" in cat && cat.link && (
+                          <a href={cat.link.href} className="text-xs text-teal-600 hover:text-teal-700 font-medium">
+                            {cat.link.label}
+                          </a>
+                        )}
+                        {"actions" in cat && cat.actions && cat.actions.map((action, idx) => {
+                          if (action.type === "button") {
+                            return (
+                              <button key={idx} className="text-xs px-2.5 py-1 bg-sky-500 text-white rounded font-medium hover:bg-sky-600 transition-colors">
+                                {action.label}
+                              </button>
+                            );
+                          }
+                          if (action.type === "green-pill") {
+                            return (
+                              <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200 cursor-pointer hover:bg-green-200 transition-colors">
+                                {action.label}
+                              </span>
+                            );
+                          }
+                          if (action.type === "link") {
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => action.subView ? setCheckSubView(action.subView) : undefined}
+                                className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                              >
+                                {action.label}
+                              </button>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 max-w-sm">{cat.description}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Rule Row Menu ───────────────────────────────────────────────────────────
+
+function RuleMenu({ ruleId }: { ruleId: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="p-1 rounded hover:bg-gray-100 transition-colors"
+      >
+        <MoreVertical className="h-4 w-4 text-gray-400" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-48">
+            <button
+              onClick={() => { setOpen(false); }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Add Custom Context
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
