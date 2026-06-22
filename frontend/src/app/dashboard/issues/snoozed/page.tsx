@@ -258,7 +258,7 @@ export default function SnoozedPage() {
             <Search className="h-4 w-4" />
           </button>
           <button className="text-sm text-gray-500 hover:text-gray-700 px-2">Docs</button>
-          <div className="h-7 w-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+          <div className="h-7 w-7 rounded-full bg-orange-500 flex items-center justify-center text-gray-900 text-xs font-bold">
             JK
           </div>
         </div>

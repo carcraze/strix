@@ -145,7 +145,7 @@ export default function RepositoryDetailsPage() {
 
     if (!repo) {
         return (
-            <div className="flex flex-col h-full bg-[#0A0A0A] p-8 text-white text-center pt-24">
+            <div className="flex flex-col h-full bg-[#0A0A0A] p-8 text-gray-900 text-center pt-24">
                 <h2 className="text-xl font-bold mb-4 font-syne">Repository not found</h2>
                 <Link href="/dashboard/repositories" className="text-[var(--color-cyan)] hover:underline inline-flex items-center gap-2 justify-center">
                     <ArrowLeft className="h-4 w-4" /> Back to Repositories
@@ -158,17 +158,17 @@ export default function RepositoryDetailsPage() {
         <div className="flex flex-col h-full bg-[#0A0A0A]">
             {/* Header Area */}
             <div className="pt-8 px-8 pb-0">
-                <Link href="/dashboard/repositories" className="inline-flex items-center gap-2 text-sm text-[var(--color-textMuted)] hover:text-white transition-colors mb-6 font-medium">
+                <Link href="/dashboard/repositories" className="inline-flex items-center gap-2 text-sm text-[var(--color-textMuted)] hover:text-gray-900 transition-colors mb-6 font-medium">
                     <ArrowLeft className="h-4 w-4" /> Repositories
                 </Link>
 
                 <div className="flex items-center gap-3 mb-8">
                     {repo.provider === 'github' ? (
-                        <Github className="h-8 w-8 text-white" />
+                        <Github className="h-8 w-8 text-gray-900" />
                     ) : (
-                        <GitBranch className="h-8 w-8 text-white" />
+                        <GitBranch className="h-8 w-8 text-gray-900" />
                     )}
-                    <h1 className="text-3xl font-bold text-white font-syne">{repo.full_name}</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 font-syne">{repo.full_name}</h1>
                 </div>
 
                 {/* Tabs */}
@@ -177,7 +177,7 @@ export default function RepositoryDetailsPage() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === tab ? 'text-white' : 'text-[var(--color-textMuted)] hover:text-white/80'
+                            className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === tab ? 'text-white' : 'text-[var(--color-textMuted)] hover:text-gray-900/80'
                                 }`}
                         >
                             {tab === 'pr_reviews' ? 'PR Reviews' : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -197,7 +197,7 @@ export default function RepositoryDetailsPage() {
                         <div className="h-12 w-12 rounded-full bg-emerald-400/10 flex items-center justify-center mb-4">
                             <CheckCircle2 className="h-6 w-6 text-emerald-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-white mb-2">No {tabNameForDisplay(activeTab).toLowerCase()} yet</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No {tabNameForDisplay(activeTab).toLowerCase()} yet</h3>
                         <p className="text-sm text-[var(--color-textMuted)]">
                             {activeTab === 'issues' && "Zentinel scans will highlight identified security issues here."}
                             {activeTab === 'tests' && "Results from completed pentest runs will appear here."}
@@ -210,19 +210,19 @@ export default function RepositoryDetailsPage() {
                     <div className="max-w-3xl flex flex-col gap-6">
                         {/* Details Section */}
                         <div className="border border-[var(--color-border)] rounded-xl p-6 bg-black">
-                            <h2 className="text-sm font-bold text-white mb-6">Details</h2>
+                            <h2 className="text-sm font-bold text-gray-900 mb-6">Details</h2>
                             <div className="flex flex-col gap-5">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-[var(--color-textMuted)]">Provider</span>
-                                    <span className="text-sm text-white capitalize">{repo.provider}</span>
+                                    <span className="text-sm text-gray-900 capitalize">{repo.provider}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-[var(--color-textMuted)]">Added</span>
-                                    <span className="text-sm text-white">{new Date(repo.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    <span className="text-sm text-gray-900">{new Date(repo.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-[var(--color-textMuted)]">Last tested</span>
-                                    <span className="text-sm text-white">—</span>
+                                    <span className="text-sm text-gray-900">—</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-[var(--color-textMuted)]">Auto-review PRs</span>
@@ -239,7 +239,7 @@ export default function RepositoryDetailsPage() {
                         <div className="border border-[var(--color-border)] rounded-xl p-6 bg-black">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h2 className="text-sm font-bold text-white">Scheduled Scans</h2>
+                                    <h2 className="text-sm font-bold text-gray-900">Scheduled Scans</h2>
                                     <p className="text-xs text-[var(--color-textMuted)] mt-1">Configure automated pentests for this repository</p>
                                 </div>
                                 <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
@@ -253,7 +253,7 @@ export default function RepositoryDetailsPage() {
                                             <select
                                                 value={scheduleDay}
                                                 onChange={e => setScheduleDay(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-white px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors"
+                                                className="w-full bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors"
                                             >
                                                 <option value="0" className="text-black">Sunday</option>
                                                 <option value="1" className="text-black">Monday</option>
@@ -270,7 +270,7 @@ export default function RepositoryDetailsPage() {
                                                 type="time"
                                                 value={scheduleTime}
                                                 onChange={e => setScheduleTime(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-white px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors [color-scheme:dark]"
+                                                className="w-full bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 px-3 py-2 outline-none focus:border-[var(--color-cyan)] transition-colors [color-scheme:dark]"
                                             />
                                         </div>
                                     </div>
@@ -280,7 +280,7 @@ export default function RepositoryDetailsPage() {
                                             type="text"
                                             value={scheduleTz}
                                             readOnly
-                                            className="w-full bg-white/5 border border-white/10 rounded-md text-sm text-[var(--color-textMuted)] px-3 py-2 outline-none opacity-70 cursor-not-allowed"
+                                            className="w-full bg-gray-100 border border-gray-200 rounded-md text-sm text-[var(--color-textMuted)] px-3 py-2 outline-none opacity-70 cursor-not-allowed"
                                         />
                                     </div>
                                 </div>
@@ -302,7 +302,7 @@ export default function RepositoryDetailsPage() {
 
                         {/* Danger Zone */}
                         <div className="border border-[var(--color-border)] rounded-xl p-6 bg-black">
-                            <h2 className="text-sm font-bold text-white mb-6">Actions</h2>
+                            <h2 className="text-sm font-bold text-gray-900 mb-6">Actions</h2>
                             <button
                                 onClick={handleRemoveRepo}
                                 disabled={removing}

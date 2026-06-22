@@ -125,7 +125,7 @@ export default function AgentIntelPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto bg-[#0e131f] p-0">
+                <div className="flex-1 overflow-auto bg-gray-50 p-0">
                     <CodeBlock
                         code={agentLog}
                         language="bash"

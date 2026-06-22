@@ -166,12 +166,12 @@ export default function DomainsPage() {
     );
 
     return (
-        <div className="flex-1 w-full bg-[#050505] p-8 overflow-y-auto animate-in fade-in duration-300">
+        <div className="flex-1 w-full bg-gray-50 p-8 overflow-y-auto animate-in fade-in duration-300">
             <div className="max-w-[1200px] mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl font-syne font-bold text-white tracking-tight">Domains &amp; APIs</h1>
+                        <h1 className="text-3xl font-syne font-bold text-gray-900 tracking-tight">Domains &amp; APIs</h1>
                         <p className="text-(--color-textSecondary) mt-1">Manage verified attack surfaces and web applications.</p>
                     </div>
                     <button
@@ -186,13 +186,13 @@ export default function DomainsPage() {
                 {/* Add Domain Modal */}
                 {isAddModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="bg-[#050505] border border-(--color-border) rounded-xl w-full max-w-md shadow-2xl p-6">
+                        <div className="bg-gray-50 border border-(--color-border) rounded-xl w-full max-w-md shadow-2xl p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h2 className="text-xl font-syne font-bold text-white mb-1">Add Domain</h2>
+                                    <h2 className="text-xl font-syne font-bold text-gray-900 mb-1">Add Domain</h2>
                                     <p className="text-sm text-(--color-textSecondary)">Enter a domain or API to monitor and test</p>
                                 </div>
-                                <button onClick={() => setIsAddModalOpen(false)} className="text-(--color-textMuted) hover:text-white transition-colors">
+                                <button onClick={() => setIsAddModalOpen(false)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors">
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
@@ -206,7 +206,7 @@ export default function DomainsPage() {
                                             placeholder="api.example.com"
                                             value={newDomainString}
                                             onChange={(e) => setNewDomainString(e.target.value)}
-                                            className={`w-full bg-transparent border ${isReachable ? 'border-(--color-green)' : 'border-(--color-border)'} rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-(--color-cyan) transition-colors pr-10`}
+                                            className={`w-full bg-transparent border ${isReachable ? 'border-(--color-green)' : 'border-(--color-border)'} rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-(--color-cyan) transition-colors pr-10`}
                                         />
                                         {isCheckingReachability && (
                                             <Loader2 className="h-4 w-4 animate-spin text-(--color-textMuted) absolute right-3 top-1/2 -translate-y-1/2" />
@@ -230,7 +230,7 @@ export default function DomainsPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsMoreDetailsOpen(!isMoreDetailsOpen)}
-                                        className="text-sm font-medium text-(--color-textMuted) flex items-center gap-1 hover:text-white transition-colors mb-4"
+                                        className="text-sm font-medium text-(--color-textMuted) flex items-center gap-1 hover:text-gray-900 transition-colors mb-4"
                                     >
                                         <ChevronDown className={`h-4 w-4 transition-transform ${isMoreDetailsOpen ? 'rotate-180' : ''}`} /> More details
                                     </button>
@@ -245,7 +245,7 @@ export default function DomainsPage() {
                                                         { id: 'api', label: 'API' },
                                                         { id: 'attack_surface', label: 'Attack Surface' }
                                                     ].map(type => (
-                                                        <label key={type.id} className="flex items-center gap-3 p-3 rounded-lg border border-(--color-border) cursor-pointer hover:bg-white/5 transition-colors">
+                                                        <label key={type.id} className="flex items-center gap-3 p-3 rounded-lg border border-(--color-border) cursor-pointer hover:bg-gray-100 transition-colors">
                                                             <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${newDomainType === type.id ? 'border-(--color-cyan)' : 'border-(--color-textMuted)'}`}>
                                                                 {newDomainType === type.id && <div className="w-2 h-2 rounded-full bg-(--color-cyan)" />}
                                                             </div>
@@ -257,7 +257,7 @@ export default function DomainsPage() {
                                                                 onChange={() => setNewDomainType(type.id)}
                                                                 className="hidden"
                                                             />
-                                                            <span className="text-sm text-white font-medium">{type.label}</span>
+                                                            <span className="text-sm text-gray-900 font-medium">{type.label}</span>
                                                         </label>
                                                     ))}
                                                 </div>
@@ -269,7 +269,7 @@ export default function DomainsPage() {
                                                     placeholder="What does this app do? Tech stack, auth, sensitive data it handles..."
                                                     value={newDomainContext}
                                                     onChange={(e) => setNewDomainContext(e.target.value)}
-                                                    className="w-full bg-transparent border border-(--color-border) rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-(--color-textSecondary) transition-colors min-h-[80px] resize-none"
+                                                    className="w-full bg-transparent border border-(--color-border) rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-(--color-textSecondary) transition-colors min-h-[80px] resize-none"
                                                 />
                                             </div>
                                         </div>
@@ -277,7 +277,7 @@ export default function DomainsPage() {
                                 </div>
 
                                 <div className="flex justify-end gap-3 pt-4 border-t border-(--color-border)">
-                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-white hover:text-gray-300 transition-colors">
+                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-900 hover:text-gray-300 transition-colors">
                                         Cancel
                                     </button>
                                     <button
@@ -296,10 +296,10 @@ export default function DomainsPage() {
                 {/* Verification Instructions Modal */}
                 {verifyDomain && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="bg-[#050505] border border-(--color-border) rounded-xl w-full max-w-xl shadow-2xl p-6">
+                        <div className="bg-gray-50 border border-(--color-border) rounded-xl w-full max-w-xl shadow-2xl p-6">
                             <div className="flex items-center justify-between mb-1">
-                                <h2 className="text-xl font-syne font-bold text-white">Domain Added</h2>
-                                <button onClick={() => setVerifyDomain(null)} className="text-(--color-textMuted) hover:text-white transition-colors">
+                                <h2 className="text-xl font-syne font-bold text-gray-900">Domain Added</h2>
+                                <button onClick={() => setVerifyDomain(null)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors">
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
@@ -310,12 +310,12 @@ export default function DomainsPage() {
                                 <p className="text-sm text-[#FFB800] font-medium"><span className="font-bold">{verifyDomain.domain}</span> added — verification pending</p>
                             </div>
 
-                            <div className="flex bg-white/5 p-1 rounded-lg mb-6">
+                            <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
                                 {(['dns', 'file', 'meta'] as const).map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setVerifyTab(tab)}
-                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${verifyTab === tab ? 'bg-white/10 text-white' : 'text-(--color-textMuted) hover:text-white'}`}
+                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${verifyTab === tab ? 'bg-gray-100 text-gray-900' : 'text-(--color-textMuted) hover:text-gray-900'}`}
                                     >
                                         {tab === 'dns' ? 'DNS Record' : tab === 'file' ? 'File Upload' : 'Meta Tag'}
                                     </button>
@@ -325,14 +325,14 @@ export default function DomainsPage() {
                             <div className="space-y-4 mb-8">
                                 {verifyTab === 'dns' && (
                                     <div className="animate-in fade-in">
-                                        <p className="text-sm text-(--color-textSecondary) mb-4">Add a DNS <span className="font-bold text-white">TXT</span> record to verify ownership:</p>
+                                        <p className="text-sm text-(--color-textSecondary) mb-4">Add a DNS <span className="font-bold text-gray-900">TXT</span> record to verify ownership:</p>
 
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-xs text-(--color-textMuted) mb-1.5">Record name</p>
                                                 <div className="flex items-center justify-between bg-black/40 border border-(--color-border) rounded-lg px-4 py-2.5">
-                                                    <code className="text-sm text-white font-mono break-all">_zentinel-verification.{verifyDomain.domain}</code>
-                                                    <button onClick={() => handleCopyToken(`_zentinel-verification.${verifyDomain.domain}`)} className="text-(--color-textMuted) hover:text-white transition-colors ml-2">
+                                                    <code className="text-sm text-gray-900 font-mono break-all">_zentinel-verification.{verifyDomain.domain}</code>
+                                                    <button onClick={() => handleCopyToken(`_zentinel-verification.${verifyDomain.domain}`)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors ml-2">
                                                         <Copy className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -340,8 +340,8 @@ export default function DomainsPage() {
                                             <div>
                                                 <p className="text-xs text-(--color-textMuted) mb-1.5">Record value</p>
                                                 <div className="flex items-center justify-between bg-black/40 border border-(--color-border) rounded-lg px-4 py-2.5">
-                                                    <code className="text-sm text-white font-mono break-all">{verifyDomain.token}</code>
-                                                    <button onClick={() => handleCopyToken(verifyDomain.token)} className="text-(--color-textMuted) hover:text-white transition-colors ml-2">
+                                                    <code className="text-sm text-gray-900 font-mono break-all">{verifyDomain.token}</code>
+                                                    <button onClick={() => handleCopyToken(verifyDomain.token)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors ml-2">
                                                         <Copy className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -353,14 +353,14 @@ export default function DomainsPage() {
 
                                 {verifyTab === 'file' && (
                                     <div className="animate-in fade-in">
-                                        <p className="text-sm text-(--color-textSecondary) mb-4">Upload a verification file to your domain's <span className="font-mono text-white">.well-known</span> directory:</p>
+                                        <p className="text-sm text-(--color-textSecondary) mb-4">Upload a verification file to your domain's <span className="font-mono text-gray-900">.well-known</span> directory:</p>
 
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-xs text-(--color-textMuted) mb-1.5">File URL</p>
                                                 <div className="flex items-center justify-between bg-black/40 border border-(--color-border) rounded-lg px-4 py-2.5">
-                                                    <code className="text-sm text-white font-mono break-all">https://{verifyDomain.domain}/.well-known/zentinel-verify.txt</code>
-                                                    <button onClick={() => handleCopyToken(`https://${verifyDomain.domain}/.well-known/zentinel-verify.txt`)} className="text-(--color-textMuted) hover:text-white transition-colors ml-2">
+                                                    <code className="text-sm text-gray-900 font-mono break-all">https://{verifyDomain.domain}/.well-known/zentinel-verify.txt</code>
+                                                    <button onClick={() => handleCopyToken(`https://${verifyDomain.domain}/.well-known/zentinel-verify.txt`)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors ml-2">
                                                         <Copy className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -368,32 +368,32 @@ export default function DomainsPage() {
                                             <div>
                                                 <p className="text-xs text-(--color-textMuted) mb-1.5">File content</p>
                                                 <div className="flex items-center justify-between bg-black/40 border border-(--color-border) rounded-lg px-4 py-2.5">
-                                                    <code className="text-sm text-white font-mono break-all">{verifyDomain.token}</code>
-                                                    <button onClick={() => handleCopyToken(verifyDomain.token)} className="text-(--color-textMuted) hover:text-white transition-colors ml-2">
+                                                    <code className="text-sm text-gray-900 font-mono break-all">{verifyDomain.token}</code>
+                                                    <button onClick={() => handleCopyToken(verifyDomain.token)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors ml-2">
                                                         <Copy className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-(--color-textMuted)">Create the file at <span className="font-mono text-white">/.well-known/zentinel-verify.txt</span> with the content above</p>
+                                            <p className="text-xs text-(--color-textMuted)">Create the file at <span className="font-mono text-gray-900">/.well-known/zentinel-verify.txt</span> with the content above</p>
                                         </div>
                                     </div>
                                 )}
 
                                 {verifyTab === 'meta' && (
                                     <div className="animate-in fade-in">
-                                        <p className="text-sm text-(--color-textSecondary) mb-4">Add a <span className="font-bold text-white">meta tag</span> to your homepage's <code className="font-mono text-white">&lt;head&gt;</code>:</p>
+                                        <p className="text-sm text-(--color-textSecondary) mb-4">Add a <span className="font-bold text-gray-900">meta tag</span> to your homepage's <code className="font-mono text-gray-900">&lt;head&gt;</code>:</p>
 
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-xs text-(--color-textMuted) mb-1.5">Meta tag</p>
                                                 <div className="flex items-center justify-between bg-black/40 border border-(--color-border) rounded-lg px-4 py-2.5">
-                                                    <code className="text-sm text-white font-mono break-all">&lt;meta name="zentinel-verification" content="{verifyDomain.token}"&gt;</code>
-                                                    <button onClick={() => handleCopyToken(`<meta name="zentinel-verification" content="${verifyDomain.token}">`)} className="text-(--color-textMuted) hover:text-white transition-colors ml-2">
+                                                    <code className="text-sm text-gray-900 font-mono break-all">&lt;meta name="zentinel-verification" content="{verifyDomain.token}"&gt;</code>
+                                                    <button onClick={() => handleCopyToken(`<meta name="zentinel-verification" content="${verifyDomain.token}">`)} className="text-(--color-textMuted) hover:text-gray-900 transition-colors ml-2">
                                                         <Copy className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-(--color-textMuted)">Place this tag in the <code className="font-mono text-white">&lt;head&gt;</code> section of your homepage at <span className="font-bold text-white">{verifyDomain.domain}</span>.</p>
+                                            <p className="text-xs text-(--color-textMuted)">Place this tag in the <code className="font-mono text-gray-900">&lt;head&gt;</code> section of your homepage at <span className="font-bold text-gray-900">{verifyDomain.domain}</span>.</p>
                                         </div>
                                     </div>
                                 )}
@@ -410,7 +410,7 @@ export default function DomainsPage() {
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-(--color-border)">
-                                <button type="button" onClick={() => setVerifyDomain(null)} className="px-5 py-2.5 text-sm font-bold text-white hover:text-gray-300 transition-colors">
+                                <button type="button" onClick={() => setVerifyDomain(null)} className="px-5 py-2.5 text-sm font-bold text-gray-900 hover:text-gray-300 transition-colors">
                                     Skip
                                 </button>
                                 <button
@@ -443,7 +443,7 @@ export default function DomainsPage() {
                         placeholder="Search domains..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-(--color-bgCard) border border-(--color-border) rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-(--color-cyan) transition-colors"
+                        className="w-full bg-(--color-bgCard) border border-(--color-border) rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-(--color-cyan) transition-colors"
                     />
                 </div>
 
@@ -456,10 +456,10 @@ export default function DomainsPage() {
                 ) : filteredDomains.length === 0 ? (
                     <div className="bg-[#0A0A0A] border border-(--color-border) rounded-xl overflow-hidden mt-6 shadow-sm">
                         <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <div className="w-16 h-16 rounded-full bg-white/5 border border-(--color-border) flex items-center justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-gray-100 border border-(--color-border) flex items-center justify-center mb-4">
                                 <Globe className="h-6 w-6 text-(--color-textMuted)" />
                             </div>
-                            <h3 className="text-lg font-syne font-medium text-white mb-2">
+                            <h3 className="text-lg font-syne font-medium text-gray-900 mb-2">
                                 {searchQuery ? "No matching domains" : "No domains"}
                             </h3>
                             <p className="text-(--color-textMuted) text-sm mb-6">
@@ -496,7 +496,7 @@ export default function DomainsPage() {
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-3">
                                                     <Globe className="h-4 w-4 text-(--color-textMuted)" />
-                                                    <span className="font-medium text-white group-hover:text-(--color-cyan) transition-colors">{domain.domain}</span>
+                                                    <span className="font-medium text-gray-900 group-hover:text-(--color-cyan) transition-colors">{domain.domain}</span>
                                                     {/* Inline Status */}
                                                     {domain.verified ? (
                                                         <div className="flex items-center gap-1 mt-0.5 ml-1">
@@ -524,22 +524,22 @@ export default function DomainsPage() {
                         {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex items-center justify-between px-4 py-3 border-t border-[#1A1A1A]">
-                                <span className="text-xs text-white/40">
+                                <span className="text-xs text-gray-500">
                                     {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filteredDomains.length)} of {filteredDomains.length}
                                 </span>
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
-                                        className="p-1.5 rounded-md hover:bg-white/5 disabled:opacity-30 transition-colors text-white/60"
+                                        className="p-1.5 rounded-md hover:bg-gray-100 disabled:opacity-30 transition-colors text-gray-900/60"
                                     >
                                         <ChevronLeft className="h-4 w-4" />
                                     </button>
-                                    <span className="text-xs text-white/50 px-2">{currentPage} / {totalPages}</span>
+                                    <span className="text-xs text-gray-500 px-2">{currentPage} / {totalPages}</span>
                                     <button
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
-                                        className="p-1.5 rounded-md hover:bg-white/5 disabled:opacity-30 transition-colors text-white/60"
+                                        className="p-1.5 rounded-md hover:bg-gray-100 disabled:opacity-30 transition-colors text-gray-900/60"
                                     >
                                         <ChevronRight className="h-4 w-4" />
                                     </button>

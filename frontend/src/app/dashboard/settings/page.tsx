@@ -56,7 +56,7 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
 function Toast({ message, show }: { message: string; show: boolean }) {
   if (!show) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-[100] bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-xl animate-in slide-in-from-bottom-2">
+    <div className="fixed bottom-6 right-6 z-[100] bg-gray-900 text-gray-900 text-sm font-medium px-5 py-3 rounded-xl shadow-xl animate-in slide-in-from-bottom-2">
       {message}
     </div>
   );
@@ -95,7 +95,7 @@ function UserAvatar({ name, idx }: { name: string; idx: number }) {
       "h-9 w-9 rounded-full bg-gradient-to-br flex items-center justify-center shrink-0",
       GRADIENTS[idx % GRADIENTS.length]
     )}>
-      <span className="text-white font-bold text-xs">{initials}</span>
+      <span className="text-gray-900 font-bold text-xs">{initials}</span>
     </div>
   );
 }
@@ -170,7 +170,7 @@ const BitbucketLogo = () => (
 // Cloud logos
 const AwsLogo = () => (
   <div className="h-9 w-9 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
-    <span className="text-white font-bold text-xs">aws</span>
+    <span className="text-gray-900 font-bold text-xs">aws</span>
   </div>
 );
 const AzureLogo = () => (
@@ -194,12 +194,12 @@ const DoLogo = () => (
 );
 const K8sLogo = () => (
   <div className="h-9 w-9 rounded-full bg-blue-700 flex items-center justify-center shrink-0">
-    <span className="text-white font-bold text-xs">K8s</span>
+    <span className="text-gray-900 font-bold text-xs">K8s</span>
   </div>
 );
 const AlibabaLogo = () => (
   <div className="h-9 w-9 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
-    <span className="text-white font-bold text-xs">ALI</span>
+    <span className="text-gray-900 font-bold text-xs">ALI</span>
   </div>
 );
 const DockerLogo = () => (
@@ -262,7 +262,7 @@ function GeneralTab({ wsName }: { wsName: string }) {
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold text-gray-900 text-base">Workspace Plan</p>
-          <span className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+          <span className="flex items-center gap-1 bg-blue-600 text-gray-900 px-3 py-1 rounded-full text-xs font-semibold">
             <Zap className="h-3 w-3 fill-white" /> Pro Trial
           </span>
         </div>
@@ -273,7 +273,7 @@ function GeneralTab({ wsName }: { wsName: string }) {
           Early-stage startup? We got you! Send us a quick chat to get started on a discounted plan.
         </p>
         <div className="flex gap-3 flex-wrap">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">
             <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
             Upgrade Plan
           </button>
@@ -344,7 +344,7 @@ function InviteModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-6 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 transition-colors">Cancel</button>
-          <button className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">Invite Users</button>
+          <button className="px-6 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">Invite Users</button>
         </div>
       </div>
     </Modal>
@@ -461,7 +461,7 @@ function UserAccessSettingsModal({ open, onClose, orgId }: { open: boolean; onCl
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors disabled:opacity-60"
+              className="px-6 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors disabled:opacity-60"
             >
               {saving ? "Saving…" : "Apply Changes"}
             </button>
@@ -571,7 +571,7 @@ function UsersTab({ orgId }: { orgId: string }) {
           </div>
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
           >
             <UserPlus className="h-4 w-4" /> + Add
           </button>
@@ -725,7 +725,7 @@ function LinkResourceModal({
           <button
             onClick={handleLink}
             disabled={selected.size === 0 || linking}
-            className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50"
           >
             {linking ? "Linking…" : "Link"}
           </button>
@@ -899,7 +899,7 @@ function TeamDetailView({
           <div className="flex justify-end mb-4">
             <button
               onClick={() => setShowLinkResource(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
             >
               <Plus className="h-4 w-4" /> Link Resource
             </button>
@@ -998,7 +998,7 @@ function CreateTeamModal({
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -1064,7 +1064,7 @@ function TeamsTab({ orgId }: { orgId: string }) {
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" /> Create Team
           </button>
@@ -1214,7 +1214,7 @@ function AddRepoModal({ open, onClose, orgId }: { open: boolean; onClose: () => 
             <button
               onClick={handleConnect}
               disabled={!repoUrl.trim() || connecting}
-              className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="px-5 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {connecting ? "Connecting…" : "Connect"}
             </button>
@@ -1295,7 +1295,7 @@ function RepositoriesTab({ orgId }: { orgId: string }) {
           </button>
           <button
             onClick={() => setShowAddRepo(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" /> Add Repo
           </button>
@@ -1410,7 +1410,7 @@ function CloudsTab() {
         <div className="ml-auto">
           <button
             onClick={() => setShowConnect(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" /> Connect Cloud
           </button>
@@ -1504,7 +1504,7 @@ function ContainersTab() {
         <p className="text-lg font-bold text-gray-900">Registries</p>
         <button
           onClick={() => setShowScan(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
         >
           <Plus className="h-4 w-4" /> Connect Registry
         </button>
@@ -1599,7 +1599,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
           ))}
         </div>
         <div className="flex justify-end mt-6">
-          <button className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">
+          <button className="px-6 py-2.5 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors">
             Next
           </button>
         </div>
@@ -1625,7 +1625,7 @@ function DomainsTab() {
         <div className="ml-auto">
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-semibold rounded-full hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" /> Add Domain
           </button>
@@ -1718,7 +1718,7 @@ function IntegrationsTab() {
     {
       label: "Cloud",
       items: [
-        { logo: <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center"><span className="text-white font-bold text-xs">aws</span></div>, name: "AWS", description: "Detect misconfigurations in your AWS cloud infrastructure." },
+        { logo: <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center"><span className="text-gray-900 font-bold text-xs">aws</span></div>, name: "AWS", description: "Detect misconfigurations in your AWS cloud infrastructure." },
         { logo: <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center"><svg viewBox="0 0 18 18" className="h-5 w-5 fill-white"><path d="M9 1L1 15h5l3-5 3 5h5z"/></svg></div>, name: "Azure", description: "Monitor Azure subscriptions for security misconfigurations." },
         { logo: <div className="h-8 w-8 rounded-full bg-white border border-gray-200 flex items-center justify-center"><span className="font-bold text-blue-600 text-sm">G</span></div>, name: "GCP", description: "Scan Google Cloud projects for identity and configuration risks." },
       ],

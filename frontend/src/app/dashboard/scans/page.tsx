@@ -141,8 +141,8 @@ export default function AuditTrailPage() {
                                 <React.Fragment key={scan.id}>
                                     <tr
                                         className={cn(
-                                            "hover:bg-white/5 transition-colors group cursor-pointer",
-                                            expandedRows[scan.id] && "bg-white/5"
+                                            "hover:bg-gray-100 transition-colors group cursor-pointer",
+                                            expandedRows[scan.id] && "bg-gray-100"
                                         )}
                                         onClick={() => toggleRow(scan.id)}
                                     >
@@ -183,14 +183,14 @@ export default function AuditTrailPage() {
                                                         <Square className="h-4 w-4 fill-current" />
                                                     </Button>
                                                 ) : (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-white hover:bg-white/10">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-gray-900 hover:bg-gray-100">
                                                         <Play className="h-4 w-4 fill-current" />
                                                     </Button>
                                                 )}
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-white hover:bg-white/10">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-gray-900 hover:bg-gray-100">
                                                     <Download className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-white hover:bg-white/10">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-textSecondary)] hover:text-gray-900 hover:bg-gray-100">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </div>

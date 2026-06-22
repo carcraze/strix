@@ -44,7 +44,7 @@ export default function AttackSurfacePage() {
                                 className="w-full bg-[var(--background)] border border-[var(--color-border)] rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-[var(--color-cyan)] text-[var(--color-textPrimary)]"
                             />
                         </div>
-                        <Button variant="outline" size="icon" className="border-[var(--color-border)] hover:bg-white/5">
+                        <Button variant="outline" size="icon" className="border-[var(--color-border)] hover:bg-gray-100">
                             <Filter className="h-4 w-4 text-[var(--color-textSecondary)]" />
                         </Button>
                     </div>
@@ -69,7 +69,7 @@ export default function AttackSurfacePage() {
                                 { severity: "low", method: "POST", path: "/api/v1/webhooks/stripe", surface: "API", time: "1d ago" },
                                 { severity: "info", method: "GET", path: "/api/health", surface: "API", time: "12m ago" },
                             ].map((endpoint, i) => (
-                                <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                <tr key={i} className="hover:bg-gray-100 transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <SeverityBadge severity={endpoint.severity as any} />
                                     </td>
@@ -94,7 +94,7 @@ export default function AttackSurfacePage() {
                                             <Button variant="ghost" size="sm" className="h-8 text-xs hover:bg-[var(--color-cyan)]/10 hover:text-[var(--color-cyan)]">
                                                 <Eye className="h-3 w-3 mr-2" /> View Finding
                                             </Button>
-                                            <Button variant="ghost" size="sm" className="h-8 text-xs hover:bg-white/10">
+                                            <Button variant="ghost" size="sm" className="h-8 text-xs hover:bg-gray-100">
                                                 <RefreshCw className="h-3 w-3 mr-2" /> Rescan
                                             </Button>
                                         </div>

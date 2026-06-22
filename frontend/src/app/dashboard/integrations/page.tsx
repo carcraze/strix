@@ -87,7 +87,7 @@ function IntegrationRow({
     };
 
     return (
-        <div className="flex items-center justify-between py-4 px-5 group hover:bg-white/[0.02] transition-colors">
+        <div className="flex items-center justify-between py-4 px-5 group hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-4">
                 <div
                     className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
@@ -97,7 +97,7 @@ function IntegrationRow({
                 </div>
                 <div>
                     <div className="flex items-center gap-2.5">
-                        <span className="text-sm font-semibold text-white">{name}</span>
+                        <span className="text-sm font-semibold text-gray-900">{name}</span>
                         {connected && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded-full">
                                 <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
@@ -105,13 +105,13 @@ function IntegrationRow({
                             </span>
                         )}
                     </div>
-                    <p className="text-xs text-white/40 mt-0.5">{description}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{description}</p>
                 </div>
             </div>
 
             <div className="shrink-0 ml-8 flex items-center gap-2">
                 {comingSoon ? (
-                    <span className="flex items-center gap-1.5 text-xs text-white/25 font-mono">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-300 font-mono">
                         <Clock className="h-3 w-3" />
                         Coming soon
                     </span>
@@ -119,7 +119,7 @@ function IntegrationRow({
                     <>
                         <Link
                             href={manageHref || "/dashboard/repositories"}
-                            className="flex items-center gap-1.5 text-xs font-medium text-white/50 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
                         >
                             <Settings className="h-3 w-3" />
                             Configure
@@ -127,7 +127,7 @@ function IntegrationRow({
                         <button
                             onClick={handleDisconnect}
                             disabled={disconnecting}
-                            className="flex items-center gap-1.5 text-xs font-medium text-white/30 hover:text-red-400 hover:border-red-400/30 border border-white/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 group/disc"
+                            className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-400 hover:border-red-400/30 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 group/disc"
                         >
                             {disconnecting ? (
                                 <span className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" />
@@ -148,7 +148,7 @@ function IntegrationRow({
                         <ExternalLink className="h-2.5 w-2.5 opacity-70" />
                     </a>
                 ) : (
-                    <button disabled className="flex items-center gap-1.5 text-xs font-medium text-white/50 border border-white/10 px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50 bg-white/5">
+                    <button disabled className="flex items-center gap-1.5 text-xs font-medium text-gray-500 border border-gray-200 px-3 py-1.5 rounded-lg cursor-not-allowed opacity-50 bg-gray-100">
                         <PlugZap className="h-3 w-3 opacity-50" />
                         Connect
                     </button>
@@ -170,11 +170,11 @@ function Section({ icon, title, description, children }: {
             <div className="flex items-center gap-3 mb-3">
                 {icon}
                 <div>
-                    <h2 className="text-sm font-syne font-bold text-white">{title}</h2>
-                    <p className="text-xs text-white/40 mt-0.5">{description}</p>
+                    <h2 className="text-sm font-syne font-bold text-gray-900">{title}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">{description}</p>
                 </div>
             </div>
-            <div className="bg-[#0C0C0E] border border-white/[0.06] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
                 {children}
             </div>
         </div>
@@ -236,19 +236,19 @@ export default function IntegrationsPage() {
                 {toast}
             </div>
         )}
-        <div className="flex-1 w-full bg-[#050505] p-8 overflow-y-auto animate-in fade-in duration-300">
+        <div className="flex-1 w-full bg-gray-50 p-8 overflow-y-auto animate-in fade-in duration-300">
             <div className="max-w-[780px] mx-auto">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-syne font-bold text-white tracking-tight">Integrations</h1>
-                        <p className="text-white/40 mt-1 text-sm">Connect Zentinel into your existing stack.</p>
+                        <h1 className="text-2xl font-syne font-bold text-gray-900 tracking-tight">Integrations</h1>
+                        <p className="text-gray-500 mt-1 text-sm">Connect Zentinel into your existing stack.</p>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/[0.06] rounded-xl px-3.5 py-2 text-xs">
+                    <div className="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2 text-xs">
                         <Zap className="h-3.5 w-3.5 text-yellow-400" />
-                        <span className="text-white font-bold">{connectedCount}</span>
-                        <span className="text-white/30">/ {totalCount} active</span>
+                        <span className="text-gray-900 font-bold">{connectedCount}</span>
+                        <span className="text-gray-400">/ {totalCount} active</span>
                     </div>
                 </div>
 

@@ -58,7 +58,7 @@ function DelegateModal({ onClose, onDelegate }: { onClose: () => void; onDelegat
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button type="submit" className="flex-1 px-4 py-2 text-sm font-medium text-gray-900 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                             Delegate
                         </button>
                     </div>
@@ -170,7 +170,7 @@ function AddTaskModal({
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-gray-900 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Adding…' : 'Add Task'}
                         </button>
                     </div>
@@ -329,7 +329,7 @@ export default function TasksPage() {
 
             {/* Toast */}
             {toast && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-xl">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-gray-900 text-sm font-medium px-5 py-3 rounded-xl shadow-xl">
                     {toast}
                 </div>
             )}
@@ -343,7 +343,7 @@ export default function TasksPage() {
                     </div>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         <Plus className="h-4 w-4" /> Add Task
                     </button>
@@ -392,7 +392,7 @@ export default function TasksPage() {
                             <p className="text-xs text-gray-500">Add your first task to get started</p>
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 <Plus className="h-4 w-4" /> Add Task
                             </button>

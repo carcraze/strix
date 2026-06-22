@@ -11,7 +11,7 @@ const SEVERITY_CONFIG: Record<string, { color: string; bg: string; label: string
     high: { color: "text-[var(--color-amber)]", bg: "bg-[var(--color-amber)]/10", label: "High" },
     medium: { color: "text-blue-400", bg: "bg-blue-500/10", label: "Medium" },
     low: { color: "text-[var(--color-green)]", bg: "bg-[var(--color-green)]/10", label: "Low" },
-    info: { color: "text-[var(--color-textSecondary)]", bg: "bg-white/5", label: "Info" },
+    info: { color: "text-[var(--color-textSecondary)]", bg: "bg-gray-100", label: "Info" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -64,9 +64,9 @@ export default function IssueDetailPage() {
         return (
             <div className="p-8 max-w-7xl mx-auto">
                 <div className="animate-pulse space-y-4">
-                    <div className="h-4 bg-white/5 rounded w-32" />
-                    <div className="h-8 bg-white/5 rounded w-2/3" />
-                    <div className="h-4 bg-white/5 rounded w-1/3" />
+                    <div className="h-4 bg-gray-100 rounded w-32" />
+                    <div className="h-8 bg-gray-100 rounded w-2/3" />
+                    <div className="h-4 bg-gray-100 rounded w-1/3" />
                 </div>
             </div>
         );
@@ -76,9 +76,9 @@ export default function IssueDetailPage() {
         return (
             <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <ShieldAlert className="h-12 w-12 text-[var(--color-red)] mb-4" />
-                <h1 className="text-2xl font-syne font-bold text-white mb-2">Issue Not Found</h1>
+                <h1 className="text-2xl font-syne font-bold text-gray-900 mb-2">Issue Not Found</h1>
                 <p className="text-[var(--color-textSecondary)] mb-6">This vulnerability does not exist or you do not have access to it.</p>
-                <button onClick={() => router.push("/dashboard/issues")} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors">
+                <button onClick={() => router.push("/dashboard/issues")} className="bg-white/10 hover:bg-white/20 text-gray-900 px-4 py-2 rounded-lg transition-colors">
                     Back to Issues
                 </button>
             </div>
@@ -103,7 +103,7 @@ export default function IssueDetailPage() {
             {/* Back */}
             <button
                 onClick={() => router.push("/dashboard/issues")}
-                className="flex items-center text-sm text-[var(--color-textMuted)] hover:text-white transition-colors mb-6"
+                className="flex items-center text-sm text-[var(--color-textMuted)] hover:text-gray-900 transition-colors mb-6"
             >
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back to Issues
             </button>
@@ -115,19 +115,19 @@ export default function IssueDetailPage() {
                         <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-bold uppercase tracking-wider ${conf.bg} ${conf.color}`}>
                             {conf.label}
                         </span>
-                        <span className={`text-xs font-mono px-2.5 py-1 rounded bg-white/5 border border-white/10 ${statusConf.color}`}>
+                        <span className={`text-xs font-mono px-2.5 py-1 rounded bg-gray-100 border border-gray-200 ${statusConf.color}`}>
                             {statusConf.label}
                         </span>
                     </div>
 
-                    <h1 className="text-2xl md:text-3xl font-syne font-bold text-white tracking-tight leading-tight">
+                    <h1 className="text-2xl md:text-3xl font-syne font-bold text-gray-900 tracking-tight leading-tight">
                         {issue.title}
                     </h1>
 
                     <p className="text-[var(--color-textSecondary)] mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                         <span className="flex items-center gap-1.5">
                             <ShieldAlert className="h-3.5 w-3.5 text-[var(--color-textMuted)]" />
-                            <span className="text-white">{targetName}</span>
+                            <span className="text-gray-900">{targetName}</span>
                         </span>
                         {foundDate && (
                             <span className="text-[var(--color-textMuted)]">
@@ -153,7 +153,7 @@ export default function IssueDetailPage() {
                         <button
                             onClick={() => handleStatusUpdate("ignored")}
                             disabled={updating}
-                            className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[var(--color-textSecondary)] hover:text-white transition-colors text-sm font-medium disabled:opacity-50"
+                            className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-gray-100 text-[var(--color-textSecondary)] hover:text-gray-900 transition-colors text-sm font-medium disabled:opacity-50"
                         >
                             <EyeOff className="h-3.5 w-3.5 inline mr-1.5" />
                             Ignore
@@ -172,7 +172,7 @@ export default function IssueDetailPage() {
                         <button
                             onClick={() => handleStatusUpdate("open")}
                             disabled={updating}
-                            className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[var(--color-textSecondary)] transition-colors text-sm font-medium disabled:opacity-50"
+                            className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-gray-100 text-[var(--color-textSecondary)] transition-colors text-sm font-medium disabled:opacity-50"
                         >
                             Reopen
                         </button>
@@ -193,7 +193,7 @@ export default function IssueDetailPage() {
                         className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ${
                             activeTab === tab.id
                                 ? "border-[var(--color-cyan)] text-[var(--color-cyan)]"
-                                : "border-transparent text-[var(--color-textSecondary)] hover:text-white"
+                                : "border-transparent text-[var(--color-textSecondary)] hover:text-gray-900"
                         }`}
                     >
                         {tab.icon}{tab.label}
@@ -210,7 +210,7 @@ export default function IssueDetailPage() {
                         <div className="lg:col-span-2 space-y-6">
                             <Card className="p-6 space-y-6">
                                 <div>
-                                    <h3 className="text-base font-syne font-bold text-white mb-3">Description</h3>
+                                    <h3 className="text-base font-syne font-bold text-gray-900 mb-3">Description</h3>
                                     <div className="text-[var(--color-textSecondary)] leading-relaxed bg-black/20 p-4 rounded-lg border border-[var(--color-border)] whitespace-pre-wrap text-sm">
                                         {issue.description || "No description available."}
                                     </div>
@@ -218,7 +218,7 @@ export default function IssueDetailPage() {
 
                                 {issue.reproduction_steps && issue.reproduction_steps.length > 0 && (
                                     <div>
-                                        <h3 className="text-base font-syne font-bold text-white mb-3">Reproduction Steps</h3>
+                                        <h3 className="text-base font-syne font-bold text-gray-900 mb-3">Reproduction Steps</h3>
                                         <ol className="space-y-2 text-sm text-[var(--color-textSecondary)]">
                                             {issue.reproduction_steps.map((step: string, i: number) => (
                                                 <li key={i} className="flex gap-3">
@@ -247,12 +247,12 @@ export default function IssueDetailPage() {
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <dt className="text-[var(--color-textMuted)]">Target</dt>
-                                            <dd className="text-white text-right truncate max-w-[150px]" title={targetName}>{targetName}</dd>
+                                            <dd className="text-gray-900 text-right truncate max-w-[150px]" title={targetName}>{targetName}</dd>
                                         </div>
                                         {foundDate && (
                                             <div className="flex justify-between gap-2">
                                                 <dt className="text-[var(--color-textMuted)]">Found</dt>
-                                                <dd className="text-white">{new Date(foundDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</dd>
+                                                <dd className="text-gray-900">{new Date(foundDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</dd>
                                             </div>
                                         )}
                                         {issue.auto_fix_available && (
@@ -274,8 +274,8 @@ export default function IssueDetailPage() {
                                                 disabled={updating || currentStatus === s}
                                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors capitalize border ${
                                                     currentStatus === s
-                                                        ? "bg-white/10 border-white/20 text-white font-semibold cursor-default"
-                                                        : "border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-white/5 hover:text-white disabled:opacity-40"
+                                                        ? "bg-white/10 border-white/20 text-gray-900 font-semibold cursor-default"
+                                                        : "border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40"
                                                 }`}
                                             >
                                                 {currentStatus === s && <CheckCircle2 className="h-3.5 w-3.5 inline mr-2 text-[var(--color-cyan)]" />}
@@ -294,7 +294,7 @@ export default function IssueDetailPage() {
                     <Card className="p-0 overflow-hidden border border-[var(--color-border)]">
                         <div className="p-4 border-b border-[var(--color-border)] bg-black/40 flex items-center gap-2">
                             <TerminalSquare className="h-5 w-5 text-[var(--color-cyan)]" />
-                            <h3 className="font-syne font-bold text-white">Proof of Concept</h3>
+                            <h3 className="font-syne font-bold text-gray-900">Proof of Concept</h3>
                         </div>
                         {issue.poc_request || issue.poc_response ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[var(--color-border)]">
@@ -328,7 +328,7 @@ export default function IssueDetailPage() {
                 {activeTab === "fix" && (
                     <Card className="p-6 space-y-6">
                         <div>
-                            <h3 className="text-base font-syne font-bold text-white mb-3 flex items-center gap-2">
+                            <h3 className="text-base font-syne font-bold text-gray-900 mb-3 flex items-center gap-2">
                                 <Code2 className="h-5 w-5 text-[var(--color-cyan)]" /> Remediation Guidance
                             </h3>
                             {issue.fix_description ? (
@@ -345,7 +345,7 @@ export default function IssueDetailPage() {
 
                         {issue.fix_diff && (
                             <div>
-                                <h3 className="text-base font-syne font-bold text-white mb-3">Suggested Diff</h3>
+                                <h3 className="text-base font-syne font-bold text-gray-900 mb-3">Suggested Diff</h3>
                                 <pre className="bg-black/40 border border-[var(--color-border)] rounded-lg p-4 text-xs font-mono text-[var(--color-green)] overflow-x-auto whitespace-pre-wrap leading-relaxed">
                                     {issue.fix_diff}
                                 </pre>
@@ -354,7 +354,7 @@ export default function IssueDetailPage() {
 
                         {issue.external_issue_url && (
                             <div>
-                                <h3 className="text-base font-syne font-bold text-white mb-3">External Tracker</h3>
+                                <h3 className="text-base font-syne font-bold text-gray-900 mb-3">External Tracker</h3>
                                 <a
                                     href={issue.external_issue_url}
                                     target="_blank"

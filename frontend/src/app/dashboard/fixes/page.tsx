@@ -200,7 +200,7 @@ function EmptyState({ onTriggerScan, scanning }: { onTriggerScan: () => void; sc
       <button
         onClick={onTriggerScan}
         disabled={scanning}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-gray-900 text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
       >
         {scanning ? (
           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -418,7 +418,7 @@ function RepoGroupTable({
     <div className="mb-6">
       {/* Toast */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg max-w-sm">
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-gray-900 text-sm px-4 py-3 rounded-xl shadow-lg max-w-sm">
           {toastMsg}
         </div>
       )}
@@ -442,7 +442,7 @@ function RepoGroupTable({
           <button
             onClick={createPr}
             disabled={creatingPr}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm text-white bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm text-gray-900 bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {creatingPr ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -658,7 +658,7 @@ export default function AutoFixPage() {
     <div className="bg-white min-h-screen">
       {/* Scan toast */}
       {scanToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg max-w-sm">
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-gray-900 text-sm px-4 py-3 rounded-xl shadow-lg max-w-sm">
           {scanToast}
         </div>
       )}
@@ -686,7 +686,7 @@ export default function AutoFixPage() {
           <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <Settings className="w-4 h-4" />
           </button>
-          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold select-none">
+          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-gray-900 text-xs font-semibold select-none">
             {activeWorkspace?.name?.slice(0, 2).toUpperCase() ?? "JK"}
           </div>
         </div>

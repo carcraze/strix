@@ -44,7 +44,7 @@ const SEVERITY_STYLES: Record<string, string> = {
     HIGH: 'text-[#FF8C00] bg-[#FF8C00]/10 border-[#FF8C00]/20',
     MEDIUM: 'text-[#FFB800] bg-[#FFB800]/10 border-[#FFB800]/20',
     LOW: 'text-[#00B4FF] bg-[#00B4FF]/10 border-[#00B4FF]/20',
-    INFO: 'text-[#A0A0A0] bg-white/5 border-white/10',
+    INFO: 'text-[#A0A0A0] bg-gray-100 border-gray-200',
 };
 
 export default function DomainDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -158,17 +158,17 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-[#050505]">
-                <Loader2 className="h-6 w-6 animate-spin text-white/40" />
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
             </div>
         );
     }
 
     if (error || !domain) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center bg-[#050505] gap-4">
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 gap-4">
                 <p className="text-[var(--color-textMuted)]">{error || 'Domain not found.'}</p>
-                <button onClick={() => router.push('/dashboard/domains')} className="text-sm text-white underline">Back to Domains</button>
+                <button onClick={() => router.push('/dashboard/domains')} className="text-sm text-gray-900 underline">Back to Domains</button>
             </div>
         );
     }
@@ -177,12 +177,12 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
     const typeLabel = (domain.type || 'web_application').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
     return (
-        <div className="flex-1 w-full bg-[#050505] overflow-y-auto animate-in fade-in duration-300">
+        <div className="flex-1 w-full bg-gray-50 overflow-y-auto animate-in fade-in duration-300">
             <div className="max-w-[900px] mx-auto px-8 py-8">
                 {/* Back */}
                 <button
                     onClick={() => router.push('/dashboard/domains')}
-                    className="flex items-center text-sm text-[var(--color-textMuted)] hover:text-white transition-colors mb-6 group"
+                    className="flex items-center text-sm text-[var(--color-textMuted)] hover:text-gray-900 transition-colors mb-6 group"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
                     Domains
@@ -191,7 +191,7 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                 {/* Header */}
                 <div className="mb-6">
                     <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-syne font-bold text-white tracking-tight">{domain.domain}</h1>
+                        <h1 className="text-3xl font-syne font-bold text-gray-900 tracking-tight">{domain.domain}</h1>
                         {domain.verified ? (
                             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-[var(--color-green)] border border-[var(--color-green)]/20 bg-[var(--color-green)]/10">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -204,7 +204,7 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                             </span>
                         )}
                     </div>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-white/60 border border-white/10">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-900/60 border border-gray-200">
                         {typeLabel}
                     </span>
                 </div>
@@ -216,8 +216,8 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${activeTab === tab
-                                ? 'border-white text-white'
-                                : 'border-transparent text-[var(--color-textMuted)] hover:text-white'
+                                ? 'border-white text-gray-900'
+                                : 'border-transparent text-[var(--color-textMuted)] hover:text-gray-900'
                                 }`}
                         >
                             {tab}
@@ -233,7 +233,7 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                                 <div className="h-14 w-14 rounded-full bg-[var(--color-green)]/10 flex items-center justify-center mb-4">
                                     <CheckCircle2 className="h-7 w-7 text-[var(--color-green)]" />
                                 </div>
-                                <p className="text-white font-medium">No issues yet</p>
+                                <p className="text-gray-900 font-medium">No issues yet</p>
                                 <p className="text-sm text-[var(--color-textMuted)] mt-1">Run a pentest to detect vulnerabilities on this domain</p>
                             </div>
                         ) : (
@@ -251,10 +251,10 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                                         {issues.map(issue => (
                                             <tr
                                                 key={issue.id}
-                                                className="border-b border-[var(--color-border)] last:border-0 hover:bg-white/5 cursor-pointer transition-colors"
+                                                className="border-b border-[var(--color-border)] last:border-0 hover:bg-gray-100 cursor-pointer transition-colors"
                                                 onClick={() => router.push(`/dashboard/issues/${issue.id}`)}
                                             >
-                                                <td className="px-5 py-3.5 font-medium text-white">{issue.title}</td>
+                                                <td className="px-5 py-3.5 font-medium text-gray-900">{issue.title}</td>
                                                 <td className="px-5 py-3.5">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${SEVERITY_STYLES[issue.severity] || SEVERITY_STYLES.INFO}`}>
                                                         {issue.severity}
@@ -276,10 +276,10 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
                         {pentests.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed border-[#1A1A1A] rounded-xl">
-                                <div className="h-14 w-14 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                                <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                                     <Activity className="h-7 w-7 text-[var(--color-textMuted)]" />
                                 </div>
-                                <p className="text-white font-medium">No tests yet</p>
+                                <p className="text-gray-900 font-medium">No tests yet</p>
                                 <p className="text-sm text-[var(--color-textMuted)] mt-1">Start a pentest to see results here</p>
                                 <button onClick={() => router.push('/dashboard/pentests/new')} className="mt-5 px-5 py-2.5 bg-white text-black font-bold text-sm rounded-lg hover:bg-gray-200 transition-colors">
                                     Start Test
@@ -299,10 +299,10 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                                         {pentests.map(pt => (
                                             <tr
                                                 key={pt.id}
-                                                className="border-b border-[var(--color-border)] last:border-0 hover:bg-white/5 cursor-pointer transition-colors"
+                                                className="border-b border-[var(--color-border)] last:border-0 hover:bg-gray-100 cursor-pointer transition-colors"
                                                 onClick={() => router.push(`/dashboard/pentests/${pt.id}`)}
                                             >
-                                                <td className="px-5 py-3.5 font-medium text-white flex items-center gap-2">
+                                                <td className="px-5 py-3.5 font-medium text-gray-900 flex items-center gap-2">
                                                     {pt.name} <ExternalLink className="h-3.5 w-3.5 text-[var(--color-textMuted)]" />
                                                 </td>
                                                 <td className="px-5 py-3.5">
@@ -326,14 +326,14 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
                         {/* Verification block - only for unverified domains */}
                         {!domain.verified && domain.verification_token && (
                             <div>
-                                <h3 className="text-base font-semibold text-white mb-4">Domain Verification</h3>
+                                <h3 className="text-base font-semibold text-gray-900 mb-4">Domain Verification</h3>
                                 {/* Tabs */}
                                 <div className="flex bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg p-0.5 mb-5">
                                     {(['dns', 'file', 'meta'] as const).map(t => (
                                         <button
                                             key={t}
                                             onClick={() => setVerifyTab(t)}
-                                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${verifyTab === t ? 'bg-white/10 text-white' : 'text-[var(--color-textMuted)] hover:text-white'}`}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${verifyTab === t ? 'bg-gray-100 text-gray-900' : 'text-[var(--color-textMuted)] hover:text-gray-900'}`}
                                         >
                                             {t === 'dns' ? 'DNS Record' : t === 'file' ? 'File Upload' : 'Meta Tag'}
                                         </button>
@@ -342,19 +342,19 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
                                 {verifyTab === 'dns' && (
                                     <div className="space-y-4 animate-in fade-in">
-                                        <p className="text-sm text-[var(--color-textMuted)]">Add a DNS <strong className="text-white">TXT</strong> record to verify ownership:</p>
+                                        <p className="text-sm text-[var(--color-textMuted)]">Add a DNS <strong className="text-gray-900">TXT</strong> record to verify ownership:</p>
                                         <div>
                                             <p className="text-xs text-[var(--color-textMuted)] mb-1.5">Record name</p>
                                             <div className="flex items-center justify-between bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg px-4 py-2.5">
-                                                <code className="text-sm text-white font-mono">_zentinel-verification.{domain.domain}</code>
-                                                <button onClick={() => handleCopy(`_zentinel-verification.${domain.domain}`)} className="text-[var(--color-textMuted)] hover:text-white ml-3"><Copy className="h-4 w-4" /></button>
+                                                <code className="text-sm text-gray-900 font-mono">_zentinel-verification.{domain.domain}</code>
+                                                <button onClick={() => handleCopy(`_zentinel-verification.${domain.domain}`)} className="text-[var(--color-textMuted)] hover:text-gray-900 ml-3"><Copy className="h-4 w-4" /></button>
                                             </div>
                                         </div>
                                         <div>
                                             <p className="text-xs text-[var(--color-textMuted)] mb-1.5">Record value</p>
                                             <div className="flex items-center justify-between bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg px-4 py-2.5">
-                                                <code className="text-sm text-white font-mono break-all">{domain.verification_token}</code>
-                                                <button onClick={() => handleCopy(domain.verification_token!)} className="text-[var(--color-textMuted)] hover:text-white ml-3"><Copy className="h-4 w-4" /></button>
+                                                <code className="text-sm text-gray-900 font-mono break-all">{domain.verification_token}</code>
+                                                <button onClick={() => handleCopy(domain.verification_token!)} className="text-[var(--color-textMuted)] hover:text-gray-900 ml-3"><Copy className="h-4 w-4" /></button>
                                             </div>
                                         </div>
                                         <p className="text-xs text-[var(--color-textMuted)]">Propagation might take 2–10 minutes.</p>
@@ -363,19 +363,19 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
                                 {verifyTab === 'file' && (
                                     <div className="space-y-4 animate-in fade-in">
-                                        <p className="text-sm text-[var(--color-textMuted)]">Upload a verification file to your domain's <code className="text-white font-mono">.well-known</code> directory:</p>
+                                        <p className="text-sm text-[var(--color-textMuted)]">Upload a verification file to your domain's <code className="text-gray-900 font-mono">.well-known</code> directory:</p>
                                         <div>
                                             <p className="text-xs text-[var(--color-textMuted)] mb-1.5">File URL</p>
                                             <div className="flex items-center justify-between bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg px-4 py-2.5">
-                                                <code className="text-sm text-white font-mono break-all">https://{domain.domain}/.well-known/zentinel-verify.txt</code>
-                                                <button onClick={() => handleCopy(`https://${domain.domain}/.well-known/zentinel-verify.txt`)} className="text-[var(--color-textMuted)] hover:text-white ml-3"><Copy className="h-4 w-4" /></button>
+                                                <code className="text-sm text-gray-900 font-mono break-all">https://{domain.domain}/.well-known/zentinel-verify.txt</code>
+                                                <button onClick={() => handleCopy(`https://${domain.domain}/.well-known/zentinel-verify.txt`)} className="text-[var(--color-textMuted)] hover:text-gray-900 ml-3"><Copy className="h-4 w-4" /></button>
                                             </div>
                                         </div>
                                         <div>
                                             <p className="text-xs text-[var(--color-textMuted)] mb-1.5">File content</p>
                                             <div className="flex items-center justify-between bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg px-4 py-2.5">
-                                                <code className="text-sm text-white font-mono break-all">{domain.verification_token}</code>
-                                                <button onClick={() => handleCopy(domain.verification_token!)} className="text-[var(--color-textMuted)] hover:text-white ml-3"><Copy className="h-4 w-4" /></button>
+                                                <code className="text-sm text-gray-900 font-mono break-all">{domain.verification_token}</code>
+                                                <button onClick={() => handleCopy(domain.verification_token!)} className="text-[var(--color-textMuted)] hover:text-gray-900 ml-3"><Copy className="h-4 w-4" /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -383,12 +383,12 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
                                 {verifyTab === 'meta' && (
                                     <div className="space-y-4 animate-in fade-in">
-                                        <p className="text-sm text-[var(--color-textMuted)]">Add this <strong className="text-white">meta tag</strong> in your homepage's <code className="text-white font-mono">&lt;head&gt;</code>:</p>
+                                        <p className="text-sm text-[var(--color-textMuted)]">Add this <strong className="text-gray-900">meta tag</strong> in your homepage's <code className="text-gray-900 font-mono">&lt;head&gt;</code>:</p>
                                         <div>
                                             <p className="text-xs text-[var(--color-textMuted)] mb-1.5">Meta tag</p>
                                             <div className="flex items-center justify-between bg-[#0A0A0A] border border-[var(--color-border)] rounded-lg px-4 py-2.5">
-                                                <code className="text-sm text-white font-mono break-all">{`<meta name="zentinel-verification" content="${domain.verification_token}">`}</code>
-                                                <button onClick={() => handleCopy(`<meta name="zentinel-verification" content="${domain.verification_token}">`)} className="text-[var(--color-textMuted)] hover:text-white ml-3"><Copy className="h-4 w-4" /></button>
+                                                <code className="text-sm text-gray-900 font-mono break-all">{`<meta name="zentinel-verification" content="${domain.verification_token}">`}</code>
+                                                <button onClick={() => handleCopy(`<meta name="zentinel-verification" content="${domain.verification_token}">`)} className="text-[var(--color-textMuted)] hover:text-gray-900 ml-3"><Copy className="h-4 w-4" /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -422,17 +422,17 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
                         {/* Domain Details */}
                         <div>
-                            <h3 className="text-base font-semibold text-white mb-4">Details</h3>
+                            <h3 className="text-base font-semibold text-gray-900 mb-4">Details</h3>
                             <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
                                 <table className="w-full text-sm">
                                     <tbody>
                                         <tr className="border-b border-[var(--color-border)]">
                                             <td className="px-5 py-3.5 text-[var(--color-textMuted)] w-1/3">Type</td>
-                                            <td className="px-5 py-3.5 text-white text-right">{typeLabel}</td>
+                                            <td className="px-5 py-3.5 text-gray-900 text-right">{typeLabel}</td>
                                         </tr>
                                         <tr className="border-b border-[var(--color-border)]">
                                             <td className="px-5 py-3.5 text-[var(--color-textMuted)]">Added</td>
-                                            <td className="px-5 py-3.5 text-white text-right">{new Date(domain.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                            <td className="px-5 py-3.5 text-gray-900 text-right">{new Date(domain.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                                         </tr>
                                         <tr className="border-b border-[var(--color-border)]">
                                             <td className="px-5 py-3.5 text-[var(--color-textMuted)]">Last tested</td>
@@ -455,7 +455,7 @@ export default function DomainDetailPage({ params }: { params: Promise<{ id: str
 
                         {/* Actions */}
                         <div>
-                            <h3 className="text-base font-semibold text-white mb-4">Actions</h3>
+                            <h3 className="text-base font-semibold text-gray-900 mb-4">Actions</h3>
                             <button
                                 onClick={handleDelete}
                                 className="flex items-center gap-2 text-sm text-[var(--color-red)] hover:underline transition-colors"

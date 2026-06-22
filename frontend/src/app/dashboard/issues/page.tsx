@@ -234,11 +234,11 @@ function AutofixModal({ issue, onClose }: { issue: any; onClose: () => void }) {
                             <button
                                 onClick={handleCreatePr}
                                 disabled={creating || !!prUrl}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-l-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 text-sm font-medium rounded-l-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
                             >
                                 {creating ? "Creating…" : prUrl ? "PR Created" : "Create PR"}
                             </button>
-                            <button className="px-2 py-2 bg-blue-600 text-white rounded-r-lg border-l border-blue-500 hover:bg-blue-700 transition-colors">
+                            <button className="px-2 py-2 bg-blue-600 text-gray-900 rounded-r-lg border-l border-blue-500 hover:bg-blue-700 transition-colors">
                                 <ChevronDown className="h-4 w-4" />
                             </button>
                         </div>
@@ -370,7 +370,7 @@ function AddTaskModal({
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-gray-900 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Adding…' : 'Add Task'}
                         </button>
                     </div>
@@ -450,7 +450,7 @@ function AdjustSeverityModal({
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button onClick={handleConfirm} disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
+                        <button onClick={handleConfirm} disabled={submitting} className="flex-1 px-4 py-2 text-sm font-medium text-gray-900 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
                             {submitting ? 'Saving…' : 'Confirm'}
                         </button>
                     </div>
@@ -777,7 +777,7 @@ export default function IssuesPage() {
 
             {/* Toast */}
             {toast && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-xl">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-gray-900 text-sm font-medium px-5 py-3 rounded-xl shadow-xl">
                     {toast}
                 </div>
             )}
@@ -882,7 +882,7 @@ export default function IssuesPage() {
                                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${selectedTypes.length > 0 ? "bg-blue-50 text-blue-700 border border-blue-200" : "text-gray-600 hover:bg-gray-50"}`}
                             >
                                 All types
-                                {selectedTypes.length > 0 && <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">{selectedTypes.length}</span>}
+                                {selectedTypes.length > 0 && <span className="bg-blue-600 text-gray-900 text-xs px-1.5 py-0.5 rounded-full">{selectedTypes.length}</span>}
                                 <ChevronDown className="h-4 w-4" />
                             </button>
                             {typeDropdownOpen && (

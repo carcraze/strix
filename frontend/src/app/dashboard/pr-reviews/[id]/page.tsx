@@ -108,9 +108,9 @@ function MarkdownBlock({ text }: { text: string }) {
         if (inCode) { codeLines.push(line); return; }
 
         if (line.startsWith("# ")) {
-            elements.push(<h1 key={i} className="text-xl font-bold text-white mt-6 mb-2 border-b border-white/10 pb-2">{line.slice(2)}</h1>);
+            elements.push(<h1 key={i} className="text-xl font-bold text-gray-900 mt-6 mb-2 border-b border-gray-200 pb-2">{line.slice(2)}</h1>);
         } else if (line.startsWith("## ")) {
-            elements.push(<h2 key={i} className="text-base font-bold text-white mt-5 mb-1">{line.slice(3)}</h2>);
+            elements.push(<h2 key={i} className="text-base font-bold text-gray-900 mt-5 mb-1">{line.slice(3)}</h2>);
         } else if (line.startsWith("### ")) {
             elements.push(<h3 key={i} className="text-sm font-semibold text-cyan-400 mt-4 mb-1">{line.slice(4)}</h3>);
         } else if (/^\*\*FINDING_\d+/.test(line)) {
@@ -163,7 +163,7 @@ function FindingCard({ finding }: { finding: ParsedFinding }) {
         <div id={anchorId} className={`rounded-xl border ${cfg.border} ${cfg.bg} overflow-hidden transition-all scroll-mt-20`}>
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-start gap-4 p-4 text-left hover:bg-white/5 transition-colors"
+                className="w-full flex items-start gap-4 p-4 text-left hover:bg-gray-100 transition-colors"
             >
                 <div className="shrink-0 w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
                     <span className="text-xs font-bold font-mono text-white/60">{finding.index + 1}</span>
@@ -174,11 +174,11 @@ function FindingCard({ finding }: { finding: ParsedFinding }) {
                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                             {cfg.label}
                         </span>
-                        <span className="font-semibold text-white text-sm">{finding.title}</span>
+                        <span className="font-semibold text-gray-900 text-sm">{finding.title}</span>
                     </div>
                     {finding.file && (
                         <div className="flex items-center gap-1.5 mt-1.5">
-                            <FileCode className="h-3.5 w-3.5 text-white/30 shrink-0" />
+                            <FileCode className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                             <code className="text-xs text-cyan-400/80 font-mono truncate">{finding.file}</code>
                         </div>
                     )}
@@ -188,13 +188,13 @@ function FindingCard({ finding }: { finding: ParsedFinding }) {
                     <button
                         onClick={copyLink}
                         title="Copy link to this finding"
-                        className="no-print p-1.5 rounded-md hover:bg-white/10 transition-colors group"
+                        className="no-print p-1.5 rounded-md hover:bg-gray-100 transition-colors group"
                     >
                         {copied
                             ? <Check className="h-3.5 w-3.5 text-green-400" />
-                            : <Link2 className="h-3.5 w-3.5 text-white/30 group-hover:text-white/60" />}
+                            : <Link2 className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-900/60" />}
                     </button>
-                    {expanded ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+                    {expanded ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
                 </div>
             </button>
 
@@ -202,13 +202,13 @@ function FindingCard({ finding }: { finding: ParsedFinding }) {
                 <div className="border-t border-white/8 px-5 py-4 space-y-4">
                     {finding.vulnerability && (
                         <div>
-                            <div className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-2">Vulnerability</div>
+                            <div className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Vulnerability</div>
                             <p className="text-sm text-white/70 leading-relaxed">{finding.vulnerability}</p>
                         </div>
                     )}
                     {finding.proof && (
                         <div>
-                            <div className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-2">Proof of Concept</div>
+                            <div className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Proof of Concept</div>
                             <pre className="text-xs text-green-400/80 bg-black/40 rounded-lg p-3 overflow-x-auto font-mono whitespace-pre-wrap leading-relaxed">{finding.proof}</pre>
                         </div>
                     )}
@@ -216,7 +216,7 @@ function FindingCard({ finding }: { finding: ParsedFinding }) {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Wrench className="h-3.5 w-3.5 text-green-400/60" />
-                                <div className="text-xs font-semibold uppercase tracking-widest text-white/40">Remediation</div>
+                                <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Remediation</div>
                             </div>
                             <pre className="text-xs text-emerald-400/80 bg-black/40 rounded-lg p-3 overflow-x-auto font-mono whitespace-pre-wrap leading-relaxed">{finding.fix}</pre>
                         </div>
@@ -240,21 +240,21 @@ function ScanLogs({ logs }: { logs: string }) {
         if (/warn/i.test(line)) return "text-yellow-400";
         if (/✅|success|completed|ready/i.test(line)) return "text-green-400";
         if (/\[ZENTINEL\]|INFO/i.test(line)) return "text-cyan-400";
-        return "text-white/50";
+        return "text-gray-500";
     };
 
     return (
-        <div className="rounded-xl border border-white/10 bg-[#0A0D12] overflow-hidden no-print">
+        <div className="rounded-xl border border-gray-200 bg-[#0A0D12] overflow-hidden no-print">
             <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-1 h-5 rounded bg-slate-500" />
                     <Terminal className="h-4 w-4 text-slate-400" />
-                    <h2 className="font-bold text-white">Scan Logs</h2>
-                    <span className="text-xs text-white/30 font-mono ml-1">{lines.length} lines</span>
+                    <h2 className="font-bold text-gray-900">Scan Logs</h2>
+                    <span className="text-xs text-gray-400 font-mono ml-1">{lines.length} lines</span>
                 </div>
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900/70 transition-colors"
                 >
                     {expanded ? "Collapse" : "Show all"}
                     <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
@@ -353,7 +353,7 @@ function LiveScanLogs({ prReviewId }: { prReviewId: string }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Terminal className="h-4 w-4 text-[#0052FF]" />
-                        <h2 className="font-bold text-white tracking-tight">Live Scan Activity</h2>
+                        <h2 className="font-bold text-gray-900 tracking-tight">Live Scan Activity</h2>
                     </div>
                 </div>
                 <div className="text-xs font-mono text-[#0052FF] opacity-80">Streaming agent operations...</div>
@@ -362,20 +362,20 @@ function LiveScanLogs({ prReviewId }: { prReviewId: string }) {
                 {logs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 opacity-50">
                         <Loader2 className="h-6 w-6 text-cyan-400 animate-spin mb-3" />
-                        <div className="text-xs text-white uppercase tracking-widest font-mono">Initializing Strix Engine...</div>
+                        <div className="text-xs text-gray-900 uppercase tracking-widest font-mono">Initializing Strix Engine...</div>
                     </div>
                 ) : (
                     <div className="space-y-1 font-mono text-[11px] md:text-xs">
                         {logs.map(log => {
-                            let typeColor = "text-white/50";
+                            let typeColor = "text-gray-500";
                             if (log.type === "thought") typeColor = "text-purple-400/60";
                             else if (log.type === "action") typeColor = "text-cyan-400/80";
                             else if (log.type === "finding") typeColor = "text-orange-400 font-bold bg-orange-400/10 px-1 rounded";
                             else if (log.type === "error") typeColor = "text-red-400 font-bold";
 
                             return (
-                                <div key={log.id} className={`leading-relaxed flex items-start gap-3 hover:bg-white/5 px-2 py-1 -mx-2 rounded transition-colors ${typeColor}`}>
-                                    <span className="text-white/30 shrink-0 select-none">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
+                                <div key={log.id} className={`leading-relaxed flex items-start gap-3 hover:bg-gray-100 px-2 py-1 -mx-2 rounded transition-colors ${typeColor}`}>
+                                    <span className="text-gray-400 shrink-0 select-none">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                                     <span className="shrink-0 w-20 text-right uppercase tracking-wider font-bold opacity-70 select-none">{log.type}</span>
                                     <span className="break-all whitespace-pre-wrap flex-1">{log.message}</span>
                                 </div>
@@ -438,7 +438,7 @@ export default function ScanReportPage() {
             <div className="min-h-screen bg-[#060A0F] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
-                    <p className="text-white/40 text-sm font-mono">Loading report…</p>
+                    <p className="text-gray-500 text-sm font-mono">Loading report…</p>
                 </div>
             </div>
         );
@@ -515,7 +515,7 @@ export default function ScanReportPage() {
                 <div className="no-print sticky top-0 z-50 bg-[#060A0F]/90 backdrop-blur border-b border-white/8 px-6 py-3 flex items-center justify-between">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-sm text-white/60 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back to PR Reviews
@@ -526,7 +526,7 @@ export default function ScanReportPage() {
                                 const url = `${window.location.origin}/report/${id}`;
                                 navigator.clipboard.writeText(url).then(() => alert('Public link copied to clipboard!'));
                             }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-100 border border-gray-200 text-gray-900 text-sm transition-colors"
                             title="Copy public report link"
                         >
                             <Link2 className="h-4 w-4" />
@@ -534,7 +534,7 @@ export default function ScanReportPage() {
                         </button>
                         <button
                             onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0052FF] hover:bg-[#0052FF]/80 text-white text-sm font-semibold transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0052FF] hover:bg-[#0052FF]/80 text-gray-900 text-sm font-semibold transition-colors"
                         >
                             <Download className="h-4 w-4" />
                             Download / Print PDF
@@ -546,21 +546,21 @@ export default function ScanReportPage() {
                 <div ref={reportRef} className="max-w-4xl mx-auto px-6 py-10 space-y-8">
 
                     {/* ── Header / Cover ── */}
-                    <div className="rounded-2xl overflow-hidden border border-white/10 print-card">
+                    <div className="rounded-2xl overflow-hidden border border-gray-200 print-card">
                         <div className="bg-gradient-to-r from-[#0A1628] to-[#0A0D12] border-b border-[#0052FF]/30 px-8 py-7">
                             <div className="flex items-start justify-between gap-6">
                                 <div>
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="w-9 h-9 rounded-lg bg-[#0052FF] flex items-center justify-center">
-                                            <Shield className="h-5 w-5 text-white" />
+                                            <Shield className="h-5 w-5 text-gray-900" />
                                         </div>
                                         <div>
-                                            <div className="text-white font-bold text-lg tracking-tight leading-none">ZENTINEL</div>
+                                            <div className="text-gray-900 font-bold text-lg tracking-tight leading-none">ZENTINEL</div>
                                             <div className="text-[#0052FF] text-xs font-mono mt-0.5">Security Intelligence Platform</div>
                                         </div>
                                     </div>
-                                    <h1 className="text-2xl font-bold text-white leading-tight">Security Assessment Report</h1>
-                                    <p className="text-white/50 text-sm mt-1 font-mono">
+                                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">Security Assessment Report</h1>
+                                    <p className="text-gray-500 text-sm mt-1 font-mono">
                                         {review.trigger_source === "manual" ? "Manual scan" : review.pr_title ? `PR: ${review.pr_title}` : "Automated scan"}
                                         {review.branch_name ? ` — branch ${review.branch_name}` : ""}
                                     </p>
@@ -585,8 +585,8 @@ export default function ScanReportPage() {
                                 <div key={label} className="flex items-start gap-2.5">
                                     <Icon className="h-4 w-4 text-[#0052FF] mt-0.5 shrink-0" />
                                     <div>
-                                        <div className="text-xs text-white/40 font-mono uppercase tracking-wider">{label}</div>
-                                        <div className="text-sm text-white font-semibold mt-0.5 font-mono truncate max-w-[140px]">{value}</div>
+                                        <div className="text-xs text-gray-500 font-mono uppercase tracking-wider">{label}</div>
+                                        <div className="text-sm text-gray-900 font-semibold mt-0.5 font-mono truncate max-w-[140px]">{value}</div>
                                     </div>
                                 </div>
                             ))}
@@ -594,23 +594,23 @@ export default function ScanReportPage() {
                     </div>
 
                     {/* ── Executive Summary ── */}
-                    <div className="rounded-xl border border-white/10 bg-[#0A0D12] overflow-hidden print-card">
+                    <div className="rounded-xl border border-gray-200 bg-[#0A0D12] overflow-hidden print-card">
                         <div className="px-6 py-4 border-b border-white/8 flex items-center gap-2">
                             <div className="w-1 h-5 rounded bg-[#0052FF]" />
-                            <h2 className="font-bold text-white">Executive Summary</h2>
+                            <h2 className="font-bold text-gray-900">Executive Summary</h2>
                         </div>
                         <div className="p-6">
                             {/* Stats — use parsed counts */}
                             <div className="grid grid-cols-4 gap-3 mb-6">
                                 {[
-                                    { label: "Total",    value: parsedFindings.length || totalFindings, color: "text-white" },
+                                    { label: "Total",    value: parsedFindings.length || totalFindings, color: "text-gray-900" },
                                     { label: "Critical", value: critCount,  color: "text-red-400" },
                                     { label: "High",     value: highCount,  color: "text-orange-400" },
                                     { label: "Medium",   value: medCount,   color: "text-yellow-400" },
                                 ].map(({ label, value, color }) => (
                                     <div key={label} className="bg-white/4 border border-white/8 rounded-xl p-4 text-center">
                                         <div className={`text-3xl font-bold font-mono ${color}`}>{value}</div>
-                                        <div className="text-xs text-white/40 mt-1 uppercase tracking-wide">{label}</div>
+                                        <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{label}</div>
                                     </div>
                                 ))}
                             </div>
@@ -652,10 +652,10 @@ export default function ScanReportPage() {
 
                     {/* ── Parsed Findings (structured) ── */}
                     {parsedFindings.length > 0 && (
-                        <div className="rounded-xl border border-white/10 bg-[#0A0D12] overflow-hidden print-card">
+                        <div className="rounded-xl border border-gray-200 bg-[#0A0D12] overflow-hidden print-card">
                             <div className="px-6 py-4 border-b border-white/8 flex items-center gap-2">
                                 <div className="w-1 h-5 rounded bg-[#0052FF]" />
-                                <h2 className="font-bold text-white">Findings ({parsedFindings.length})</h2>
+                                <h2 className="font-bold text-gray-900">Findings ({parsedFindings.length})</h2>
                             </div>
                             <div className="p-4 space-y-3">
                                 {parsedFindings.map((f) => (
@@ -666,11 +666,11 @@ export default function ScanReportPage() {
                     )}
 
                     {review.final_report && (
-                        <div className="rounded-xl border border-white/10 bg-[#0A0D12] overflow-hidden print-card">
+                        <div className="rounded-xl border border-gray-200 bg-[#0A0D12] overflow-hidden print-card">
                             <div className="px-6 py-4 border-b border-white/8 flex items-center gap-2">
                                 <div className="w-1 h-5 rounded bg-cyan-500" />
                                 <ScrollText className="h-4 w-4 text-cyan-400" />
-                                <h2 className="font-bold text-white">Full Strix Report</h2>
+                                <h2 className="font-bold text-gray-900">Full Strix Report</h2>
                             </div>
                             <div className="p-6">
                                 <MarkdownBlock text={review.final_report} />
@@ -689,11 +689,11 @@ export default function ScanReportPage() {
                     <div className="flex items-center justify-between pt-4 pb-2 border-t border-white/8">
                         <div className="flex items-center gap-2">
                             <div className="w-5 h-5 rounded bg-[#0052FF] flex items-center justify-center">
-                                <Shield className="h-3 w-3 text-white" />
+                                <Shield className="h-3 w-3 text-gray-900" />
                             </div>
-                            <span className="text-xs text-white/40 font-mono">Zentinel Security Platform · zentinel.dev</span>
+                            <span className="text-xs text-gray-500 font-mono">Zentinel Security Platform · zentinel.dev</span>
                         </div>
-                        <div className="text-xs text-white/30 font-mono">
+                        <div className="text-xs text-gray-400 font-mono">
                             Generated {scanDate} · Confidential
                         </div>
                     </div>

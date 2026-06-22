@@ -49,7 +49,7 @@ function ProviderIcon({ provider }: { provider?: string }) {
     if (provider === 'github') return <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white/70" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" /></svg>;
     if (provider === 'gitlab') return <span className="text-[10px] font-bold text-[#FC6D26]">GL</span>;
     if (provider === 'bitbucket') return <span className="text-[10px] font-bold text-[#2684FF]">BB</span>;
-    return <GitPullRequest className="h-4 w-4 text-white/40" />;
+    return <GitPullRequest className="h-4 w-4 text-gray-500" />;
 }
 
 function FindingsBadges({ review }: { review: any }) {
@@ -81,7 +81,7 @@ function Dropdown({ label, options, value, onChange }: {
     }, []);
     return (
         <div className="relative" ref={ref}>
-            <button onClick={() => setOpen(!open)} className="flex items-center gap-2 bg-[#0D1117] border border-[var(--color-border)] rounded-lg px-4 py-2 text-sm text-white hover:border-white/30 transition-colors whitespace-nowrap min-w-[140px]">
+            <button onClick={() => setOpen(!open)} className="flex items-center gap-2 bg-[#0D1117] border border-[var(--color-border)] rounded-lg px-4 py-2 text-sm text-gray-900 hover:border-white/30 transition-colors whitespace-nowrap min-w-[140px]">
                 <span className="flex-1 text-left">{selected?.label || label}</span>
                 <ChevronDown className={`h-4 w-4 text-[var(--color-textMuted)] transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
@@ -89,8 +89,8 @@ function Dropdown({ label, options, value, onChange }: {
                 <div className="absolute top-11 left-0 z-50 bg-[#0D1117] border border-[var(--color-border)] rounded-xl shadow-2xl py-1 w-44 animate-in fade-in slide-in-from-top-1 duration-150">
                     {options.map(opt => (
                         <button key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
-                            className="w-full text-left flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">
-                            <span className={value === opt.value ? "text-white font-medium" : "text-[var(--color-textSecondary)]"}>{opt.label}</span>
+                            className="w-full text-left flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-gray-100 transition-colors">
+                            <span className={value === opt.value ? "text-gray-900 font-medium" : "text-[var(--color-textSecondary)]"}>{opt.label}</span>
                             {value === opt.value && <Check className="h-3.5 w-3.5 text-[var(--color-cyan)]" />}
                         </button>
                     ))}
@@ -112,14 +112,14 @@ function Pagination({ total, page, pageSize, onPageChange, onPageSizeChange }: {
                 <div className="flex gap-1">
                     {[25, 50].map(size => (
                         <button key={size} onClick={() => { onPageSizeChange(size); onPageChange(1); }}
-                            className={`px-3 py-1 rounded text-xs font-mono transition-colors ${pageSize === size ? "bg-[var(--color-cyan)] text-black font-bold" : "bg-white/5 hover:bg-white/10 text-[var(--color-textSecondary)]"}`}>{size}</button>
+                            className={`px-3 py-1 rounded text-xs font-mono transition-colors ${pageSize === size ? "bg-[var(--color-cyan)] text-black font-bold" : "bg-gray-100 hover:bg-gray-100 text-[var(--color-textSecondary)]"}`}>{size}</button>
                     ))}
                 </div>
                 <span className="text-[var(--color-textMuted)]">{((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}</span>
             </div>
             <div className="flex items-center gap-1">
                 <button onClick={() => onPageChange(page - 1)} disabled={page === 1}
-                    className="p-1.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                     <ChevronLeft className="h-4 w-4" />
                 </button>
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -131,11 +131,11 @@ function Pagination({ total, page, pageSize, onPageChange, onPageSizeChange }: {
                     }
                     return (
                         <button key={p} onClick={() => onPageChange(p)}
-                            className={`w-8 h-8 rounded text-xs font-mono transition-colors ${page === p ? "bg-[var(--color-cyan)] text-black font-bold" : "hover:bg-white/10"}`}>{p}</button>
+                            className={`w-8 h-8 rounded text-xs font-mono transition-colors ${page === p ? "bg-[var(--color-cyan)] text-black font-bold" : "hover:bg-gray-100"}`}>{p}</button>
                     );
                 })}
                 <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages}
-                    className="p-1.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                     <ChevronRight className="h-4 w-4" />
                 </button>
             </div>
@@ -166,11 +166,11 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-[#0A0D12]/95 backdrop-blur border-b border-[var(--color-border)] px-6 py-5 flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5">
+                        <div className="p-2 rounded-lg bg-gray-100">
                             <ProviderIcon provider={review.provider} />
                         </div>
                         <div>
-                            <h2 className="font-syne font-bold text-white text-lg leading-tight line-clamp-1">
+                            <h2 className="font-syne font-bold text-gray-900 text-lg leading-tight line-clamp-1">
                                 {review.pr_title || "Untitled Scan"}
                             </h2>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -191,7 +191,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0">
+                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0">
                         <X className="h-5 w-5 text-white/60" />
                     </button>
                 </div>
@@ -200,7 +200,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                     {/* Summary Cards */}
                     <div className="grid grid-cols-3 gap-3">
                         <div className="bg-white/4 border border-white/8 rounded-xl p-4 text-center">
-                            <div className="text-2xl font-bold font-mono text-white">{review.issues_found ?? '—'}</div>
+                            <div className="text-2xl font-bold font-mono text-gray-900">{review.issues_found ?? '—'}</div>
                             <div className="text-xs text-[var(--color-textMuted)] mt-1">Total Findings</div>
                         </div>
                         <div className="bg-white/4 border border-white/8 rounded-xl p-4 text-center">
@@ -215,7 +215,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold font-mono text-white/30">—</div>
+                                    <div className="text-2xl font-bold font-mono text-gray-400">—</div>
                                     <div className="text-xs text-[var(--color-textMuted)] mt-1">Scan Duration</div>
                                 </>
                             )}
@@ -237,14 +237,14 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Layers className="h-4 w-4 text-[var(--color-cyan)]" />
-                            <h3 className="text-sm font-syne font-semibold text-white">Analysis Phases</h3>
+                            <h3 className="text-sm font-syne font-semibold text-gray-900">Analysis Phases</h3>
                         </div>
                         <div className="space-y-2">
                             {SCAN_PHASES.map((phase) => (
                                 <div key={phase.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/3 border border-white/6">
                                     <span className="text-lg">{phase.icon}</span>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium text-white">Phase {phase.id}: {phase.name}</div>
+                                        <div className="text-sm font-medium text-gray-900">Phase {phase.id}: {phase.name}</div>
                                         <div className="text-xs text-[var(--color-textMuted)] mt-0.5">{phase.desc}</div>
                                     </div>
                                     {review.status === 'completed' ? (
@@ -264,7 +264,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <ShieldAlert className="h-4 w-4 text-[var(--color-cyan)]" />
-                                <h3 className="text-sm font-syne font-semibold text-white">
+                                <h3 className="text-sm font-syne font-semibold text-gray-900">
                                     Findings {(review.issues_found ?? 0) > 0 ? `(${review.issues_found})` : ''}
                                 </h3>
                             </div>
@@ -293,7 +293,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <FileText className="h-4 w-4 text-[var(--color-cyan)]" />
-                                <h3 className="text-sm font-syne font-semibold text-white">Strix Final Report</h3>
+                                <h3 className="text-sm font-syne font-semibold text-gray-900">Strix Final Report</h3>
                             </div>
                             <div className="bg-black/40 border border-white/8 rounded-xl p-4 max-h-80 overflow-y-auto">
                                 <pre className="text-xs text-[var(--color-textSecondary)] whitespace-pre-wrap font-mono leading-relaxed">
@@ -307,7 +307,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Terminal className="h-4 w-4 text-[var(--color-cyan)]" />
-                            <h3 className="text-sm font-syne font-semibold text-white">Scan Metadata</h3>
+                            <h3 className="text-sm font-syne font-semibold text-gray-900">Scan Metadata</h3>
                         </div>
                         <div className="bg-black/40 border border-white/8 rounded-xl divide-y divide-white/6 overflow-hidden">
                             {[
@@ -322,7 +322,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                             ].map(([k, v]) => (
                                 <div key={k} className="flex items-center justify-between px-4 py-2.5">
                                     <span className="text-xs text-[var(--color-textMuted)]">{k}</span>
-                                    <span className="text-xs text-white font-mono">{v}</span>
+                                    <span className="text-xs text-gray-900 font-mono">{v}</span>
                                 </div>
                             ))}
                         </div>
@@ -331,7 +331,7 @@ function ScanDetailModal({ review, onClose }: { review: any; onClose: () => void
                     {/* Link to PR */}
                     {review.pr_url && (
                         <a href={review.pr_url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[var(--color-border)] text-sm text-[var(--color-textSecondary)] hover:text-white hover:border-white/20 transition-colors">
+                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[var(--color-border)] text-sm text-[var(--color-textSecondary)] hover:text-gray-900 hover:border-white/20 transition-colors">
                             <ExternalLink className="h-4 w-4" />
                             View PR on {review.provider === 'github' ? 'GitHub' : review.provider === 'gitlab' ? 'GitLab' : 'Bitbucket'}
                         </a>
@@ -351,13 +351,13 @@ function FindingCard({ finding }: { finding: any }) {
         <div className={`rounded-xl border overflow-hidden ${sevClass} bg-opacity-5`}>
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 transition-colors"
             >
                 <span className={`flex-shrink-0 text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${sevClass}`}>
                     {sev.toUpperCase()}
                 </span>
-                <span className="flex-1 text-sm text-white font-medium line-clamp-1">{finding.title}</span>
-                <Chevron className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                <span className="flex-1 text-sm text-gray-900 font-medium line-clamp-1">{finding.title}</span>
+                <Chevron className={`h-4 w-4 flex-shrink-0 text-gray-500 transition-transform ${expanded ? 'rotate-90' : ''}`} />
             </button>
             {expanded && (
                 <div className="px-4 pb-4 space-y-3 border-t border-white/8">
@@ -368,7 +368,7 @@ function FindingCard({ finding }: { finding: any }) {
                     {finding.file_path && (
                         <div>
                             <div className="text-xs text-[var(--color-textMuted)] uppercase tracking-wider mb-1">File</div>
-                            <code className="text-xs text-cyan-400 bg-white/5 px-2 py-1 rounded font-mono">{finding.file_path}</code>
+                            <code className="text-xs text-cyan-400 bg-gray-100 px-2 py-1 rounded font-mono">{finding.file_path}</code>
                         </div>
                     )}
                     {(finding.poc_description || finding.poc_script_code) && (
@@ -474,7 +474,7 @@ export default function PRReviewsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-syne font-bold text-white tracking-tight">PR Reviews</h1>
+                    <h1 className="text-3xl font-syne font-bold text-gray-900 tracking-tight">PR Reviews</h1>
                     <p className="text-[var(--color-textSecondary)] mt-1">
                         Automated security reviews on pull requests across connected repositories.
                         {activeCount > 0 && (
@@ -498,11 +498,11 @@ export default function PRReviewsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-textMuted)]" />
                     <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Search repository, title, or PR number..."
-                        className="w-full bg-[#0D1117] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-cyan)] transition-colors" />
+                        className="w-full bg-[#0D1117] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-[var(--color-cyan)] transition-colors" />
                 </div>
                 <Dropdown label="All Status" options={PR_STATUSES} value={statusFilter} onChange={setStatusFilter} />
                 {hasFilters && (
-                    <button onClick={() => { setSearch(""); setStatusFilter("all"); }} className="text-xs text-[var(--color-textMuted)] hover:text-white transition-colors underline">
+                    <button onClick={() => { setSearch(""); setStatusFilter("all"); }} className="text-xs text-[var(--color-textMuted)] hover:text-gray-900 transition-colors underline">
                         Clear filters
                     </button>
                 )}
@@ -541,7 +541,7 @@ export default function PRReviewsPage() {
                                     <td colSpan={7}>
                                         <div className="flex flex-col items-center justify-center py-16 text-center">
                                             <GitPullRequest className="h-10 w-10 text-[var(--color-textMuted)] mb-4" />
-                                            <h3 className="text-lg font-syne font-medium text-white mb-2">
+                                            <h3 className="text-lg font-syne font-medium text-gray-900 mb-2">
                                                 {reviews.length === 0 ? "No PR reviews yet" : "No results"}
                                             </h3>
                                             <p className="text-[var(--color-textSecondary)] max-w-sm mx-auto mb-6">
@@ -559,18 +559,18 @@ export default function PRReviewsPage() {
                                 </tr>
                             ) : (
                                 paginated.map(r => {
-                                    const statusClass = STATUS_COLORS[r.status] || "text-gray-400 bg-white/5 border border-white/10";
+                                    const statusClass = STATUS_COLORS[r.status] || "text-gray-400 bg-gray-100 border border-gray-200";
                                     const isActive = r.status === 'pending' || r.status === 'running';
                                     const isFullRepo = r.trigger_source === 'full_repo';
                                     return (
                                         <tr key={r.id}
                                             onClick={() => router.push(`/dashboard/pr-reviews/${r.id}`)}
-                                            className="hover:bg-white/5 transition-colors group cursor-pointer">
+                                            className="hover:bg-gray-100 transition-colors group cursor-pointer">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <ProviderIcon provider={r.provider} />
                                                     <div>
-                                                        <div className="font-medium text-white group-hover:text-[var(--color-cyan)] transition-colors line-clamp-1 max-w-[200px]">
+                                                        <div className="font-medium text-gray-900 group-hover:text-[var(--color-cyan)] transition-colors line-clamp-1 max-w-[200px]">
                                                             {r.pr_title || "Untitled"}
                                                         </div>
                                                         <div className="text-xs text-[var(--color-textMuted)] font-mono mt-0.5">
@@ -616,7 +616,7 @@ export default function PRReviewsPage() {
                                             <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                                                 {r.pr_url ? (
                                                     <a href={r.pr_url} target="_blank" rel="noopener noreferrer"
-                                                        className="text-[var(--color-textMuted)] hover:text-[var(--color-cyan)] transition-colors p-1 rounded hover:bg-white/10 inline-flex">
+                                                        className="text-[var(--color-textMuted)] hover:text-[var(--color-cyan)] transition-colors p-1 rounded hover:bg-gray-100 inline-flex">
                                                         <ExternalLink className="h-4 w-4" />
                                                     </a>
                                                 ) : <span className="text-[var(--color-textMuted)] text-xs">—</span>}

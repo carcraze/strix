@@ -254,14 +254,14 @@ export default function SolvedPage() {
                         className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors",
                             showFilters
-                                ? "bg-gray-900 text-white border-gray-900"
+                                ? "bg-gray-900 text-gray-900 border-gray-900"
                                 : "border-gray-200 text-gray-700 hover:bg-gray-50",
                         )}
                     >
                         <SlidersHorizontal className="h-3.5 w-3.5" />
                         Filters
                         {hasActiveFilters && (
-                            <span className="ml-1 h-4 w-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">!</span>
+                            <span className="ml-1 h-4 w-4 rounded-full bg-blue-600 text-gray-900 text-[10px] flex items-center justify-center font-bold">!</span>
                         )}
                     </button>
 
@@ -296,7 +296,7 @@ export default function SolvedPage() {
                                 className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors",
                                     quickFilter === "recent"
-                                        ? "bg-gray-900 text-white border-gray-900"
+                                        ? "bg-gray-900 text-gray-900 border-gray-900"
                                         : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100",
                                 )}
                             >
@@ -309,7 +309,7 @@ export default function SolvedPage() {
                                 className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors",
                                     quickFilter === "frontend"
-                                        ? "bg-gray-900 text-white border-gray-900"
+                                        ? "bg-gray-900 text-gray-900 border-gray-900"
                                         : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100",
                                 )}
                             >
@@ -322,7 +322,7 @@ export default function SolvedPage() {
                                 className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors",
                                     quickFilter === "backend"
-                                        ? "bg-gray-900 text-white border-gray-900"
+                                        ? "bg-gray-900 text-gray-900 border-gray-900"
                                         : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100",
                                 )}
                             >

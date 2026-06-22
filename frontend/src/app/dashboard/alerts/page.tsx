@@ -84,15 +84,15 @@ export default function AlertsPage() {
                         </h3>
                         <div className="flex gap-2">
                             <Tag color="cyan" className="cursor-pointer hover:bg-[var(--color-cyan)]/20">All</Tag>
-                            <Tag color="default" className="cursor-pointer hover:bg-white/10">Vulnerabilities</Tag>
-                            <Tag color="default" className="cursor-pointer hover:bg-white/10">System</Tag>
+                            <Tag color="default" className="cursor-pointer hover:bg-gray-100">Vulnerabilities</Tag>
+                            <Tag color="default" className="cursor-pointer hover:bg-gray-100">System</Tag>
                         </div>
                     </div>
 
                     <div className="flex-1 overflow-auto p-0">
                         <div className="divide-y divide-[var(--color-border)]">
                             {mockPulseFeed.map((event) => (
-                                <div key={event.id} className={`p-4 sm:p-6 flex gap-4 transition-colors hover:bg-white/5 ${event.bgPath}`}>
+                                <div key={event.id} className={`p-4 sm:p-6 flex gap-4 transition-colors hover:bg-gray-100 ${event.bgPath}`}>
                                     <div className="shrink-0 mt-1">
                                         <event.icon className={`h-5 w-5 ${event.iconColor}`} />
                                     </div>
@@ -161,19 +161,19 @@ export default function AlertsPage() {
                                 />
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" className="flex-1 border-[var(--color-border)] hover:bg-white/5">Test</Button>
+                                <Button variant="outline" size="sm" className="flex-1 border-[var(--color-border)] hover:bg-gray-100">Test</Button>
                                 <Button variant="outline" size="sm" className="flex-1 text-[var(--color-red)] border-[var(--color-red)]/20 hover:bg-[var(--color-red)]/10">Remove</Button>
                             </div>
                         </div>
                     </Card>
 
                     <Card className="p-6 flex-1 border-dashed border-[var(--color-border)] bg-transparent flex flex-col items-center justify-center text-center">
-                        <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                        <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                             <AlertTriangle className="h-6 w-6 text-[var(--color-green)]" />
                         </div>
                         <h4 className="font-bold text-[var(--color-textPrimary)] mb-1">PagerDuty</h4>
                         <p className="text-xs text-[var(--color-textSecondary)] mb-4 max-w-[200px]">Send high severity alerts directly to your on-call team.</p>
-                        <Button size="sm" className="bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold">
+                        <Button size="sm" className="bg-gray-100 border border-gray-200 hover:bg-gray-100 text-gray-900 font-bold">
                             <Webhook className="h-3 w-3 mr-2" /> Connect
                         </Button>
                     </Card>

@@ -292,7 +292,7 @@ export default function RepositoriesPage() {
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Toast Notification */}
             {toast && (
-                <div className="fixed top-6 right-6 z-[100] bg-[#111] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top-2 duration-300 max-w-sm">
+                <div className="fixed top-6 right-6 z-[100] bg-[#111] border border-gray-200 text-gray-900 text-sm px-5 py-3 rounded-xl shadow-2xl animate-in slide-in-from-top-2 duration-300 max-w-sm">
                     {toast}
                 </div>
             )}
@@ -301,12 +301,12 @@ export default function RepositoriesPage() {
             {scanModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-                        <div className="p-6 pb-4 flex items-start justify-between border-b border-white/[0.06]">
+                        <div className="p-6 pb-4 flex items-start justify-between border-b border-gray-200">
                             <div>
-                                <h2 className="text-xl font-syne font-bold text-white">Manual Scan</h2>
-                                <p className="text-sm text-white/40 mt-1 font-mono truncate max-w-xs">{scanModal.repo.full_name}</p>
+                                <h2 className="text-xl font-syne font-bold text-gray-900">Manual Scan</h2>
+                                <p className="text-sm text-gray-500 mt-1 font-mono truncate max-w-xs">{scanModal.repo.full_name}</p>
                             </div>
-                            <button onClick={() => setScanModal(null)} className="text-white/30 hover:text-white transition-colors">
+                            <button onClick={() => setScanModal(null)} className="text-gray-400 hover:text-gray-900 transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -315,13 +315,13 @@ export default function RepositoriesPage() {
                             <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
                                 <button
                                     onClick={() => { setScanMode('pr'); setScanInput(''); }}
-                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'pr' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
+                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'pr' ? 'bg-white text-black' : 'bg-transparent text-gray-500 hover:text-gray-900'}`}
                                 >
                                     PR Scan
                                 </button>
                                 <button
                                     onClick={() => { setScanMode('full_repo'); setScanInput(''); }}
-                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'full_repo' ? 'bg-white text-black' : 'bg-transparent text-white/50 hover:text-white'}`}
+                                    className={`flex-1 py-2 text-sm font-medium transition-colors ${scanMode === 'full_repo' ? 'bg-white text-black' : 'bg-transparent text-gray-500 hover:text-gray-900'}`}
                                 >
                                     Full Repo Scan
                                 </button>
@@ -329,7 +329,7 @@ export default function RepositoriesPage() {
                                                 {/* Input */}
                             {scanMode === 'pr' ? (
                                 fetchingPRs ? (
-                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 flex flex-row items-center font-mono">
+                                    <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-gray-500 flex flex-row items-center font-mono">
                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                         Fetching open pull requests...
                                     </div>
@@ -341,22 +341,22 @@ export default function RepositoriesPage() {
                                     <select
                                         value={scanInput}
                                         onChange={e => setScanInput(e.target.value)}
-                                        className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/20 transition-colors appearance-none font-mono"
+                                        className="w-full bg-white/[0.04] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-white/20 transition-colors appearance-none font-mono"
                                     >
                                         <option value="" disabled>Select an open PR...</option>
                                         {scanModal.prs.map((pr: any) => (
-                                            <option key={pr.number} value={pr.number} className="bg-[#111] text-white">
+                                            <option key={pr.number} value={pr.number} className="bg-[#111] text-gray-900">
                                                 #{pr.number}: {pr.title}
                                             </option>
                                         ))}
                                     </select>
                                 )
                             ) : (
-                                <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 font-mono">
+                                <div className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-gray-500 font-mono">
                                     Full repository scan on default branch ({scanModal.repo.default_branch || 'main'})
                                 </div>
                             )}
-                            <p className="text-xs text-white/30">
+                            <p className="text-xs text-gray-400">
                                 {scanMode === 'pr'
                                     ? 'Select an open pull request to run a security review.'
                                     : 'Perform a full deep scan of the entire repository codebase. Results will appear in the Issues dashboard.'}
@@ -365,7 +365,7 @@ export default function RepositoriesPage() {
                         <div className="px-6 pb-6 flex gap-3">
                             <button
                                 onClick={() => setScanModal(null)}
-                                className="flex-1 py-2 rounded-lg border border-white/10 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
+                                className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-white/60 hover:text-gray-900 hover:border-white/20 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -385,7 +385,7 @@ export default function RepositoriesPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-syne font-bold text-white tracking-tight">Repositories</h1>
+                    <h1 className="text-3xl font-syne font-bold text-gray-900 tracking-tight">Repositories</h1>
                     <p className="text-[var(--color-textSecondary)] mt-1">Manage source code for white-box scanning and PR reviews.</p>
                 </div>
                 <button
@@ -404,12 +404,12 @@ export default function RepositoriesPage() {
                     <div className="bg-[#080808] border border-white/[0.08] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
 
                         {/* Modal Header */}
-                        <div className="p-6 pb-4 flex items-start justify-between border-b border-white/[0.06]">
+                        <div className="p-6 pb-4 flex items-start justify-between border-b border-gray-200">
                             <div>
-                                <h2 className="text-xl font-syne font-bold text-white">Add Repositories</h2>
-                                <p className="text-sm text-white/40 mt-1">Select from your connected integrations</p>
+                                <h2 className="text-xl font-syne font-bold text-gray-900">Add Repositories</h2>
+                                <p className="text-sm text-gray-500 mt-1">Select from your connected integrations</p>
                             </div>
-                            <button onClick={() => setIsAddModalOpen(false)} className="text-white/30 hover:text-white transition-colors">
+                            <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -422,13 +422,13 @@ export default function RepositoriesPage() {
                                     onClick={() => switchProvider(p.id)}
                                     className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeProvider === p.id
                                         ? 'bg-white/10 text-white'
-                                        : 'text-white/40 hover:text-white'
+                                        : 'text-gray-500 hover:text-gray-900'
                                         } ${!connectedProviders.includes(p.id) ? 'opacity-40 cursor-not-allowed' : ''}`}
                                     disabled={!connectedProviders.includes(p.id)}
                                 >
                                     {providerIcon(p.id)}
                                     {p.label}
-                                    {!connectedProviders.includes(p.id) && <span className="text-[10px] text-white/30">(not connected)</span>}
+                                    {!connectedProviders.includes(p.id) && <span className="text-[10px] text-gray-400">(not connected)</span>}
                                 </button>
                             ))}
                         </div>
@@ -436,13 +436,13 @@ export default function RepositoriesPage() {
                         {/* Search */}
                         <div className="px-6 py-3">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Search repositories..."
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
-                                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
+                                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
                                     autoFocus
                                 />
                             </div>
@@ -451,14 +451,14 @@ export default function RepositoriesPage() {
                         {/* Repo List */}
                         <div className="px-6 pb-4 flex-1 overflow-y-auto min-h-[240px]">
                             {fetchingRepos ? (
-                                <div className="flex items-center justify-center h-40 text-white/30">
+                                <div className="flex items-center justify-center h-40 text-gray-400">
                                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                                     <span className="text-sm">Loading repositories...</span>
                                 </div>
                             ) : availableRepos.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-center">
                                     <Layers className="h-8 w-8 text-white/20 mb-2" />
-                                    <p className="text-sm text-white/40">
+                                    <p className="text-sm text-gray-500">
                                         {connectedProviders.includes(activeProvider)
                                             ? 'No repositories found'
                                             : `Connect ${PROVIDERS.find(p => p.id === activeProvider)?.label} first`
@@ -482,11 +482,11 @@ export default function RepositoriesPage() {
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="shrink-0 text-white/50">
+                                                    <div className="shrink-0 text-gray-500">
                                                         {repo.private ? <Lock className="h-3.5 w-3.5" /> : <Globe className="h-3.5 w-3.5" />}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-white truncate">{repo.name}</p>
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{repo.name}</p>
                                                         {repo.description && (
                                                             <p className="text-xs text-white/35 truncate mt-0.5">{repo.description}</p>
                                                         )}
@@ -494,14 +494,14 @@ export default function RepositoriesPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0 ml-3">
                                                     {repo.language && (
-                                                        <span className="text-[10px] text-white/30 font-mono">{repo.language}</span>
+                                                        <span className="text-[10px] text-gray-400 font-mono">{repo.language}</span>
                                                     )}
                                                     {isAdded ? (
                                                         <Check className="h-4 w-4 text-emerald-400" />
                                                     ) : isAdding ? (
                                                         <Loader2 className="h-4 w-4 text-[var(--color-cyan)] animate-spin" />
                                                     ) : (
-                                                        <Plus className="h-4 w-4 text-white/30 hover:text-white transition-colors" />
+                                                        <Plus className="h-4 w-4 text-gray-400 hover:text-gray-900 transition-colors" />
                                                     )}
                                                 </div>
                                             </button>
@@ -512,12 +512,12 @@ export default function RepositoriesPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-5 bg-black/30 border-t border-white/[0.06] flex items-center justify-between">
-                            <Link href="/dashboard/integrations" className="flex items-center gap-2 text-sm text-white/30 hover:text-white transition-colors">
+                        <div className="p-5 bg-black/30 border-t border-gray-200 flex items-center justify-between">
+                            <Link href="/dashboard/integrations" className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-900 transition-colors">
                                 <Settings className="h-4 w-4" />
                                 Manage integrations
                             </Link>
-                            <button onClick={() => setIsAddModalOpen(false)} className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors border border-white/5">
+                            <button onClick={() => setIsAddModalOpen(false)} className="bg-white/10 hover:bg-white/20 text-gray-900 text-sm font-medium py-2 px-5 rounded-lg transition-colors border border-white/5">
                                 Close
                             </button>
                         </div>
@@ -532,7 +532,7 @@ export default function RepositoriesPage() {
                     <input
                         type="text"
                         placeholder="Filter added repositories..."
-                        className="w-full bg-[var(--color-bgCard)] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#A855F7] transition-colors"
+                        className="w-full bg-[var(--color-bgCard)] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-[#A855F7] transition-colors"
                     />
                 </div>
             </div>
@@ -562,7 +562,7 @@ export default function RepositoriesPage() {
                                     <td colSpan={4}>
                                         <div className="flex flex-col items-center justify-center py-16 text-center">
                                             <Layers className="h-10 w-10 text-[var(--color-textMuted)] mb-4" />
-                                            <h3 className="text-lg font-syne font-medium text-white mb-2">No repositories connected</h3>
+                                            <h3 className="text-lg font-syne font-medium text-gray-900 mb-2">No repositories connected</h3>
                                             <p className="text-[var(--color-textSecondary)] max-w-sm mx-auto mb-6">
                                                 Click <strong>Add Repository</strong> to pick repos from your connected GitHub, GitLab, or Bitbucket account.
                                             </p>
@@ -579,9 +579,9 @@ export default function RepositoriesPage() {
                                 repositories
                                     .slice((currentPage - 1) * reposPerPage, currentPage * reposPerPage)
                                     .map((repo) => (
-                                        <tr key={repo.id} className="hover:bg-white/5 transition-colors group">
+                                        <tr key={repo.id} className="hover:bg-gray-100 transition-colors group">
                                             <td className="px-6 py-4">
-                                                <Link href={`/dashboard/repositories/${repo.id}`} className="font-medium text-white flex items-center gap-2 hover:text-[#A855F7] transition-colors w-fit">
+                                                <Link href={`/dashboard/repositories/${repo.id}`} className="font-medium text-gray-900 flex items-center gap-2 hover:text-[#A855F7] transition-colors w-fit">
                                                     {repo.provider === 'github' ? <Github className="h-4 w-4" /> : <GitBranch className="h-4 w-4 text-[var(--color-textMuted)]" />}
                                                     {repo.full_name || repo.name}
                                                 </Link>
@@ -595,7 +595,7 @@ export default function RepositoriesPage() {
                                                         Active
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="bg-white/5 text-white/40 border-white/10">
+                                                    <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
                                                         Disabled
                                                     </Badge>
                                                 )}
@@ -613,7 +613,7 @@ export default function RepositoriesPage() {
                                                 <div className="flex items-center justify-end gap-3">
                                                     <button
                                                         onClick={() => handleScanNow(repo)}
-                                                        className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md transition-colors border border-white/5"
+                                                        className="inline-flex items-center gap-1.5 text-xs text-gray-900 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md transition-colors border border-white/5"
                                                     >
                                                         <Play className="h-3 w-3" /> Scan now
                                                     </button>
@@ -646,14 +646,14 @@ export default function RepositoriesPage() {
                             <button
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm text-white bg-white/5 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-1 text-sm text-gray-900 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Previous
                             </button>
                             <button
                                 onClick={() => setCurrentPage(p => Math.min(Math.ceil(repositories.length / reposPerPage), p + 1))}
                                 disabled={currentPage >= Math.ceil(repositories.length / reposPerPage)}
-                                className="px-3 py-1 text-sm text-white bg-white/5 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-1 text-sm text-gray-900 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Next
                             </button>

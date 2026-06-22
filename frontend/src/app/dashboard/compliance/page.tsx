@@ -55,7 +55,7 @@ export default function CompliancePage() {
                     <p className="text-[var(--color-textSecondary)] mt-1 font-mono text-sm">Continuous control monitoring across industry frameworks.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="border-[var(--color-border)] hover:bg-white/5">
+                    <Button variant="outline" className="border-[var(--color-border)] hover:bg-gray-100">
                         <FileText className="h-4 w-4 mr-2" /> Framework Settings
                     </Button>
                     <Button className="bg-[var(--color-cyan)] text-[var(--background)] hover:bg-[var(--color-cyan)]/90 font-bold">
