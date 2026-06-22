@@ -53,7 +53,7 @@ const NAV = [
         section: "MANAGE",
         items: [
             { icon: Plug,     label: "Integrations", href: "/dashboard/integrations" },
-            { icon: Settings, label: "Settings",     href: "/dashboard/settings/general" },
+            { icon: Settings, label: "Settings",     href: "/dashboard/settings" },
         ],
     },
 ];
