@@ -340,14 +340,15 @@ export default function TasksPage() {
             .eq('organization_id', activeWorkspace?.id);
 
         const match = members?.find((m: any) => {
-            const profile = m.user_profiles;
+            const profile = Array.isArray(m.user_profiles) ? m.user_profiles[0] : m.user_profiles;
             if (!profile) return false;
             const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim().toLowerCase();
             return fullName.includes(name.toLowerCase()) || profile.email?.toLowerCase().includes(name.toLowerCase());
         });
 
+        const matchProfile = match ? (Array.isArray(match.user_profiles) ? match.user_profiles[0] : match.user_profiles) : null;
         const assignedTo = match?.user_id || null;
-        const assignedName = match ? `${match.user_profiles?.first_name || ''} ${match.user_profiles?.last_name || ''}`.trim() : name;
+        const assignedName = matchProfile ? `${matchProfile.first_name || ''} ${matchProfile.last_name || ''}`.trim() : name;
 
         await supabase.from('tasks').update({
             status: 'delegated',

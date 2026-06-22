@@ -498,7 +498,16 @@ function PullRequestsTab({
 // TAB 3: Checks
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const CHECK_CATEGORIES = [
+type CheckAction = { label: string; type: "button" | "link" | "green-pill"; subView?: CheckSubView };
+
+const CHECK_CATEGORIES: {
+  id: string;
+  icon: any;
+  title: string;
+  description: string;
+  link?: { label: string; href: string };
+  actions?: CheckAction[];
+}[] = [
   {
     id: "dependency",
     icon: Package,
@@ -519,8 +528,8 @@ const CHECK_CATEGORIES = [
     title: "SAST",
     description: "Static application security testing.",
     actions: [
-      { label: "Create custom rule", type: "button" as const },
-      { label: "View SAST rules", type: "link" as const, subView: "sast" as CheckSubView },
+      { label: "Create custom rule", type: "button" },
+      { label: "View SAST rules", type: "link", subView: "sast" },
     ],
   },
   {
@@ -529,8 +538,8 @@ const CHECK_CATEGORIES = [
     title: "AI Code Audit",
     description: "Run a one-off AI code audit. Credits are required.",
     actions: [
-      { label: "Try now", type: "green-pill" as const },
-      { label: "View AI Code Audits", type: "link" as const },
+      { label: "Try now", type: "green-pill" },
+      { label: "View AI Code Audits", type: "link" },
     ],
   },
   {
@@ -539,7 +548,7 @@ const CHECK_CATEGORIES = [
     title: "IaC",
     description: "Infrastructure as Code testing. Check which files we can monitor in your application.",
     actions: [
-      { label: "View IaC rules", type: "link" as const, subView: "iac" as CheckSubView },
+      { label: "View IaC rules", type: "link", subView: "iac" },
     ],
   },
   {
@@ -548,7 +557,7 @@ const CHECK_CATEGORIES = [
     title: "Container Images",
     description: "Zentinel checks container images for vulnerabilities.",
     actions: [
-      { label: "View container rules", type: "link" as const },
+      { label: "View container rules", type: "link" },
     ],
   },
   {
@@ -557,7 +566,7 @@ const CHECK_CATEGORIES = [
     title: "Mobile issues",
     description: "Mobile manifest file monitoring.",
     actions: [
-      { label: "View mobile rules", type: "link" as const, subView: "mobile" as CheckSubView },
+      { label: "View mobile rules", type: "link", subView: "mobile" },
     ],
   },
 ];
@@ -735,7 +744,7 @@ function ChecksTab({
                             return (
                               <button
                                 key={idx}
-                                onClick={() => (action as any).subView ? setCheckSubView((action as any).subView) : undefined}
+                                onClick={() => action.subView ? setCheckSubView(action.subView) : undefined}
                                 className="text-xs text-teal-600 hover:text-teal-700 font-medium"
                               >
                                 {action.label}
