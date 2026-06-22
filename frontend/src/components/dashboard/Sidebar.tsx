@@ -20,10 +20,13 @@ const NAV = [
     {
         section: "FEED",
         items: [
-            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard", exact: true },
-            { icon: BellOff,      label: "Snoozed", href: "/dashboard/issues/snoozed", subItem: true },
-            { icon: EyeOff,       label: "Ignored", href: "/dashboard/issues/ignored", subItem: true },
-            { icon: CheckCircle2, label: "Solved",  href: "/dashboard/issues/solved",  subItem: true },
+            { icon: LayoutGrid,   label: "Feed",    href: "/dashboard", exact: true, hasDropdown: true,
+              subItems: [
+                { icon: BellOff,      label: "Snoozed", href: "/dashboard/issues/snoozed" },
+                { icon: EyeOff,       label: "Ignored", href: "/dashboard/issues/ignored" },
+                { icon: CheckCircle2, label: "Solved",  href: "/dashboard/issues/solved" },
+              ]
+            },
             { icon: CheckSquare2, label: "Tasks",   href: "/dashboard/tasks" },
             { icon: Wrench,       label: "AutoFix", href: "/dashboard/fixes" },
         ],
@@ -177,24 +180,55 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (
                             {group.items.map((item) => {
                                 const isSubItem = !!(item as any).subItem;
                                 const active = isActive(item.href, (item as any).exact);
+                                const hasDropdown = !!(item as any).hasDropdown;
+                                const subItems = (item as any).subItems as { icon: any; label: string; href: string }[] | undefined;
 
                                 if (isSubItem) {
-                                    // Always-visible sub-item with indent
                                     if (collapsed) return null;
+                                    return null; // handled by dropdown now
+                                }
+
+                                // Dropdown item (Feed with sub-items)
+                                if (hasDropdown && subItems && !collapsed) {
                                     return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            className={cn(
-                                                "flex items-center gap-2 ml-6 pl-3 pr-2 py-1 rounded-md text-xs transition-colors border-l border-indigo-800/40",
-                                                active
-                                                    ? "text-sky-300 bg-sky-500/15"
-                                                    : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
-                                            )}
-                                        >
-                                            <item.icon className="h-3 w-3 shrink-0" />
-                                            {item.label}
-                                        </Link>
+                                        <div key={item.href}>
+                                            <Link
+                                                href={item.href}
+                                                className={cn(
+                                                    "flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-colors group",
+                                                    active
+                                                        ? "bg-sky-500/20 text-sky-300"
+                                                        : "text-indigo-200/70 hover:text-white hover:bg-indigo-800/30"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    {item.label}
+                                                </div>
+                                                <ChevronDown className="h-3.5 w-3.5 text-indigo-300/50" />
+                                            </Link>
+                                            {/* Always-visible sub-items */}
+                                            <div className="mt-0.5 space-y-0.5">
+                                                {subItems.map(sub => {
+                                                    const subActive = isActive(sub.href);
+                                                    return (
+                                                        <Link
+                                                            key={sub.href}
+                                                            href={sub.href}
+                                                            className={cn(
+                                                                "flex items-center gap-2 ml-6 pl-3 pr-2 py-1 rounded-md text-xs transition-colors border-l border-indigo-800/40",
+                                                                subActive
+                                                                    ? "text-sky-300 bg-sky-500/15"
+                                                                    : "text-indigo-200/60 hover:text-indigo-100 hover:bg-indigo-800/20"
+                                                            )}
+                                                        >
+                                                            <sub.icon className="h-3 w-3 shrink-0" />
+                                                            {sub.label}
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     );
                                 }
 
