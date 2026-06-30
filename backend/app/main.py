@@ -4,7 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
-from app.api.endpoints import scans, scan_logs, pr_reviews, code_scan, cto_scan, compliance
+from app.api.endpoints import scans, scan_logs, pr_reviews, code_scan, cto_scan
 
 # 🔐 SECURITY: Initialize rate limiter to prevent abuse
 limiter = Limiter(key_func=get_remote_address)
@@ -31,7 +31,6 @@ app.include_router(scan_logs.router)
 app.include_router(pr_reviews.router)
 app.include_router(code_scan.router)   # Day Zero code scanning pipeline
 app.include_router(cto_scan.router)    # CTO super admin pentest panel
-app.include_router(compliance.router)  # Compliance posture (Kenya & UK frameworks)
 
 @app.get("/")
 @limiter.limit("60/minute")  # Basic rate limit for health check
