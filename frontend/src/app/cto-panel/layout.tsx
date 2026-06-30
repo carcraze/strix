@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import {
     Shield, Loader2, FolderKanban, History, Users, FileText,
     Terminal, ChevronLeft, ChevronRight, Zap, BarChart3, Settings,
-    LogOut, Crosshair, Globe
+    LogOut, Crosshair, Globe, Sun, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
     const [authorized, setAuthorized] = useState(false);
     const [loading, setLoading] = useState(true);
     const [collapsed, setCollapsed] = useState(false);
+    const [isDark, setIsDark] = useState(true);
 
     useEffect(() => {
         const check = async () => {
@@ -49,6 +50,10 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
         // Load saved sidebar state
         const saved = localStorage.getItem("cto-sidebar");
         if (saved === "collapsed") setCollapsed(true);
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem("cto-theme");
+        if (savedTheme === "light") setIsDark(false);
     }, [router]);
 
     const toggleSidebar = () => {
@@ -57,14 +62,20 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
         localStorage.setItem("cto-sidebar", next ? "collapsed" : "expanded");
     };
 
+    const toggleTheme = () => {
+        const next = !isDark;
+        setIsDark(next);
+        localStorage.setItem("cto-theme", next ? "dark" : "light");
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center">
+            <div className={cn("min-h-screen flex items-center justify-center", isDark ? "bg-[#0f0f12]" : "bg-gray-50")}>
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                        <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
+                    <div className={cn("h-12 w-12 rounded-2xl border flex items-center justify-center", isDark ? "bg-indigo-600/20 border-indigo-500/30" : "bg-indigo-50 border-indigo-200")}>
+                        <Loader2 className={cn("h-5 w-5 animate-spin", isDark ? "text-indigo-400" : "text-indigo-600")} />
                     </div>
-                    <p className="text-sm text-gray-500 font-mono">Authenticating...</p>
+                    <p className={cn("text-sm font-mono", isDark ? "text-gray-500" : "text-gray-400")}>Authenticating...</p>
                 </div>
             </div>
         );
@@ -72,16 +83,53 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
 
     if (!authorized) return null;
 
+    // Theme tokens
+    const t = isDark ? {
+        bg: "bg-[#0f0f12]",
+        sidebarBg: "bg-[#0a0a0e]",
+        sidebarBorder: "border-white/[0.06]",
+        text: "text-gray-100",
+        textMuted: "text-gray-500",
+        textDim: "text-gray-600",
+        navActive: "bg-indigo-600/10 text-indigo-400",
+        navInactive: "text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]",
+        navIndicator: "bg-indigo-500",
+        divider: "bg-white/[0.04]",
+        sectionLabel: "text-gray-600",
+        profileBg: "bg-white/[0.02]",
+        profileName: "text-gray-300",
+        profileRole: "text-gray-600",
+        toggleText: "text-gray-600 hover:text-gray-300 hover:bg-white/[0.04]",
+    } : {
+        bg: "bg-gray-50",
+        sidebarBg: "bg-white",
+        sidebarBorder: "border-gray-200",
+        text: "text-gray-900",
+        textMuted: "text-gray-500",
+        textDim: "text-gray-400",
+        navActive: "bg-indigo-50 text-indigo-700",
+        navInactive: "text-gray-500 hover:text-gray-900 hover:bg-gray-100",
+        navIndicator: "bg-indigo-600",
+        divider: "bg-gray-200",
+        sectionLabel: "text-gray-400",
+        profileBg: "bg-gray-50",
+        profileName: "text-gray-700",
+        profileRole: "text-gray-400",
+        toggleText: "text-gray-400 hover:text-gray-700 hover:bg-gray-100",
+    };
+
     return (
-        <div className="min-h-screen bg-[#0f0f12] flex text-gray-100">
+        <div className={cn("min-h-screen flex", t.bg, t.text)}>
             {/* Sidebar */}
             <aside className={cn(
-                "sticky top-0 h-screen flex flex-col border-r border-white/[0.06] bg-[#0a0a0e] transition-all duration-300 z-40",
+                "sticky top-0 h-screen flex flex-col border-r transition-all duration-300 z-40",
+                t.sidebarBg, t.sidebarBorder,
                 collapsed ? "w-[60px]" : "w-[240px]"
             )}>
                 {/* Logo */}
                 <div className={cn(
-                    "flex items-center gap-3 border-b border-white/[0.06] h-14 px-4",
+                    "flex items-center gap-3 border-b h-14 px-4",
+                    t.sidebarBorder,
                     collapsed && "justify-center px-0"
                 )}>
                     <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
@@ -89,7 +137,7 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                     </div>
                     {!collapsed && (
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white tracking-tight">CTO Ops</span>
+                            <span className={cn("text-sm font-bold tracking-tight", isDark ? "text-white" : "text-gray-900")}>CTO Ops</span>
                             <span className="text-[10px] text-red-400 font-mono uppercase tracking-wider">Super Admin</span>
                         </div>
                     )}
@@ -98,7 +146,7 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                 {/* Nav */}
                 <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                     {!collapsed && (
-                        <p className="px-3 text-[10px] uppercase tracking-[0.15em] text-gray-600 font-medium mb-2">Operations</p>
+                        <p className={cn("px-3 text-[10px] uppercase tracking-[0.15em] font-medium mb-2", t.sectionLabel)}>Operations</p>
                     )}
                     {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
@@ -115,15 +163,13 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                                 className={cn(
                                     "flex items-center gap-3 rounded-lg transition-all group relative",
                                     collapsed ? "h-10 w-10 mx-auto justify-center" : "px-3 py-2.5",
-                                    active
-                                        ? "bg-indigo-600/10 text-indigo-400"
-                                        : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]"
+                                    active ? t.navActive : t.navInactive
                                 )}
                             >
                                 {active && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-indigo-500" />
+                                    <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full", t.navIndicator)} />
                                 )}
-                                <Icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-indigo-400")} />
+                                <Icon className="h-[18px] w-[18px] shrink-0" />
                                 {!collapsed && (
                                     <span className="text-[13px] font-medium">{item.name}</span>
                                 )}
@@ -131,10 +177,10 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                         );
                     })}
 
-                    <div className="h-px bg-white/[0.04] my-4" />
+                    <div className={cn("h-px my-4", t.divider)} />
 
                     {!collapsed && (
-                        <p className="px-3 text-[10px] uppercase tracking-[0.15em] text-gray-600 font-medium mb-2">System</p>
+                        <p className={cn("px-3 text-[10px] uppercase tracking-[0.15em] font-medium mb-2", t.sectionLabel)}>System</p>
                     )}
                     {BOTTOM_ITEMS.map((item) => {
                         const Icon = item.icon;
@@ -147,9 +193,7 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                                 className={cn(
                                     "flex items-center gap-3 rounded-lg transition-all",
                                     collapsed ? "h-10 w-10 mx-auto justify-center" : "px-3 py-2.5",
-                                    active
-                                        ? "bg-white/[0.06] text-white"
-                                        : "text-gray-600 hover:text-gray-300 hover:bg-white/[0.03]"
+                                    active ? t.navActive : t.navInactive
                                 )}
                             >
                                 <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -159,24 +203,38 @@ export default function CTOPanelLayout({ children }: { children: React.ReactNode
                     })}
                 </nav>
 
-                {/* Collapse toggle + profile */}
-                <div className="border-t border-white/[0.06] p-2 space-y-2">
+                {/* Bottom: theme toggle + collapse + profile */}
+                <div className={cn("border-t p-2 space-y-2", t.sidebarBorder)}>
+                    {/* Theme toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        className={cn(
+                            "w-full flex items-center justify-center gap-2 h-9 rounded-lg transition-colors",
+                            t.toggleText
+                        )}
+                        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                    >
+                        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                        {!collapsed && <span className="text-xs">{isDark ? "Light Mode" : "Dark Mode"}</span>}
+                    </button>
+
+                    {/* Collapse toggle */}
                     <button
                         onClick={toggleSidebar}
-                        className="w-full flex items-center justify-center gap-2 h-9 rounded-lg text-gray-600 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
+                        className={cn("w-full flex items-center justify-center gap-2 h-9 rounded-lg transition-colors", t.toggleText)}
                     >
                         {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                         {!collapsed && <span className="text-xs">Collapse</span>}
                     </button>
 
                     {!collapsed && (
-                        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02]">
+                        <div className={cn("flex items-center gap-3 px-3 py-2 rounded-lg", t.profileBg)}>
                             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
                                 A
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-300 truncate">Alvin</p>
-                                <p className="text-[10px] text-gray-600 truncate">CTO • Zentinel</p>
+                                <p className={cn("text-xs font-medium truncate", t.profileName)}>Alvin</p>
+                                <p className={cn("text-[10px] truncate", t.profileRole)}>CTO • Zentinel</p>
                             </div>
                         </div>
                     )}
