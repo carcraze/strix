@@ -386,7 +386,8 @@ export default function DomainsPage() {
                 {filteredDomains.map((d) => (
                   <tr
                     key={d.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    onClick={() => window.location.href = `/dashboard/domains/${d.id}`}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
