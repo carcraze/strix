@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
@@ -97,6 +98,7 @@ function domainTypeLabel(t: string): string {
 
 export default function DomainsPage() {
   const { activeWorkspace } = useWorkspace();
+  const router = useRouter();
 
   // Data
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -386,7 +388,7 @@ export default function DomainsPage() {
                 {filteredDomains.map((d) => (
                   <tr
                     key={d.id}
-                    onClick={() => window.location.href = `/dashboard/domains/${d.id}`}
+                    onClick={() => router.push(`/dashboard/domains/${d.id}`)}
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
