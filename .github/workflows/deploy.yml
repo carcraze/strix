@@ -93,6 +93,8 @@ jobs:
             --project=${{ env.GCP_PROJECT }} \
             --tunnel-through-iap \
             --quiet \
+            --ssh-flag="-o ServerAliveInterval=10" \
+            --ssh-flag="-o ServerAliveCountMax=3" \
             --command='
               set -e
               echo "=== Pulling latest code ==="
@@ -100,21 +102,22 @@ jobs:
 
               echo "=== Cleaning old scan artifacts ==="
               sudo rm -rf /home/alvin/zentinel/backend/strix_runs/* 2>/dev/null || true
-              sudo rm -f /home/alvin/celery.log 2>/dev/null || true
 
-              echo "=== Stopping existing Celery workers ==="
-              sudo pkill -f "celery -A app.workers" || true
-              sleep 3
+              echo "=== Installing/updating systemd service ==="
+              sudo cp /home/alvin/zentinel/deploy/zentinel-celery.service /etc/systemd/system/zentinel-celery.service
+              sudo systemctl daemon-reload
+              sudo systemctl enable zentinel-celery
 
-              echo "=== Starting Celery worker ==="
-              sudo -u alvin bash -c "cd /home/alvin/zentinel/backend && source /home/alvin/zentinel-env/bin/activate && source .env && export PYTHONPATH=/home/alvin/zentinel/backend && nohup celery -A app.workers.tasks:celery_app worker --loglevel=info --queues=scans,day_zero --concurrency=2 --include=app.api.endpoints.cto_scan > /home/alvin/celery.log 2>&1 &"
+              echo "=== Restarting Celery worker ==="
+              sudo systemctl restart zentinel-celery
 
               sleep 5
-              if pgrep -f "celery -A app.workers" > /dev/null; then
+              if systemctl is-active --quiet zentinel-celery; then
                 echo "=== Celery worker restarted successfully ==="
+                sudo systemctl status zentinel-celery --no-pager -l | tail -5
               else
                 echo "=== ERROR: Celery worker failed to start ==="
-                sudo tail -20 /home/alvin/celery.log
+                sudo journalctl -u zentinel-celery --no-pager -n 20
                 exit 1
               fi
             '

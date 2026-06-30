@@ -1,0 +1,21 @@
+[Unit]
+Description=Zentinel Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=forking
+User=alvin
+Group=alvin
+WorkingDirectory=/home/alvin/zentinel/backend
+EnvironmentFile=/home/alvin/zentinel/backend/.env
+Environment="PYTHONPATH=/home/alvin/zentinel/backend"
+ExecStart=/bin/bash -c 'source /home/alvin/zentinel-env/bin/activate && celery -A app.workers.tasks:celery_app worker --loglevel=info --queues=scans,day_zero --concurrency=2 --include=app.api.endpoints.cto_scan --pidfile=/home/alvin/celery.pid --logfile=/home/alvin/celery.log --detach'
+ExecStop=/bin/bash -c 'kill $(cat /home/alvin/celery.pid) 2>/dev/null || pkill -f "celery -A app.workers" || true'
+PIDFile=/home/alvin/celery.pid
+Restart=on-failure
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
