@@ -346,29 +346,99 @@ Do not call finish_scan until all sub-agents have reported back.
         set_global_report_state(report_state)
 
         # 5. Configure environment for the Strix SDK
-        # The SDK reads STRIX_LLM and LLM_API_KEY from environment
+        # Set up LLM model with fallback chain
+        # LiteLLM (used by Strix SDK) reads these env vars for auth
         os.environ.setdefault("STRIX_LLM", settings.STRIX_LLM)
+
+        # AWS Bedrock auth (for Anthropic via Bedrock)
+        if settings.AWS_ACCESS_KEY_ID:
+            os.environ.setdefault("AWS_ACCESS_KEY_ID", settings.AWS_ACCESS_KEY_ID)
+            os.environ.setdefault("AWS_SECRET_ACCESS_KEY", settings.AWS_SECRET_ACCESS_KEY)
+            os.environ.setdefault("AWS_REGION_NAME", settings.AWS_REGION)
+
+        # Vertex AI auth (uses GCP ADC — no key needed on Cloud Run)
+        os.environ.setdefault("VERTEXAI_PROJECT", settings.VERTEX_PROJECT)
+        os.environ.setdefault("VERTEXAI_LOCATION", settings.VERTEX_LOCATION)
+
+        # NVIDIA NIM
+        if settings.NVIDIA_NIM_API_KEY:
+            os.environ.setdefault("NVIDIA_NIM_API_KEY", settings.NVIDIA_NIM_API_KEY)
+
+        # Gemini direct API key
+        if settings.GEMINI_API_KEY:
+            os.environ.setdefault("GEMINI_API_KEY", settings.GEMINI_API_KEY)
+
+        # DeepSeek
+        if settings.DEEPSEEK_API_KEY:
+            os.environ.setdefault("DEEPSEEK_API_KEY", settings.DEEPSEEK_API_KEY)
+
+        # Model selection with fallback logic:
+        # Try primary model, if it fails (429/quota/auth), fall back
+        selected_model = settings.STRIX_LLM
+        fallbacks = [
+            settings.STRIX_LLM_FALLBACK_1,
+            settings.STRIX_LLM_FALLBACK_2,
+            settings.STRIX_LLM_FALLBACK_3,
+            settings.STRIX_LLM_FALLBACK_4,
+        ]
+        # Filter out fallbacks that don't have credentials configured
+        active_fallbacks = []
+        for fb in fallbacks:
+            if fb.startswith("bedrock/") and settings.AWS_ACCESS_KEY_ID:
+                active_fallbacks.append(fb)
+            elif fb.startswith("vertex_ai/"):
+                active_fallbacks.append(fb)  # Uses GCP ADC
+            elif fb.startswith("nvidia_nim/") and settings.NVIDIA_NIM_API_KEY:
+                active_fallbacks.append(fb)
+            elif fb.startswith("gemini/") and settings.GEMINI_API_KEY:
+                active_fallbacks.append(fb)
+            elif fb.startswith("deepseek/") and settings.DEEPSEEK_API_KEY:
+                active_fallbacks.append(fb)
+            elif fb.startswith("anthropic/"):
+                active_fallbacks.append(fb)  # Uses LLM_API_KEY
+
+        strix_logger.info(f"[ZENTINEL] Primary model: {selected_model}")
+        strix_logger.info(f"[ZENTINEL] Active fallbacks: {active_fallbacks}")
 
         # Resolve sandbox image
         strix_image = os.environ.get("STRIX_IMAGE", "ghcr.io/usestrix/strix-sandbox:1.0.0")
 
-        # 6. Execute via the new SDK runner
+        # 6. Execute via the new SDK runner with fallback chain
         strix_logger.info(f"[ZENTINEL] Launching run_strix_scan for pentest {pentest_id}")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+
+        result = None
+        models_to_try = [selected_model] + active_fallbacks
+
         try:
-            result = loop.run_until_complete(
-                run_strix_scan(
-                    scan_config=strix_scan_config,
-                    scan_id=pentest_id,
-                    image=strix_image,
-                    local_sources=None,
-                    interactive=False,
-                    max_turns=max_turns,
-                    model=settings.STRIX_LLM,
-                    cleanup_on_exit=True,
-                )
-            )
+            for i, model in enumerate(models_to_try):
+                try:
+                    strix_logger.info(f"[ZENTINEL] Trying model {i+1}/{len(models_to_try)}: {model}")
+                    os.environ["STRIX_LLM"] = model
+                    result = loop.run_until_complete(
+                        run_strix_scan(
+                            scan_config=strix_scan_config,
+                            scan_id=pentest_id,
+                            image=strix_image,
+                            local_sources=None,
+                            interactive=False,
+                            max_turns=max_turns,
+                            model=model,
+                            cleanup_on_exit=True,
+                        )
+                    )
+                    strix_logger.info(f"[ZENTINEL] Success with model: {model}")
+                    break  # Success — exit loop
+                except Exception as model_err:
+                    err_str = str(model_err).lower()
+                    # Only retry on quota/auth errors, not scan failures
+                    is_retriable = any(k in err_str for k in ["429", "quota", "rate limit", "resource exhausted", "authentication", "credentials", "unauthorized", "forbidden"])
+                    if is_retriable and i < len(models_to_try) - 1:
+                        strix_logger.warning(f"[ZENTINEL] Model {model} failed ({type(model_err).__name__}), trying fallback...")
+                        continue
+                    else:
+                        raise  # Re-raise if not retriable or last model
         finally:
             loop.close()
 
