@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
     Plus, FolderOpen, Globe, GitBranch, Crosshair, Clock,
@@ -606,6 +607,7 @@ function LaunchScanModal({
     onClose: () => void;
     onLaunched: () => void;
 }) {
+    const router = useRouter();
     const [title, setTitle] = useState(`Full Pentest — ${new Date().toLocaleDateString()}`);
     const [customContext, setCustomContext] = useState("");
     const [credentials, setCredentials] = useState("");
@@ -676,6 +678,8 @@ function LaunchScanModal({
 
         setLaunching(false);
         onLaunched();
+        // Navigate to live scan view
+        router.push(`/cto-panel/scan/${report.id}`);
     };
 
     return (
