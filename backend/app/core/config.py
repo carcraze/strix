@@ -5,16 +5,16 @@ class Settings(BaseSettings):
 
     # ── LLM Model Fallback Chain ──────────────────────────────────
     # Priority order for pentesting scans:
-    # 1. Anthropic via AWS Bedrock (best reasoning for security)
-    # 2. Vertex AI Gemini (fast, good for DAST)
-    # 3. NVIDIA NIM (cost-effective for large scans)
-    # 4. Gemini via API key (fallback if Vertex quota exceeded)
-    # 5. DeepSeek (last resort, cheapest)
-    STRIX_LLM: str = "bedrock/anthropic.claude-sonnet-4-6-20250514-v1:0"
-    STRIX_LLM_FALLBACK_1: str = "vertex_ai/gemini-2.5-pro"
-    STRIX_LLM_FALLBACK_2: str = "nvidia_nim/meta/llama-3.3-70b-instruct"
-    STRIX_LLM_FALLBACK_3: str = "gemini/gemini-2.5-pro"
-    STRIX_LLM_FALLBACK_4: str = "deepseek/deepseek-chat"
+    # 1. Claude Opus 4.6 via AWS Bedrock (best reasoning)
+    # 2. Qwen 3.5 397B via NVIDIA NIM (massive model, great for security)
+    # 3. DeepSeek V4 Pro via NVIDIA NIM (strong reasoning)
+    # 4. Vertex AI Gemini 2.5 Pro (fast, GCP-native)
+    # 5. DeepSeek V4 Flash via NVIDIA NIM (cheapest, thinking mode)
+    STRIX_LLM: str = "bedrock/anthropic.claude-opus-4-6-20250514-v1:0"
+    STRIX_LLM_FALLBACK_1: str = "nvidia_nim/qwen/qwen3.5-397b-a17b"
+    STRIX_LLM_FALLBACK_2: str = "nvidia_nim/deepseek-ai/deepseek-v4-pro"
+    STRIX_LLM_FALLBACK_3: str = "vertex_ai/gemini-2.5-pro"
+    STRIX_LLM_FALLBACK_4: str = "nvidia_nim/deepseek-ai/deepseek-v4-flash"
 
     # ── GCP / Vertex AI ───────────────────────────────────────────
     VERTEX_PROJECT: str = "moyopal-453021"

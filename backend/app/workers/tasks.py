@@ -360,9 +360,10 @@ Do not call finish_scan until all sub-agents have reported back.
         os.environ.setdefault("VERTEXAI_PROJECT", settings.VERTEX_PROJECT)
         os.environ.setdefault("VERTEXAI_LOCATION", settings.VERTEX_LOCATION)
 
-        # NVIDIA NIM
+        # NVIDIA NIM (OpenAI-compatible endpoint)
         if settings.NVIDIA_NIM_API_KEY:
             os.environ.setdefault("NVIDIA_NIM_API_KEY", settings.NVIDIA_NIM_API_KEY)
+            os.environ.setdefault("NVIDIA_NIM_API_BASE", "https://integrate.api.nvidia.com/v1")
 
         # Gemini direct API key
         if settings.GEMINI_API_KEY:
