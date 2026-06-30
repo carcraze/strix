@@ -70,6 +70,62 @@ jobs:
             --platform=managed \
             --quiet
 
+  deploy-worker:
+    needs: [detect-changes, deploy-backend]
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Pull code & restart Celery on worker VM
+        run: |
+          gcloud compute ssh alvin@zentinel-worker-1 \
+            --zone=us-central1-a \
+            --project=${{ env.GCP_PROJECT }} \
+            --command='
+              set -e
+              echo "=== Pulling latest code ==="
+              cd /home/alvin/zentinel && git pull origin main
+
+              echo "=== Cleaning old scan artifacts ==="
+              rm -rf /home/alvin/zentinel/backend/strix_runs/* 2>/dev/null || true
+              rm -f /home/alvin/celery.log 2>/dev/null || true
+
+              echo "=== Stopping existing Celery workers ==="
+              pkill -f "celery -A app.workers" || true
+              sleep 3
+
+              echo "=== Starting Celery worker ==="
+              cd /home/alvin/zentinel/backend
+              source /home/alvin/zentinel-env/bin/activate
+              source .env
+              export PYTHONPATH=/home/alvin/zentinel/backend
+              nohup celery -A app.workers.tasks:celery_app worker \
+                --loglevel=info \
+                --queues=scans,day_zero \
+                --concurrency=2 \
+                --include=app.api.endpoints.cto_scan \
+                > /home/alvin/celery.log 2>&1 &
+
+              sleep 5
+              if pgrep -f "celery -A app.workers" > /dev/null; then
+                echo "=== Celery worker started successfully ==="
+              else
+                echo "=== ERROR: Celery worker failed to start ==="
+                tail -20 /home/alvin/celery.log
+                exit 1
+              fi
+            '
+
   deploy-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
