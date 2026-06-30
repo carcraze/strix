@@ -24,6 +24,9 @@ celery_app.conf.update(
     task_always_eager=False,
     worker_prefetch_multiplier=1,  # one task at a time per worker — prevents memory spikes
 
+    # Include additional task modules so the worker discovers them
+    include=["app.api.endpoints.cto_scan"],
+
     # GAP 4: Per-queue concurrency limits via routing.
     # day_zero scans are memory-heavy (clone + 5 parallel tools + AI triage).
     # We give day_zero its own queue and cap it at 2 concurrent scans so that
@@ -33,6 +36,7 @@ celery_app.conf.update(
     task_routes={
         "run_day_zero_scan": {"queue": "day_zero"},  # separate low-concurrency queue
         "run_pentest":       {"queue": "scans"},
+        "run_cto_pipeline":  {"queue": "scans"},
     },
 )
 
