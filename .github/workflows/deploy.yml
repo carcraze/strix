@@ -86,12 +86,13 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Pull code & restart Celery on worker VM
+      - name: Deploy to Celery worker VM
         run: |
-          gcloud compute ssh alvin@zentinel-worker-1 \
+          gcloud compute ssh zentinel-worker-1 \
             --zone=us-central1-a \
             --project=${{ env.GCP_PROJECT }} \
             --tunnel-through-iap \
+            --quiet \
             --command='
               set -e
               echo "=== Pulling latest code ==="
@@ -106,22 +107,11 @@ jobs:
               sleep 3
 
               echo "=== Starting Celery worker ==="
-              sudo -u alvin bash -c "
-                cd /home/alvin/zentinel/backend &&
-                source /home/alvin/zentinel-env/bin/activate &&
-                source .env &&
-                export PYTHONPATH=/home/alvin/zentinel/backend &&
-                nohup celery -A app.workers.tasks:celery_app worker \
-                  --loglevel=info \
-                  --queues=scans,day_zero \
-                  --concurrency=2 \
-                  --include=app.api.endpoints.cto_scan \
-                  > /home/alvin/celery.log 2>&1 &
-              "
+              sudo -u alvin bash -c "cd /home/alvin/zentinel/backend && source /home/alvin/zentinel-env/bin/activate && source .env && export PYTHONPATH=/home/alvin/zentinel/backend && nohup celery -A app.workers.tasks:celery_app worker --loglevel=info --queues=scans,day_zero --concurrency=2 --include=app.api.endpoints.cto_scan > /home/alvin/celery.log 2>&1 &"
 
               sleep 5
               if pgrep -f "celery -A app.workers" > /dev/null; then
-                echo "=== Celery worker started successfully ==="
+                echo "=== Celery worker restarted successfully ==="
               else
                 echo "=== ERROR: Celery worker failed to start ==="
                 sudo tail -20 /home/alvin/celery.log

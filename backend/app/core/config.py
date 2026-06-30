@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Zentinel.dev API"
+    PROJECT_NAME: str = "Zentinel.dev API"  # v2.1 — auto-deploy worker
 
     # ── LLM Model Fallback Chain ──────────────────────────────────
     # Priority order for pentesting scans:
