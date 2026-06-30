@@ -5,15 +5,19 @@ class Settings(BaseSettings):
 
     # ── LLM Model Fallback Chain ──────────────────────────────────
     # Priority order for pentesting scans:
-    # 1. Claude Opus 4.6 via AWS Bedrock (best reasoning)
-    # 2. Qwen 3.5 397B via NVIDIA NIM (massive model, great for security)
-    # 3. DeepSeek V4 Pro via NVIDIA NIM (strong reasoning)
-    # 4. Vertex AI Gemini 2.5 Pro (fast, GCP-native)
-    # 5. DeepSeek V4 Flash via NVIDIA NIM (cheapest, thinking mode)
-    STRIX_LLM: str = "bedrock/anthropic.claude-opus-4-6-20250514-v1:0"
-    STRIX_LLM_FALLBACK_1: str = "nvidia_nim/qwen/qwen3.5-397b-a17b"
-    STRIX_LLM_FALLBACK_2: str = "nvidia_nim/deepseek-ai/deepseek-v4-pro"
-    STRIX_LLM_FALLBACK_3: str = "vertex_ai/gemini-2.5-pro"
+    # 1. Claude Opus 4.6 via AWS Bedrock (best reasoning, cross-region inference)
+    # 2. Claude Sonnet 4.6 via AWS Bedrock (fast, cross-region inference)
+    # 3. Vertex AI Gemini 2.5 Pro (fast, GCP-native — proven working)
+    # 4. NVIDIA NIM Qwen 3.5 397B (massive model, great for security)
+    # 5. NVIDIA NIM DeepSeek V4 Flash (cheapest, thinking mode)
+    #
+    # Bedrock model IDs (cross-region inference):
+    #   Opus:   us.anthropic.claude-opus-4-6-v1
+    #   Sonnet: us.anthropic.claude-sonnet-4-6-v1
+    STRIX_LLM: str = "bedrock/us.anthropic.claude-opus-4-6-v1"
+    STRIX_LLM_FALLBACK_1: str = "bedrock/us.anthropic.claude-sonnet-4-6-v1"
+    STRIX_LLM_FALLBACK_2: str = "vertex_ai/gemini-2.5-pro"
+    STRIX_LLM_FALLBACK_3: str = "nvidia_nim/qwen/qwen3.5-397b-a17b"
     STRIX_LLM_FALLBACK_4: str = "nvidia_nim/deepseek-ai/deepseek-v4-flash"
 
     # ── GCP / Vertex AI ───────────────────────────────────────────

@@ -26,7 +26,7 @@ COPY . .
 RUN mkdir -p /var/zentinel/scans
 
 ENV PYTHONUNBUFFERED=1
-ENV STRIX_LLM=vertex_ai/gemini-2.5-pro
+ENV STRIX_LLM=bedrock/us.anthropic.claude-opus-4-6-v1
 ENV STRIX_TELEMETRY=false
 
 # concurrency=2 = 2 parallel scans per worker instance

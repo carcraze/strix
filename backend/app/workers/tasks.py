@@ -437,10 +437,16 @@ Do not call finish_scan until all sub-agents have reported back.
                     break  # Success — exit loop
                 except Exception as model_err:
                     err_str = str(model_err).lower()
-                    # Only retry on quota/auth errors, not scan failures
-                    is_retriable = any(k in err_str for k in ["429", "quota", "rate limit", "resource exhausted", "authentication", "credentials", "unauthorized", "forbidden"])
+                    # Retry on quota/auth errors AND Bedrock API format errors (400 bad request)
+                    # The tool_choice.type error is a litellm ↔ Bedrock compatibility issue
+                    is_retriable = any(k in err_str for k in [
+                        "429", "quota", "rate limit", "resource exhausted",
+                        "authentication", "credentials", "unauthorized", "forbidden",
+                        "400", "bad request", "tool_choice", "field required",
+                        "validation", "malformed", "invalid",
+                    ])
                     if is_retriable and i < len(models_to_try) - 1:
-                        strix_logger.warning(f"[ZENTINEL] Model {model} failed ({type(model_err).__name__}), trying fallback...")
+                        strix_logger.warning(f"[ZENTINEL] Model {model} failed ({type(model_err).__name__}: {str(model_err)[:150]}), trying fallback...")
                         continue
                     else:
                         raise  # Re-raise if not retriable or last model
