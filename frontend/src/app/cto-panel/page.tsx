@@ -379,23 +379,23 @@ function NewProjectModal({ prospects, onClose, onCreated }: { prospects: Prospec
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-[#111114] rounded-2xl border border-white/[0.08] shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-white/[0.06]">
+            <div className="bg-[#111114] rounded-2xl border border-white/[0.08] shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-5 border-b border-white/[0.06] shrink-0">
                     <h2 className="text-lg font-bold text-white">New Project</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Link to a CRM prospect or create standalone.</p>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-5 space-y-3 overflow-y-auto flex-1">
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Link Prospect</label>
-                        <div className="relative mt-1.5">
+                        <div className="relative mt-1">
                             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                             <input type="text" value={prospectSearch} onChange={e => setProspectSearch(e.target.value)} placeholder="Search prospects..."
                                 className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
                         </div>
                         {prospectSearch && filteredProspects.length > 0 && (
-                            <div className="mt-2 max-h-32 overflow-y-auto bg-[#0a0a0e] border border-white/[0.08] rounded-lg">
+                            <div className="mt-1 max-h-28 overflow-y-auto bg-[#0a0a0e] border border-white/[0.08] rounded-lg">
                                 {filteredProspects.map(p => (
-                                    <button key={p.id} onClick={() => handleSelectProspect(p)} className="w-full text-left px-3 py-2 text-sm hover:bg-white/[0.04] flex justify-between">
+                                    <button key={p.id} onClick={() => handleSelectProspect(p)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-white/[0.04] flex justify-between">
                                         <span className="text-white">{p.company_name}</span>
                                         <span className="text-gray-600 text-xs">{p.founder_name}</span>
                                     </button>
@@ -407,30 +407,30 @@ function NewProjectModal({ prospects, onClose, onCreated }: { prospects: Prospec
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Project Name</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Acme Corp Pentest"
-                            className="w-full mt-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
+                            className="w-full mt-1 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
                     </div>
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Company</label>
                         <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company name"
-                            className="w-full mt-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
+                            className="w-full mt-1 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
                     </div>
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Target Domains</label>
-                        <textarea value={domains} onChange={e => setDomains(e.target.value)} placeholder={"example.com\napi.example.com"} rows={3}
-                            className="w-full mt-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
+                        <textarea value={domains} onChange={e => setDomains(e.target.value)} placeholder={"example.com\napi.example.com"} rows={2}
+                            className="w-full mt-1 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
                     </div>
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Repos (optional)</label>
-                        <textarea value={repos} onChange={e => setRepos(e.target.value)} placeholder="org/repo" rows={2}
-                            className="w-full mt-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
+                        <textarea value={repos} onChange={e => setRepos(e.target.value)} placeholder="org/repo" rows={1}
+                            className="w-full mt-1 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
                     </div>
                     <div>
                         <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Notes</label>
-                        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Context..." rows={2}
-                            className="w-full mt-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
+                        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Context..." rows={1}
+                            className="w-full mt-1 bg-white/[0.03] border border-white/[0.08] rounded-lg py-2 px-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 resize-none" />
                     </div>
                 </div>
-                <div className="p-6 border-t border-white/[0.06] flex justify-end gap-3">
+                <div className="p-5 border-t border-white/[0.06] flex justify-end gap-3 shrink-0">
                     <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 hover:text-white transition-colors">Cancel</button>
                     <button onClick={handleCreate} disabled={!name.trim() || creating} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors">
                         {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Create
